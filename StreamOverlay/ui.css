@@ -1,0 +1,308 @@
+.vc-streamoverlay-settings {
+    --so-accent: var(--brand-500, #5865f2);
+    --so-text: var(--text-default, var(--text-normal, #dbdee1));
+    --so-muted: var(--text-muted, #949ba4);
+    --so-line: var(--border-subtle, rgb(128 128 128 / 18%));
+    --so-soft: color-mix(in srgb, var(--so-text) 5%, transparent);
+    --so-soft-2: color-mix(in srgb, var(--so-text) 10%, transparent);
+
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    color: var(--so-text);
+    font-size: 14px;
+}
+
+/* ---------- Cards ---------- */
+
+.vc-streamoverlay-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--so-line);
+    background: var(--so-soft);
+}
+
+.vc-streamoverlay-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--so-muted);
+}
+
+.vc-streamoverlay-card-title + .vc-streamoverlay-hint {
+    margin-top: -8px;
+}
+
+.vc-streamoverlay-hint {
+    font-size: 12px;
+    color: var(--so-muted);
+    line-height: 1.4;
+}
+
+.vc-streamoverlay-hint code,
+.vc-streamoverlay-url code {
+    font-family: var(--font-code, monospace);
+}
+
+.vc-streamoverlay-divider {
+    height: 1px;
+    background: var(--so-line);
+}
+
+/* ---------- Rows ---------- */
+
+.vc-streamoverlay-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vc-streamoverlay-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-streamoverlay-row-label {
+    font-weight: 600;
+}
+
+.vc-streamoverlay-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-streamoverlay-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ---------- Status ---------- */
+
+.vc-streamoverlay-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--so-soft);
+    border: 1px solid var(--so-line);
+}
+
+.vc-streamoverlay-dot {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--so-muted);
+}
+
+.vc-streamoverlay-status-on .vc-streamoverlay-dot {
+    background: var(--status-positive, #23a55a);
+    box-shadow: 0 0 0 0 rgb(35 165 90 / 60%);
+    animation: vc-streamoverlay-pulse 2s infinite;
+}
+
+.vc-streamoverlay-status-error {
+    color: var(--text-default, var(--text-normal));
+    background: rgb(242 63 67 / 12%);
+    border-color: rgb(242 63 67 / 40%);
+}
+
+.vc-streamoverlay-status-error .vc-streamoverlay-dot {
+    background: var(--status-danger, #f23f43);
+}
+
+@keyframes vc-streamoverlay-pulse {
+    70% {
+        box-shadow: 0 0 0 7px rgb(35 165 90 / 0%);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgb(35 165 90 / 0%);
+    }
+}
+
+/* ---------- Inputs ---------- */
+
+.vc-streamoverlay-input {
+    box-sizing: border-box;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--so-line);
+    background: var(--input-background, var(--background-tertiary, rgb(0 0 0 / 20%)));
+    color: var(--so-text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.vc-streamoverlay-input:focus {
+    border-color: var(--so-accent);
+}
+
+.vc-streamoverlay-input-small {
+    width: 96px;
+}
+
+/* ---------- Toggles ---------- */
+
+.vc-streamoverlay-seg {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 9px;
+    background: var(--so-soft-2);
+}
+
+.vc-streamoverlay-seg-item {
+    flex: 1;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--so-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s;
+}
+
+.vc-streamoverlay-seg-item:hover {
+    color: var(--so-text);
+}
+
+.vc-streamoverlay-seg-item-active {
+    background: var(--so-accent);
+    color: #fff !important;
+}
+
+/* ---------- Sliders ---------- */
+
+.vc-streamoverlay-slider-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-streamoverlay-slider-value {
+    font-variant-numeric: tabular-nums;
+    color: var(--so-muted);
+}
+
+.vc-streamoverlay-slider {
+    width: 100%;
+    accent-color: var(--so-accent);
+    cursor: pointer;
+}
+
+/* ---------- Colors ---------- */
+
+.vc-streamoverlay-colors {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-streamoverlay-swatch {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--so-line);
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.vc-streamoverlay-swatch:hover {
+    transform: scale(1.12);
+}
+
+.vc-streamoverlay-swatch-active {
+    box-shadow: 0 0 0 2px var(--background-primary, #313338), 0 0 0 4px var(--so-text);
+}
+
+.vc-streamoverlay-color-picker {
+    width: 30px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* ---------- URL & buttons ---------- */
+
+.vc-streamoverlay-url {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px dashed var(--so-line);
+    background: var(--background-tertiary, rgb(0 0 0 / 20%));
+    font-size: 13px;
+    word-break: break-all;
+    cursor: copy;
+    user-select: all;
+}
+
+.vc-streamoverlay-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vc-streamoverlay-btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 8px;
+    background: var(--so-soft-2);
+    color: var(--so-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, background 0.15s;
+}
+
+.vc-streamoverlay-btn:hover {
+    filter: brightness(1.15);
+}
+
+.vc-streamoverlay-btn-primary {
+    background: var(--so-accent);
+    color: #fff;
+}
+
+.vc-streamoverlay-btn-link {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.vc-streamoverlay-btn-link:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Guide ---------- */
+
+.vc-streamoverlay-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.45;
+}

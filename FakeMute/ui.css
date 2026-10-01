@@ -1,0 +1,195 @@
+.vc-fakemute-btn,
+.vc-fakemute-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-fakemute-btn {
+    position: relative;
+}
+
+.vc-fakemute-btn .vc-fakemute-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-fakemute-btn:hover .vc-fakemute-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-fakemute-btn[class*="selected"] .vc-fakemute-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+/* Fake active: yellow icon + dot so you don't forget it */
+.vc-fakemute-btn-active .vc-fakemute-icon,
+.vc-fakemute-btn-active:hover .vc-fakemute-icon {
+    color: var(--status-warning, #f0b232);
+}
+
+.vc-fakemute-btn-active::after {
+    content: "";
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--status-warning, #f0b232);
+    pointer-events: none;
+}
+
+/* ---------- Popout ---------- */
+
+.vc-fakemute-popout {
+    width: 300px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 12px;
+    background: var(--background-surface-higher, var(--background-floating));
+    border: 1px solid var(--border-subtle, transparent);
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-fakemute-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-fakemute-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-fakemute-muted {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ---------- Karten ---------- */
+
+.vc-fakemute-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+}
+
+.vc-fakemute-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.vc-fakemute-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.vc-fakemute-status-label {
+    color: var(--text-muted);
+}
+
+.vc-fakemute-status-value {
+    font-weight: 600;
+}
+
+.vc-fakemute-status-good {
+    color: var(--status-positive, var(--text-positive, #23a55a));
+}
+
+.vc-fakemute-status-bad {
+    color: var(--status-danger, var(--text-danger, #f23f43));
+}
+
+.vc-fakemute-warning {
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: var(--text-default, var(--text-normal));
+    background: rgb(240 178 50 / 15%);
+    border: 1px solid rgb(240 178 50 / 40%);
+}
+
+/* ---------- Umschalter ---------- */
+
+.vc-fakemute-segmented {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+}
+
+.vc-fakemute-disabled {
+    opacity: 0.5;
+}
+
+.vc-fakemute-segment {
+    flex: 1;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vc-fakemute-segment:disabled {
+    cursor: not-allowed;
+}
+
+.vc-fakemute-segment:hover:not(:disabled) {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-fakemute-segment-off {
+    background: var(--brand-500, #5865f2);
+    color: #fff !important;
+}
+
+.vc-fakemute-segment-fake {
+    background: var(--status-warning, #f0b232);
+    color: #000 !important;
+}
+
+.vc-fakemute-segment-real {
+    background: var(--status-danger, #f23f43);
+    color: #fff !important;
+}
+
+/* ---------- Settings ---------- */
+
+.vc-fakemute-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-fakemute-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+}

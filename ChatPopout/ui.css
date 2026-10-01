@@ -1,0 +1,1455 @@
+/* ===================================================================== ChatPopout */
+
+/* ---------- Window ---------- */
+
+.vc-chatpopout-window {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text-default, var(--text-normal, #dbdee1));
+    background: var(--background-base-lower, var(--background-primary, #313338));
+    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
+    font-size: 15px;
+}
+
+/* ---------- Title bar (draggable) ---------- */
+
+.vc-chatpopout-titlebar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 6px 0 12px;
+    border-bottom: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    background: var(--background-base-low, var(--background-secondary, #2b2d31));
+    user-select: none;
+    -webkit-app-region: drag;
+}
+
+.vc-chatpopout-title-icon {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vc-chatpopout-title-icon-text {
+    display: grid;
+    place-items: center;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.vc-chatpopout-title-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-chatpopout-title-name {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--header-primary, #f2f3f5);
+}
+
+.vc-chatpopout-title-sub {
+    overflow: hidden;
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-title-actions {
+    display: flex;
+    gap: 2px;
+    -webkit-app-region: no-drag;
+}
+
+.vc-chatpopout-icon-btn-active {
+    color: var(--brand-500, #5865f2) !important;
+}
+
+/* ---------- Call bar ---------- */
+
+.vc-chatpopout-voice {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    background: color-mix(in srgb, var(--status-positive, #23a55a) 8%, transparent);
+    font-size: 12px;
+}
+
+.vc-chatpopout-voice-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-positive, #23a55a);
+    animation: vc-chatpopout-pulse 2s ease-in-out infinite;
+}
+
+@keyframes vc-chatpopout-pulse {
+    50% { opacity: 0.4; }
+}
+
+.vc-chatpopout-voice-people {
+    display: flex;
+    align-items: center;
+}
+
+.vc-chatpopout-voice-person {
+    position: relative;
+    margin-left: -4px;
+}
+
+.vc-chatpopout-voice-person:first-child {
+    margin-left: 0;
+}
+
+.vc-chatpopout-voice-person img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--background-base-lower, #313338);
+    border-radius: 50%;
+}
+
+.vc-chatpopout-voice-flag {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+}
+
+.vc-chatpopout-voice-live {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+    font-size: 8px;
+    font-weight: 800;
+    transform: translateX(-50%);
+}
+
+.vc-chatpopout-voice-more,
+.vc-chatpopout-voice-label {
+    color: var(--text-muted, #949ba4);
+    font-weight: 600;
+}
+
+.vc-chatpopout-voice-more {
+    margin-left: 4px;
+}
+
+.vc-chatpopout-voice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    background: var(--status-positive, #23a55a);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-chatpopout-voice-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* ---------- Image preview ---------- */
+
+.vc-chatpopout-lightbox {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: rgb(0 0 0 / 85%);
+    cursor: zoom-out;
+}
+
+.vc-chatpopout-lightbox img {
+    max-width: 100%;
+    max-height: calc(100% - 40px);
+    border-radius: 6px;
+    object-fit: contain;
+    cursor: default;
+}
+
+.vc-chatpopout-lightbox-open {
+    color: #fff;
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.vc-chatpopout-lightbox-open:hover {
+    opacity: 1;
+}
+
+/* ---------- Buttons, messages & input ---------- */
+
+.vc-chatpopout-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+}
+
+.vc-chatpopout-icon-btn:hover:not(:disabled) {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-chatpopout-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.vc-chatpopout-icon-btn-danger:hover:not(:disabled) {
+    color: var(--status-danger, #f23f43);
+}
+
+/* ---------- Message list ---------- */
+
+.vc-chatpopout-list-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.vc-chatpopout-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-anchor: none;
+}
+
+.vc-chatpopout-list-content {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0 12px;
+}
+
+.vc-chatpopout-load-older,
+.vc-chatpopout-list-start {
+    align-self: center;
+    margin: 8px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-load-older {
+    padding: 4px 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.vc-chatpopout-load-older:hover:not(:disabled) {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-chatpopout-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.vc-chatpopout-day {
+    display: flex;
+    align-items: center;
+    margin: 12px 12px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-day::before,
+.vc-chatpopout-day::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle, var(--background-modifier-accent));
+}
+
+.vc-chatpopout-day span {
+    padding: 0 8px;
+}
+
+.vc-chatpopout-message {
+    position: relative;
+    padding: 1px 12px 1px 0;
+    line-height: 1.375;
+    word-wrap: break-word;
+}
+
+.vc-chatpopout-message:hover {
+    background: var(--background-message-hover, rgb(128 128 128 / 6%));
+}
+
+.vc-chatpopout-group-start {
+    margin-top: 12px;
+}
+
+.vc-chatpopout-mentioned {
+    background: var(--background-mentioned, rgb(240 177 50 / 10%));
+    box-shadow: inset 2px 0 0 var(--info-warning-foreground, #f0b232);
+}
+
+.vc-chatpopout-mentioned:hover {
+    background: var(--background-mentioned-hover, rgb(240 177 50 / 14%));
+}
+
+.vc-chatpopout-pending .vc-chatpopout-content {
+    opacity: 0.5;
+}
+
+.vc-chatpopout-failed .vc-chatpopout-content {
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-chatpopout-flash {
+    animation: vc-chatpopout-flash 1.6s ease-out;
+}
+
+@keyframes vc-chatpopout-flash {
+    0%,
+    40% {
+        background: var(--brand-500, #5865f2);
+        background: rgb(88 101 242 / 25%);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.vc-chatpopout-row {
+    display: flex;
+}
+
+.vc-chatpopout-gutter {
+    flex: none;
+    width: 60px;
+    display: flex;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-avatar {
+    width: 36px;
+    height: 36px;
+    margin-top: 2px;
+    border-radius: 50%;
+    cursor: pointer;
+    object-fit: cover;
+}
+
+.vc-chatpopout-gutter-time {
+    visibility: hidden;
+    padding-top: 3px;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-chatpopout-message:hover .vc-chatpopout-gutter-time {
+    visibility: visible;
+}
+
+.vc-chatpopout-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-chatpopout-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vc-chatpopout-name {
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+    cursor: pointer;
+}
+
+.vc-chatpopout-name:hover {
+    text-decoration: underline;
+}
+
+.vc-chatpopout-bot-tag {
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 15px;
+    color: #fff;
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-chatpopout-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-chatpopout-time:hover {
+    text-decoration: underline;
+}
+
+.vc-chatpopout-content {
+    white-space: pre-wrap;
+    user-select: text;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-chatpopout-content code {
+    white-space: pre-wrap;
+}
+
+.vc-chatpopout-edited {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-muted {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-error-text {
+    font-size: 13px;
+    color: var(--status-danger, var(--text-danger, #f23f43));
+}
+
+.vc-chatpopout-system .vc-chatpopout-gutter {
+    font-size: 16px;
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-chatpopout-system {
+    display: flex;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+/* Reply line */
+.vc-chatpopout-reply {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 0 2px 60px;
+    font-size: 13px;
+    min-width: 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vc-chatpopout-reply::before {
+    content: "";
+    position: absolute;
+    left: -34px;
+    top: 50%;
+    width: 28px;
+    height: 10px;
+    border-top: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+    border-left: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+    border-top-left-radius: 6px;
+    box-sizing: border-box;
+}
+
+.vc-chatpopout-reply-avatar {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.vc-chatpopout-reply-name {
+    font-weight: 600;
+    flex: none;
+}
+
+.vc-chatpopout-reply-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-reply:hover .vc-chatpopout-reply-text {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-chatpopout-command {
+    color: var(--text-link, #00a8fc);
+}
+
+/* Attachments */
+.vc-chatpopout-attachments {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.vc-chatpopout-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: zoom-in;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+}
+
+.vc-chatpopout-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-base-lowest, var(--background-secondary));
+    color: var(--text-link, #00a8fc);
+    text-decoration: none;
+}
+
+.vc-chatpopout-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-chatpopout-file-size {
+    flex: none;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Embeds */
+.vc-chatpopout-embed {
+    display: flex;
+    gap: 12px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border-left: 4px solid var(--background-modifier-accent, rgb(128 128 128 / 40%));
+    background: var(--background-base-lowest, var(--background-secondary));
+}
+
+.vc-chatpopout-embed-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-chatpopout-embed-provider,
+.vc-chatpopout-embed-author {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-embed-author {
+    font-weight: 600;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-chatpopout-embed-title {
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+}
+
+a.vc-chatpopout-embed-title {
+    color: var(--text-link, #00a8fc);
+}
+
+.vc-chatpopout-embed-desc {
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+
+.vc-chatpopout-embed-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.vc-chatpopout-embed-thumb {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* Stickers & reactions */
+.vc-chatpopout-stickers {
+    margin-top: 4px;
+}
+
+.vc-chatpopout-sticker {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
+.vc-chatpopout-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.vc-chatpopout-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+}
+
+.vc-chatpopout-reaction img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.vc-chatpopout-reaction-emoji {
+    font-size: 15px;
+    line-height: 18px;
+}
+
+.vc-chatpopout-reaction-me {
+    border-color: var(--brand-500, #5865f2);
+    background: rgb(88 101 242 / 15%);
+    color: var(--text-default, var(--text-normal));
+}
+
+/* New messages pill */
+.vc-chatpopout-new-pill {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 14px;
+    border: none;
+    border-radius: 14px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-medium, 0 4px 8px rgb(0 0 0 / 24%));
+}
+
+/* ---------- Input ---------- */
+
+.vc-chatpopout-composer {
+    flex: none;
+    padding: 0 12px 4px;
+}
+
+.vc-chatpopout-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 8px 8px 12px;
+    border-radius: 8px;
+    background: var(--channeltextarea-background, var(--background-base-lowest, var(--background-secondary)));
+    border: 1px solid var(--border-subtle, transparent);
+}
+
+.vc-chatpopout-input-disabled {
+    opacity: 0.6;
+}
+
+.vc-chatpopout-input {
+    flex: 1;
+    min-height: 22px;
+    max-height: 180px;
+    padding: 2px 0;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.375;
+}
+
+.vc-chatpopout-input::placeholder {
+    color: var(--text-muted);
+}
+
+.vc-chatpopout-send,
+.vc-chatpopout-button {
+    flex: none;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-chatpopout-send:disabled,
+.vc-chatpopout-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.vc-chatpopout-send:hover:not(:disabled),
+.vc-chatpopout-button:hover:not(:disabled) {
+    background: var(--brand-560, #4752c4);
+}
+
+.vc-chatpopout-typing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-typing-dots {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.vc-chatpopout-typing-dots i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentcolor;
+    animation: vc-chatpopout-dot 1.2s infinite ease-in-out;
+}
+
+.vc-chatpopout-typing-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.vc-chatpopout-typing-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes vc-chatpopout-dot {
+    0%,
+    60%,
+    100% {
+        opacity: 0.3;
+    }
+
+    30% {
+        opacity: 1;
+    }
+}
+
+
+/* ---------- Popout icons in DM & channel list (shown on hover) ---------- */
+
+.vc-chatpopout-row-btn {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin: 0 2px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--interactive-icon-default, var(--interactive-normal, #b5bac1));
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s;
+}
+
+li:hover .vc-chatpopout-row-btn,
+[class*="selected"] .vc-chatpopout-row-btn,
+.vc-chatpopout-row-btn:focus-visible {
+    opacity: 1;
+}
+
+.vc-chatpopout-row-btn:hover {
+    color: var(--interactive-icon-hover, var(--interactive-hover, #fff));
+}
+
+/* ---------- Tooltips in the popout window (recreation of Discord's tooltip) ---------- */
+
+.vc-chatpopout-window [data-tip] {
+    position: relative;
+}
+
+.vc-chatpopout-window [data-tip]::before,
+.vc-chatpopout-window [data-tip]::after {
+    position: absolute;
+    z-index: 50;
+    left: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+/* Bubble */
+.vc-chatpopout-window [data-tip]::after {
+    content: attr(data-tip);
+    bottom: calc(100% + 8px);
+    max-width: 260px;
+    width: max-content;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--background-surface-highest, var(--background-floating, #111214));
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-default, var(--text-normal, #dbdee1));
+    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: left;
+    white-space: normal;
+    transform: translate(-50%, 4px) scale(0.96);
+}
+
+/* Arrow */
+.vc-chatpopout-window [data-tip]::before {
+    content: "";
+    bottom: calc(100% + 3px);
+    border: 5px solid transparent;
+    border-bottom-width: 0;
+    border-top-color: var(--background-surface-highest, var(--background-floating, #111214));
+    transform: translate(-50%, 4px);
+}
+
+.vc-chatpopout-window [data-tip]:hover::before,
+.vc-chatpopout-window [data-tip]:hover::after {
+    opacity: 1;
+    transition-delay: 0.15s;
+}
+
+.vc-chatpopout-window [data-tip]:hover::after {
+    transform: translate(-50%, 0) scale(1);
+}
+
+.vc-chatpopout-window [data-tip]:hover::before {
+    transform: translate(-50%, 0);
+}
+
+/* Below instead of above (e.g. in the title bar) */
+.vc-chatpopout-window [data-tip-pos="bottom"]::after {
+    top: calc(100% + 8px);
+    bottom: auto;
+    transform: translate(-50%, -4px) scale(0.96);
+}
+
+.vc-chatpopout-window [data-tip-pos="bottom"]::before {
+    top: calc(100% + 3px);
+    bottom: auto;
+    border-width: 0 5px 5px;
+    border-color: transparent transparent var(--background-surface-highest, var(--background-floating, #111214));
+    transform: translate(-50%, -4px);
+}
+
+/* Flush with the window edge instead of centered */
+.vc-chatpopout-window [data-tip-align="end"]::after {
+    left: auto;
+    right: -4px;
+    transform: translateY(4px) scale(0.96);
+}
+
+.vc-chatpopout-window [data-tip-align="start"]::after {
+    left: -4px;
+    transform: translateY(4px) scale(0.96);
+}
+
+.vc-chatpopout-window [data-tip-pos="bottom"][data-tip-align="end"]::after,
+.vc-chatpopout-window [data-tip-pos="bottom"][data-tip-align="start"]::after {
+    transform: translateY(-4px) scale(0.96);
+}
+
+.vc-chatpopout-window [data-tip-align="end"]:hover::after,
+.vc-chatpopout-window [data-tip-align="start"]:hover::after {
+    transform: none;
+}
+
+/* No tooltip on disabled buttons */
+.vc-chatpopout-window [data-tip]:disabled::before,
+.vc-chatpopout-window [data-tip]:disabled::after {
+    display: none;
+}
+
+/* ---------- Scrollbars (Discord style) ---------- */
+
+/*
+ * Chromium ignores every ::-webkit-scrollbar rule as soon as the standard
+ * scrollbar-width / scrollbar-color is set (scrollbar-color is inherited, e.g. from Discord's html).
+ * Reset both so the Discord-style rules below apply.
+ */
+.vc-chatpopout-window,
+.vc-chatpopout-window * {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+}
+
+.vc-chatpopout-window ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+}
+
+.vc-chatpopout-window ::-webkit-scrollbar-corner,
+.vc-chatpopout-window ::-webkit-scrollbar-button {
+    display: none;
+    background: transparent;
+}
+
+.vc-chatpopout-window ::-webkit-scrollbar-track {
+    border: 4px solid transparent;
+    border-radius: 8px;
+    background-color: var(--scrollbar-auto-track, rgb(0 0 0 / 15%));
+    background-clip: padding-box;
+}
+
+.vc-chatpopout-window ::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    border: 4px solid transparent;
+    border-radius: 8px;
+    background-color: var(--scrollbar-auto-thumb, rgb(0 0 0 / 40%));
+    background-clip: padding-box;
+}
+
+/* Small lists (command suggestions etc.): thin scrollbar without a track */
+.vc-chatpopout-cmd-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-chatpopout-cmd-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vc-chatpopout-cmd-list::-webkit-scrollbar-thumb {
+    border-width: 2px;
+    background-color: var(--scrollbar-thin-thumb, rgb(255 255 255 / 20%));
+}
+
+/* ---------- Polish ---------- */
+
+.vc-chatpopout-composer {
+    position: relative;
+}
+
+.vc-chatpopout-input-wrap {
+    transition: box-shadow 0.15s;
+}
+
+.vc-chatpopout-input-wrap:focus-within {
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 10%);
+}
+
+.vc-chatpopout-send {
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.vc-chatpopout-icon-btn {
+    transition: color 0.12s, background 0.12s;
+}
+
+.vc-chatpopout-message {
+    transition: background 0.1s;
+}
+
+/* ---------- Command suggestions ---------- */
+
+.vc-chatpopout-cmd-popup {
+    position: absolute;
+    right: 16px;
+    bottom: calc(100% - 4px);
+    left: 16px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    max-height: min(340px, 55vh);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
+    border-radius: 8px;
+    background: var(--background-surface-high, var(--background-floating, #232428));
+    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / 35%));
+    animation: vc-chatpopout-rise 0.12s ease-out;
+}
+
+@keyframes vc-chatpopout-rise {
+    from { opacity: 0; transform: translateY(4px); }
+}
+
+.vc-chatpopout-cmd-popup-head {
+    padding: 10px 12px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-list {
+    flex: 1;
+    min-height: 0;
+    padding: 0 6px 6px;
+    overflow-y: auto;
+}
+
+.vc-chatpopout-cmd-empty {
+    padding: 10px 8px 14px;
+    font-size: 14px;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-chatpopout-cmd-item-active {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-chatpopout-cmd-icon {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vc-chatpopout-cmd-icon-text {
+    display: grid;
+    place-items: center;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.vc-chatpopout-cmd-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-chatpopout-cmd-name {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--header-primary, #f2f3f5);
+}
+
+.vc-chatpopout-cmd-arg {
+    font-weight: 400;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-desc {
+    overflow: hidden;
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-source {
+    flex: none;
+    max-width: 30%;
+    overflow: hidden;
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted, #949ba4);
+}
+
+/* ---------- Command form ---------- */
+
+.vc-chatpopout-cmd-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--channeltextarea-background, var(--background-surface-high, #383a40));
+    animation: vc-chatpopout-rise 0.12s ease-out;
+}
+
+.vc-chatpopout-cmd-form-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.vc-chatpopout-cmd-form-name {
+    flex: none;
+    font-weight: 700;
+    color: var(--header-primary, #f2f3f5);
+}
+
+.vc-chatpopout-cmd-form-desc {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.vc-chatpopout-cmd-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.vc-chatpopout-cmd-field-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--header-secondary, #b5bac1);
+}
+
+.vc-chatpopout-cmd-field-label b {
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-chatpopout-cmd-field-hint {
+    overflow: hidden;
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-cmd-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 9px;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
+    border-radius: 6px;
+    background: var(--input-background, var(--background-base-lowest, #1e1f22));
+    color: var(--text-default, #dbdee1);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.vc-chatpopout-cmd-input:focus {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-chatpopout-cmd-note {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgb(240 178 50 / 12%);
+    color: var(--text-warning, #f0b232);
+    font-size: 13px;
+}
+
+.vc-chatpopout-cmd-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-chatpopout-cmd-hint {
+    font-size: 12px;
+    color: var(--text-muted, #949ba4);
+}
+
+/* ---------- Sidebar (channel list) ---------- */
+
+.vc-chatpopout-main {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.vc-chatpopout-chat {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-chatpopout-sidebar {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    width: 220px;
+    border-right: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    background: var(--background-base-low, var(--background-secondary, #2b2d31));
+}
+
+/* Narrow window: the list lies over the chat instead of squeezing it */
+@media (width < 560px) {
+    .vc-chatpopout-sidebar {
+        position: absolute;
+        inset: 0 auto 0 0;
+        z-index: 5;
+        width: min(260px, 85%);
+        box-shadow: 4px 0 16px rgb(0 0 0 / 35%);
+    }
+}
+
+.vc-chatpopout-side-head {
+    flex: none;
+    overflow: hidden;
+    padding: 12px 14px 8px;
+    color: var(--header-primary, #f2f3f5);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-side-list {
+    flex: 1;
+    min-height: 0;
+    padding: 0 6px 8px;
+    overflow: hidden auto;
+}
+
+.vc-chatpopout-side-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-chatpopout-side-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vc-chatpopout-side-list::-webkit-scrollbar-thumb {
+    border-width: 2px;
+    background-color: var(--scrollbar-thin-thumb, rgb(255 255 255 / 20%));
+}
+
+.vc-chatpopout-side-group + .vc-chatpopout-side-group {
+    margin-top: 12px;
+}
+
+.vc-chatpopout-side-category {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+    padding: 4px 4px 4px 0;
+    border: none;
+    background: none;
+    color: var(--channels-default, var(--text-muted, #949ba4));
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-align: left;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.vc-chatpopout-side-category span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-side-category:hover {
+    color: var(--interactive-hover, #dbdee1);
+}
+
+.vc-chatpopout-side-chevron {
+    flex: none;
+    transition: transform 0.15s;
+}
+
+.vc-chatpopout-side-category-collapsed .vc-chatpopout-side-chevron {
+    transform: rotate(-90deg);
+}
+
+.vc-chatpopout-side-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 32px;
+    margin: 1px 0;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--channels-default, var(--text-muted, #949ba4));
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-chatpopout-side-item:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+    color: var(--interactive-hover, #dbdee1);
+}
+
+.vc-chatpopout-side-item-active,
+.vc-chatpopout-side-item-active:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--interactive-active, #fff);
+}
+
+.vc-chatpopout-side-item-unread {
+    color: var(--interactive-active, #fff);
+    font-weight: 600;
+}
+
+/* Unread dot on the left edge, like Discord */
+.vc-chatpopout-side-item-unread:not(.vc-chatpopout-side-item-active)::before {
+    position: absolute;
+    top: 50%;
+    left: -6px;
+    width: 4px;
+    height: 8px;
+    border-radius: 0 4px 4px 0;
+    background: var(--interactive-active, #fff);
+    content: "";
+    transform: translateY(-50%);
+}
+
+.vc-chatpopout-side-item-muted {
+    opacity: 0.45;
+}
+
+.vc-chatpopout-side-icon {
+    flex: none;
+    opacity: 0.8;
+}
+
+.vc-chatpopout-side-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-side-count {
+    flex: none;
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+}
+
+.vc-chatpopout-side-badge {
+    flex: none;
+    min-width: 16px;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+}
+
+.vc-chatpopout-side-dm {
+    min-height: 40px;
+}
+
+.vc-chatpopout-side-avatar {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    font-size: 12px;
+}

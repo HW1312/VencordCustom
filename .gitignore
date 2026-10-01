@@ -1,0 +1,6 @@
+Vencord/
+release/
+VencordCustom.zip
+node_modules/
+.playwright-mcp/
+performance/

@@ -1,0 +1,309 @@
+/* Wrapper around Vencord chat buttons: itself invisible to the layout */
+.vc-toolbarmanager-contents {
+    display: contents;
+}
+
+/* ---------- ⋯ button in title bar ---------- */
+
+.vc-toolbarmanager-dock,
+.vc-toolbarmanager-dock-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-toolbarmanager-dock .vc-toolbarmanager-dock-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-toolbarmanager-dock:hover .vc-toolbarmanager-dock-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+/* ---------- Settings ---------- */
+
+.vc-toolbarmanager-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-toolbarmanager-hint {
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+}
+
+.vc-toolbarmanager-muted {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-toolbarmanager-empty {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 6px 0;
+}
+
+.vc-toolbarmanager-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+}
+
+.vc-toolbarmanager-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.vc-toolbarmanager-count {
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+}
+
+/* ---------- List ---------- */
+
+.vc-toolbarmanager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-toolbarmanager-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: var(--background-base-lower, var(--background-secondary));
+    cursor: grab;
+}
+
+.vc-toolbarmanager-row-dragging {
+    opacity: 0.4;
+}
+
+.vc-toolbarmanager-row-over {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-toolbarmanager-grip {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.vc-toolbarmanager-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-toolbarmanager-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.vc-toolbarmanager-icon-letter {
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+}
+
+.vc-toolbarmanager-row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vc-toolbarmanager-row-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-toolbarmanager-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-toolbarmanager-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #fff;
+    background: var(--text-muted);
+}
+
+.vc-toolbarmanager-badge-vencord {
+    background: #8a5cf6;
+}
+
+.vc-toolbarmanager-badge-native {
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-toolbarmanager-badge-plugin {
+    background: #1f9e8f;
+}
+
+.vc-toolbarmanager-row-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.vc-toolbarmanager-icon-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.vc-toolbarmanager-icon-btn:hover:not(:disabled) {
+    color: var(--text-default, var(--text-normal));
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-toolbarmanager-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.vc-toolbarmanager-icon-btn-danger:hover:not(:disabled) {
+    color: var(--status-danger, #f23f43);
+}
+
+/* ---------- Umschalter ---------- */
+
+.vc-toolbarmanager-segmented {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+}
+
+.vc-toolbarmanager-segment {
+    flex: 1;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vc-toolbarmanager-segment:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-toolbarmanager-segment-visible {
+    background: var(--brand-500, #5865f2);
+    color: #fff !important;
+}
+
+.vc-toolbarmanager-segment-menu {
+    background: var(--status-warning, #f0b232);
+    color: #000 !important;
+}
+
+.vc-toolbarmanager-segment-hidden {
+    background: var(--status-danger, #f23f43);
+    color: #fff !important;
+}
+
+/* ---------- Profiles ---------- */
+
+.vc-toolbarmanager-profiles,
+.vc-toolbarmanager-save-row,
+.vc-toolbarmanager-custom-profile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vc-toolbarmanager-custom-profiles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-toolbarmanager-custom-profile .vc-toolbarmanager-row-name {
+    flex: 1;
+}
+
+.vc-toolbarmanager-btn {
+    padding: 5px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-toolbarmanager-btn:hover:not(:disabled) {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-toolbarmanager-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.vc-toolbarmanager-btn-danger:hover:not(:disabled) {
+    background: var(--status-danger, #f23f43);
+}
+
+.vc-toolbarmanager-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-base-lowest, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+}
+
+.vc-toolbarmanager-svg {
+    display: block;
+}

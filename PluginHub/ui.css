@@ -1,0 +1,237 @@
+.vc-pluginhub-btn-titlebar,
+.vc-pluginhub-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-pluginhub-btn-titlebar .vc-pluginhub-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-pluginhub-btn-titlebar:hover .vc-pluginhub-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-pluginhub-btn-titlebar[class*="selected"] .vc-pluginhub-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+/* ---------- Popout ---------- */
+
+.vc-pluginhub-popout {
+    width: 380px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 12px;
+    background: var(--background-surface-higher, var(--background-floating));
+    border: 1px solid var(--border-subtle, transparent);
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-pluginhub-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-pluginhub-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-pluginhub-link {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--text-link, #00a8fc);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.vc-pluginhub-link:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Hub ---------- */
+
+.vc-pluginhub-hub {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-pluginhub-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vc-pluginhub-search {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    outline: none;
+}
+
+.vc-pluginhub-search:focus {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-pluginhub-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.vc-pluginhub-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.vc-pluginhub-btn {
+    padding: 5px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vc-pluginhub-btn:hover {
+    filter: brightness(1.15);
+}
+
+.vc-pluginhub-btn-brand {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-pluginhub-restart {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    background: rgb(240 178 50 / 15%);
+    border: 1px solid rgb(240 178 50 / 40%);
+}
+
+.vc-pluginhub-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-pluginhub-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+    border-left: 3px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+}
+
+.vc-pluginhub-row-on {
+    border-left-color: var(--status-positive, #23a55a);
+}
+
+.vc-pluginhub-row-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-pluginhub-row-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.vc-pluginhub-row-desc {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-pluginhub-compact .vc-pluginhub-row-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.vc-pluginhub-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--status-warning, #f0b232);
+    color: #000;
+}
+
+.vc-pluginhub-cog {
+    display: flex;
+    padding: 4px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--interactive-normal);
+    cursor: pointer;
+}
+
+.vc-pluginhub-cog:hover:not(:disabled) {
+    color: var(--interactive-hover);
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-pluginhub-cog:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.vc-pluginhub-empty {
+    padding: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ---------- Settings ---------- */
+
+.vc-pluginhub-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-pluginhub-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+}

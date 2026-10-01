@@ -1,0 +1,80 @@
+.vc-gofile-stack {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 300px;
+    pointer-events: none;
+}
+
+.vc-gofile-card {
+    pointer-events: auto;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--background-floating, #111214);
+    box-shadow: var(--elevation-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-normal, #dbdee1);
+    font-size: 13px;
+}
+
+.vc-gofile-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-gofile-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.vc-gofile-cancel {
+    flex: none;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.vc-gofile-cancel:hover {
+    color: var(--interactive-hover, #fff);
+}
+
+.vc-gofile-status {
+    margin-top: 4px;
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+}
+
+.vc-gofile-bar {
+    height: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--background-modifier-accent, rgb(255 255 255 / 10%));
+}
+
+.vc-gofile-fill {
+    width: 0;
+    height: 100%;
+    background: var(--brand-500, #5865f2);
+    transition: width 0.2s linear;
+}
+
+.vc-gofile-card[data-state="error"] .vc-gofile-fill {
+    background: var(--status-danger, #da373c);
+}
+
+.vc-gofile-card[data-state="done"] .vc-gofile-fill {
+    background: var(--status-positive, #23a55a);
+}

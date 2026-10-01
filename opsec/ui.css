@@ -1,0 +1,2484 @@
+/* ===================================================================== OpSec
+ * UI in the style of a security suite: calm dark surfaces, sidebar,
+ * a green accent for "protected", all controls custom-built.
+ */
+
+.vc-opsec-app,
+.vc-opsec-curtain,
+.vc-opsec-link-warning,
+.vc-opsec-editor,
+.vc-opsec-checklist {
+    --opsec-accent: #3ddc97;
+    --opsec-a: #1e9e66;
+    --opsec-b: #1e9e66;
+    --opsec-grad: linear-gradient(#1e9e66, #1e9e66);
+    --opsec-good: #3ddc97;
+    --opsec-warn: #f5b83d;
+    --opsec-bad: #ff5c5c;
+    --opsec-bg: #111317;
+    --opsec-side: #0c0e11;
+    --opsec-surface: #171a1f;
+    --opsec-surface-2: #1d2127;
+    --opsec-text: #e6e9ee;
+    --opsec-muted: #8a93a0;
+    --opsec-line: rgb(255 255 255 / 7%);
+    --opsec-line-2: rgb(255 255 255 / 12%);
+    --opsec-soft: rgb(255 255 255 / 3%);
+    --opsec-soft-2: rgb(255 255 255 / 7%);
+    --opsec-accent-soft: rgb(61 220 151 / 12%);
+    --opsec-radius: 8px;
+    --opsec-spring: cubic-bezier(0.34, 1.3, 0.5, 1);
+    --opsec-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- Shared animations ---------- */
+
+@keyframes vc-opsec-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes vc-opsec-fade {
+    from { opacity: 0; transform: translateY(3px); }
+}
+
+@keyframes vc-opsec-rise {
+    from { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes vc-opsec-badge {
+    from { transform: scale(0); }
+}
+
+@keyframes vc-opsec-shine {
+    to { background-position: -200% 0; }
+}
+
+@keyframes vc-opsec-pop {
+    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+
+/* ---------- Title bar ---------- */
+
+.vc-opsec-btn-titlebar,
+.vc-opsec-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-opsec-btn-titlebar .vc-opsec-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    transition: color 0.15s;
+}
+
+.vc-opsec-btn-titlebar:hover .vc-opsec-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-opsec-btn-titlebar[class*="selected"] .vc-opsec-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+.vc-opsec-btn-titlebar-hot .vc-opsec-icon {
+    color: #3ddc97 !important;
+}
+
+/* ---------- Window ---------- */
+
+.vc-opsec-popout {
+    width: min(720px, calc(100vw - 24px));
+    height: min(560px, calc(100vh - 72px));
+    overflow: hidden;
+    border: 1px solid var(--opsec-line-2, rgb(255 255 255 / 12%));
+    border-radius: 12px;
+    background: #111317;
+    box-shadow: 0 20px 50px rgb(0 0 0 / 55%);
+    transform-origin: top left;
+    animation: vc-opsec-pop 0.18s var(--opsec-ease, ease-out);
+}
+
+.vc-opsec-app {
+    display: flex;
+    height: 100%;
+    color: var(--opsec-text);
+    background: var(--opsec-bg);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.vc-opsec-app-modal {
+    height: min(640px, 72vh);
+    overflow: hidden;
+    border: 1px solid var(--opsec-line);
+    border-radius: 12px;
+}
+
+.vc-opsec-app button {
+    font-family: inherit;
+}
+
+.vc-opsec-app :focus-visible {
+    outline: 2px solid var(--opsec-accent);
+    outline-offset: 2px;
+}
+
+/* ---------- Sidebar ---------- */
+
+.vc-opsec-sidebar {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    width: 176px;
+    padding: 16px 10px 12px;
+    box-sizing: border-box;
+    border-right: 1px solid var(--opsec-line);
+    background: var(--opsec-side);
+}
+
+.vc-opsec-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 6px 18px;
+}
+
+.vc-opsec-brand-logo {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: #06140d;
+    background: var(--opsec-accent);
+}
+
+.vc-opsec-brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-opsec-brand-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.vc-opsec-brand-sub {
+    font-size: 11px;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vc-opsec-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--opsec-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.vc-opsec-nav-item:hover {
+    color: var(--opsec-text);
+    background: var(--opsec-soft-2);
+}
+
+.vc-opsec-nav-item-active,
+.vc-opsec-nav-item-active:hover {
+    color: var(--opsec-text);
+    background: var(--opsec-surface-2);
+}
+
+.vc-opsec-nav-item-active::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: -10px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--opsec-accent);
+}
+
+.vc-opsec-nav-item-active svg {
+    color: var(--opsec-accent);
+}
+
+.vc-opsec-nav-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-opsec-nav-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    background: var(--opsec-warn);
+    color: #1a1204;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+
+
+
+
+
+
+
+/* ---------- Main area ---------- */
+
+.vc-opsec-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+
+
+
+.vc-opsec-scroller {
+    flex: 1;
+    min-height: 0;
+    padding: 16px 12px 20px 20px;
+    overflow: hidden auto;
+    scrollbar-gutter: stable;
+}
+
+/* Custom scrollbar (also for the server list) */
+.vc-opsec-scroller::-webkit-scrollbar,
+.vc-opsec-guild-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-opsec-scroller::-webkit-scrollbar-track,
+.vc-opsec-guild-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vc-opsec-scroller::-webkit-scrollbar-thumb,
+.vc-opsec-guild-list::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: rgb(255 255 255 / 10%) padding-box;
+}
+
+.vc-opsec-scroller::-webkit-scrollbar-thumb:hover,
+.vc-opsec-guild-list::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 20%) padding-box;
+}
+
+.vc-opsec-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: vc-opsec-fade 0.2s var(--opsec-ease);
+}
+
+.vc-opsec-fade-in {
+    animation: vc-opsec-fade 0.2s var(--opsec-ease);
+}
+
+.vc-opsec-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-section-right {
+    margin-left: auto;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.vc-opsec-link-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--opsec-accent);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-opsec-link-btn:hover {
+    text-decoration: underline;
+}
+
+.vc-opsec-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-opsec-row-hint {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-text-warn {
+    color: var(--opsec-warn);
+}
+
+/* ---------- Cards & rows ---------- */
+
+.vc-opsec-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+}
+
+.vc-opsec-card > * + *,
+.vc-opsec-card > div > .vc-opsec-row-sub {
+    border-top: 1px solid var(--opsec-line);
+}
+
+.vc-opsec-card-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.vc-opsec-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.vc-opsec-row:hover {
+    background: var(--opsec-soft);
+}
+
+.vc-opsec-row:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--opsec-accent);
+}
+
+.vc-opsec-row-sub {
+    padding-left: 56px;
+    background: rgb(0 0 0 / 12%);
+}
+
+.vc-opsec-row-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-opsec-row-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    color: var(--opsec-muted);
+    background: var(--opsec-soft-2);
+    transition: color 0.15s, background 0.15s;
+}
+
+.vc-opsec-row-icon-on {
+    color: var(--opsec-accent);
+    background: var(--opsec-accent-soft);
+}
+
+.vc-opsec-row-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-opsec-row-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--opsec-text);
+}
+
+/* ---------- Switches ---------- */
+
+.vc-opsec-switch {
+    position: relative;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: #2a3038;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 6%);
+    transition: background 0.18s;
+}
+
+.vc-opsec-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #8a93a0;
+    transition: transform 0.2s var(--opsec-ease), background 0.18s;
+}
+
+.vc-opsec-switch-on {
+    background: var(--opsec-a);
+}
+
+.vc-opsec-switch-on .vc-opsec-switch-knob {
+    background: #fff;
+    transform: translateX(16px);
+}
+
+/* ---------- Segments ---------- */
+
+.vc-opsec-profile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-opsec-seg {
+    position: relative;
+    display: flex;
+    padding: 3px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-side);
+}
+
+.vc-opsec-seg-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    border-radius: 6px;
+    background: var(--opsec-surface-2);
+    box-shadow: inset 0 0 0 1px var(--opsec-line-2), 0 1px 2px rgb(0 0 0 / 30%);
+}
+
+.vc-opsec-animated {
+    transition: transform 0.25s var(--opsec-ease), width 0.25s var(--opsec-ease);
+}
+
+.vc-opsec-seg-item {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    padding: 7px 6px;
+    border: none;
+    background: none;
+    color: var(--opsec-muted);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.vc-opsec-seg-small .vc-opsec-seg-item {
+    padding: 6px 4px;
+    font-size: 12px;
+}
+
+.vc-opsec-seg-item:hover,
+.vc-opsec-seg-item-active {
+    color: var(--opsec-text);
+}
+
+/* ---------- Status (overview) ---------- */
+
+.vc-opsec-state {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+}
+
+.vc-opsec-state-shield {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    color: var(--opsec-good);
+    background: rgb(61 220 151 / 12%);
+    box-shadow: inset 0 0 0 1px rgb(61 220 151 / 30%);
+}
+
+.vc-opsec-state-warn .vc-opsec-state-shield {
+    color: var(--opsec-warn);
+    background: rgb(245 184 61 / 12%);
+    box-shadow: inset 0 0 0 1px rgb(245 184 61 / 30%);
+}
+
+.vc-opsec-state-bad .vc-opsec-state-shield {
+    color: var(--opsec-bad);
+    background: rgb(255 92 92 / 12%);
+    box-shadow: inset 0 0 0 1px rgb(255 92 92 / 30%);
+}
+
+.vc-opsec-state-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.vc-opsec-state-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-opsec-meter {
+    display: block;
+    height: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--opsec-soft-2);
+}
+
+.vc-opsec-meter-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--opsec-good);
+    transition: width 0.6s var(--opsec-ease);
+}
+
+.vc-opsec-state-warn .vc-opsec-meter-fill {
+    background: var(--opsec-warn);
+}
+
+.vc-opsec-state-bad .vc-opsec-meter-fill {
+    background: var(--opsec-bad);
+}
+
+.vc-opsec-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.vc-opsec-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+}
+
+.vc-opsec-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-stat-value {
+    display: flex;
+    align-items: center;
+    min-height: 22px;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-opsec-stat-dim {
+    font-weight: 500;
+    color: var(--opsec-muted);
+}
+
+/* ---------- Check: header with ring ---------- */
+
+.vc-opsec-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+    color: inherit;
+    text-align: left;
+}
+
+.vc-opsec-hero-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+}
+
+.vc-opsec-hero-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-opsec-hero-text .vc-opsec-btn {
+    margin-top: 6px;
+}
+
+.vc-opsec-ring {
+    position: relative;
+    flex: none;
+}
+
+.vc-opsec-ring svg {
+    display: block;
+}
+
+.vc-opsec-ring-track {
+    fill: none;
+    stroke: var(--opsec-soft-2);
+}
+
+.vc-opsec-ring-bar {
+    fill: none;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s var(--opsec-ease);
+}
+
+.vc-opsec-ring-good .vc-opsec-ring-stop-a,
+.vc-opsec-ring-good .vc-opsec-ring-stop-b { stop-color: #3ddc97; }
+.vc-opsec-ring-mid .vc-opsec-ring-stop-a,
+.vc-opsec-ring-mid .vc-opsec-ring-stop-b { stop-color: #f5b83d; }
+.vc-opsec-ring-bad .vc-opsec-ring-stop-a,
+.vc-opsec-ring-bad .vc-opsec-ring-stop-b { stop-color: #ff5c5c; }
+
+.vc-opsec-ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    padding-top: calc(50% - 14px);
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-opsec-ring-num {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.vc-opsec-ring-total {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--opsec-muted);
+}
+
+/* ---------- Curtain button ---------- */
+
+.vc-opsec-curtain-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+    color: var(--opsec-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.vc-opsec-curtain-btn:hover {
+    border-color: rgb(61 220 151 / 40%);
+    background: var(--opsec-surface-2);
+}
+
+.vc-opsec-curtain-btn:active {
+    transform: translateY(1px);
+}
+
+.vc-opsec-curtain-btn-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    color: var(--opsec-accent);
+    background: var(--opsec-accent-soft);
+}
+
+/* ---------- Tiles ---------- */
+
+.vc-opsec-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vc-opsec-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+    color: var(--opsec-text);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.vc-opsec-tile:hover {
+    background: var(--opsec-surface-2);
+    border-color: var(--opsec-line-2);
+}
+
+.vc-opsec-tile-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--opsec-muted);
+    background: var(--opsec-soft-2);
+    transition: color 0.15s, background 0.15s;
+}
+
+.vc-opsec-tile-on .vc-opsec-tile-icon {
+    color: var(--opsec-accent);
+    background: var(--opsec-accent-soft);
+}
+
+.vc-opsec-pop {
+    animation: vc-opsec-badge 0.25s var(--opsec-spring);
+}
+
+.vc-opsec-tile-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-opsec-tile-label {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-opsec-tile-state {
+    font-size: 11px;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-tile-on .vc-opsec-tile-state {
+    color: var(--opsec-accent);
+}
+
+/* ---------- Buttons ---------- */
+
+.vc-opsec-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: var(--opsec-a);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.vc-opsec-btn:hover {
+    background: #22b373;
+}
+
+.vc-opsec-btn:active {
+    transform: translateY(1px);
+}
+
+.vc-opsec-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.vc-opsec-btn-small {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.vc-opsec-btn-ghost {
+    background: var(--opsec-soft-2);
+    color: var(--opsec-text);
+    box-shadow: inset 0 0 0 1px var(--opsec-line);
+}
+
+.vc-opsec-btn-ghost:hover {
+    background: rgb(255 255 255 / 11%);
+}
+
+.vc-opsec-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: var(--opsec-soft-2);
+    color: var(--opsec-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.vc-opsec-icon-btn:hover {
+    color: var(--opsec-text);
+    background: rgb(255 255 255 / 11%);
+}
+
+.vc-opsec-spinner {
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgb(255 255 255 / 30%);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: vc-opsec-spin 0.7s linear infinite;
+}
+
+/* ---------- Keys ---------- */
+
+.vc-opsec-kbd-group {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+}
+
+.vc-opsec-kbd {
+    min-width: 12px;
+    padding: 2px 6px;
+    border: 1px solid var(--opsec-line-2);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--opsec-side);
+    color: var(--opsec-text);
+    font-family: var(--font-code, monospace);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.vc-opsec-kbd-live {
+    border-color: rgb(61 220 151 / 50%);
+    animation: vc-opsec-fade 0.15s ease-out both;
+}
+
+.vc-opsec-keybind {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-opsec-keybind > .vc-opsec-row-hint {
+    flex-basis: 100%;
+}
+
+.vc-opsec-keybind-box {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 38px;
+    padding: 6px 8px 6px 10px;
+    border: 1px solid var(--opsec-line-2);
+    border-radius: 6px;
+    background: var(--opsec-side);
+    color: var(--opsec-text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.vc-opsec-keybind-box:hover {
+    border-color: rgb(255 255 255 / 22%);
+}
+
+.vc-opsec-keybind-rec {
+    border-color: var(--opsec-accent);
+    animation: vc-opsec-rec 1.4s ease-in-out infinite;
+}
+
+@keyframes vc-opsec-rec {
+    50% { border-color: var(--opsec-line-2); }
+}
+
+.vc-opsec-keybind-prompt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--opsec-accent);
+}
+
+.vc-opsec-keybind-action {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-flash .vc-opsec-kbd {
+    animation: vc-opsec-flash 0.8s ease-out;
+}
+
+@keyframes vc-opsec-flash {
+    0% { border-color: var(--opsec-accent); color: var(--opsec-accent); }
+}
+
+/* ---------- Sliders, colors, input ---------- */
+
+.vc-opsec-range {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-opsec-range-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vc-opsec-range-value {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--opsec-muted);
+}
+
+.vc-opsec-range input {
+    width: 100%;
+    height: 4px;
+    margin: 6px 0;
+    border-radius: 2px;
+    background: linear-gradient(var(--opsec-accent), var(--opsec-accent)) 0 0 / var(--pct) 100% no-repeat, #2a3038;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+}
+
+.vc-opsec-range input::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--opsec-accent);
+    border-radius: 50%;
+    background: var(--opsec-bg);
+    appearance: none;
+    transition: transform 0.15s;
+}
+
+.vc-opsec-range input:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+}
+
+.vc-opsec-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vc-opsec-swatch {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%);
+    cursor: pointer;
+}
+
+.vc-opsec-swatch-active {
+    box-shadow: 0 0 0 2px var(--opsec-bg), 0 0 0 4px var(--opsec-text);
+}
+
+.vc-opsec-swatch-custom {
+    display: block;
+    overflow: hidden;
+    background: conic-gradient(#ff5c5c, #f5b83d, #3ddc97, #4c9bff, #8b7bff, #ff5c5c);
+}
+
+.vc-opsec-swatch-custom input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.vc-opsec-swatch-small {
+    width: 20px;
+    height: 20px;
+}
+
+.vc-opsec-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid var(--opsec-line-2);
+    border-radius: 6px;
+    background: var(--opsec-side);
+    color: var(--opsec-text);
+    font: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.vc-opsec-input:focus {
+    border-color: var(--opsec-accent);
+}
+
+/* ---------- Curtain tab ---------- */
+
+.vc-opsec-preview-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-opsec-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.vc-opsec-styles {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.vc-opsec-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px 8px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+    color: var(--opsec-muted);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.vc-opsec-style:hover {
+    color: var(--opsec-text);
+    border-color: var(--opsec-line-2);
+}
+
+.vc-opsec-style-active,
+.vc-opsec-style-active:hover {
+    border-color: var(--opsec-accent);
+    color: var(--opsec-text);
+}
+
+/* ---------- Check ---------- */
+
+.vc-opsec-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-opsec-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--opsec-line);
+    border-radius: var(--opsec-radius);
+    background: var(--opsec-surface);
+    animation: vc-opsec-rise 0.25s var(--opsec-ease) both;
+}
+
+.vc-opsec-check-warn {
+    border-left: 3px solid var(--opsec-warn);
+}
+
+.vc-opsec-status {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+}
+
+.vc-opsec-status-ok {
+    color: var(--opsec-good);
+    background: rgb(61 220 151 / 14%);
+}
+
+.vc-opsec-status-check {
+    stroke-dasharray: 22;
+    stroke-dashoffset: 22;
+    animation: vc-opsec-draw 0.4s 0.1s var(--opsec-ease) forwards;
+}
+
+@keyframes vc-opsec-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+.vc-opsec-status-warn {
+    color: var(--opsec-warn);
+    background: rgb(245 184 61 / 14%);
+}
+
+.vc-opsec-status-unknown {
+    color: var(--opsec-muted);
+    background: var(--opsec-soft-2);
+}
+
+.vc-opsec-pill-danger {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgb(255 92 92 / 16%);
+    color: var(--opsec-bad);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.vc-opsec-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--opsec-good);
+}
+
+/* ---------- Link warning ---------- */
+
+.vc-opsec-link-warning {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-default, var(--text-normal, #dbdee1));
+}
+
+.vc-opsec-link-badge {
+    display: grid;
+    align-self: center;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+}
+
+.vc-opsec-link-badge-danger {
+    color: var(--opsec-bad);
+    background: rgb(255 92 92 / 14%);
+}
+
+.vc-opsec-link-badge-warn {
+    color: var(--opsec-warn);
+    background: rgb(245 184 61 / 14%);
+}
+
+.vc-opsec-link-badge-info {
+    color: var(--opsec-accent);
+    background: var(--opsec-accent-soft);
+}
+
+.vc-opsec-link-reason {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.vc-opsec-link-danger {
+    border: 1px solid rgb(255 92 92 / 40%);
+    background: rgb(255 92 92 / 10%);
+}
+
+.vc-opsec-link-warn {
+    border: 1px solid rgb(245 184 61 / 40%);
+    background: rgb(245 184 61 / 10%);
+}
+
+.vc-opsec-link-host {
+    font-size: 18px;
+    font-weight: 700;
+    word-break: break-all;
+}
+
+.vc-opsec-link-url {
+    max-height: 110px;
+    padding: 8px 10px;
+    overflow-y: auto;
+    border-radius: 6px;
+    background: rgb(0 0 0 / 25%);
+    color: var(--opsec-muted);
+    font-family: var(--font-code, monospace);
+    font-size: 12px;
+    word-break: break-all;
+}
+
+/* ---------- Preview (mini Discord) ---------- */
+
+.vc-opsec-preview {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--opsec-line);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
+    background: #313338;
+}
+
+.vc-opsec-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.vc-opsec-mock {
+    position: absolute;
+    inset: 0;
+    display: flex;
+}
+
+.vc-opsec-mock i {
+    display: block;
+    border-radius: 99px;
+}
+
+.vc-opsec-mock-servers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6%;
+    width: 9%;
+    padding-top: 3%;
+    background: #1e1f22;
+}
+
+.vc-opsec-mock-servers i {
+    width: 62%;
+    aspect-ratio: 1;
+    background: #313338;
+}
+
+.vc-opsec-mock-servers i:first-child {
+    background: #5865f2;
+    border-radius: 30%;
+}
+
+.vc-opsec-mock-channels {
+    display: flex;
+    flex-direction: column;
+    gap: 7%;
+    width: 24%;
+    padding: 5% 3%;
+    box-sizing: border-box;
+    background: #2b2d31;
+}
+
+.vc-opsec-mock-channels i {
+    height: 5px;
+    background: #4e5058;
+}
+
+.vc-opsec-mock-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 7%;
+    padding: 5% 4%;
+}
+
+.vc-opsec-mock-msg {
+    display: flex;
+    gap: 6%;
+    align-items: flex-start;
+}
+
+.vc-opsec-mock-avatar {
+    flex-shrink: 0;
+    width: 7%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+}
+
+.vc-opsec-mock-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-opsec-mock-lines i {
+    height: 5px;
+    background: #4e5058;
+}
+
+.vc-opsec-mock-lines i:first-child {
+    height: 6px;
+    background: #80848e;
+}
+
+.vc-opsec-mock-input {
+    margin-top: auto;
+    height: 12%;
+    border-radius: 6px;
+    background: #383a40;
+}
+
+.vc-opsec-style-thumb {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 7px;
+    overflow: hidden;
+    color: #fff;
+}
+
+.vc-opsec-thumb-mask {
+    background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--opsec-c-accent) 45%, transparent), #0c0c0e 70%);
+}
+
+.vc-opsec-thumb-glass {
+    background:
+        linear-gradient(135deg, rgb(255 255 255 / 18%), rgb(255 255 255 / 4%)),
+        repeating-linear-gradient(0deg, #4e5058 0 3px, #313338 3px 8px);
+    backdrop-filter: blur(2px);
+}
+
+.vc-opsec-thumb-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(3px);
+    background: color-mix(in srgb, var(--opsec-c-accent) 15%, rgb(20 20 24 / 50%));
+}
+
+.vc-opsec-thumb-glass svg {
+    position: relative;
+}
+
+.vc-opsec-thumb-black {
+    background: #000;
+    color: #333;
+}
+
+.vc-opsec-thumb-update {
+    background: #000;
+}
+
+.vc-opsec-thumb-dots {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px dotted #fff;
+    animation: vc-opsec-spin 2s linear infinite;
+}
+
+.vc-opsec-thumb-matrix {
+    background:
+        repeating-linear-gradient(90deg, transparent 0 5px, color-mix(in srgb, var(--opsec-c-accent) 70%, transparent) 5px 6px, transparent 6px 11px),
+        #000;
+    background-size: 100% 200%;
+    animation: vc-opsec-rain 1.6s linear infinite;
+}
+
+.vc-opsec-thumb-matrix::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 30%, #000 90%);
+}
+
+@keyframes vc-opsec-rain {
+    to {
+        background-position: 0 100%;
+    }
+}
+
+/* ===================================================================== Curtain */
+
+.vc-opsec-curtain {
+    --opsec-c-accent: #8b7bff;
+    --opsec-c-opacity: 0.94;
+    --opsec-c-blur: 24px;
+
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    container-type: size;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    color: #e6e6ea;
+    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
+    background: rgb(10 10 13 / var(--opsec-c-opacity));
+    backdrop-filter: blur(var(--opsec-c-blur)) saturate(1.2) !important;
+    transition: background 0.3s, backdrop-filter 0.3s;
+}
+
+.vc-opsec-curtain-preview {
+    position: absolute;
+    z-index: 1;
+    cursor: default;
+}
+
+.vc-opsec-curtain-mask {
+    background:
+        radial-gradient(45cqmax 45cqmax at 50% 42%, color-mix(in srgb, var(--opsec-c-accent) 22%, transparent), transparent 70%),
+        rgb(10 10 13 / var(--opsec-c-opacity));
+}
+
+.vc-opsec-curtain-glass {
+    background:
+        linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 2%)),
+        color-mix(in srgb, var(--opsec-c-accent) 10%, rgb(18 18 24 / calc(var(--opsec-c-opacity) * 0.55)));
+    backdrop-filter: blur(calc(var(--opsec-c-blur) + 8px)) saturate(1.5) !important;
+}
+
+.vc-opsec-curtain-black {
+    background: #000;
+    backdrop-filter: none !important;
+    color: #3a3a40;
+}
+
+.vc-opsec-curtain-update {
+    background: #000;
+    backdrop-filter: none !important;
+    color: #fff;
+    cursor: default;
+}
+
+.vc-opsec-curtain-matrix {
+    background: rgb(0 0 0 / var(--opsec-c-opacity));
+}
+
+.vc-opsec-curtain-center {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(4px, 1.4cqmin, 12px);
+    text-align: center;
+    padding: 0 6cqw;
+}
+
+.vc-opsec-curtain-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: clamp(34px, 20cqmin, 150px);
+    aspect-ratio: 1;
+    margin-bottom: clamp(4px, 2cqmin, 18px);
+    color: #f2f2f5;
+    animation: vc-opsec-float 5s ease-in-out infinite;
+}
+
+.vc-opsec-curtain-icon svg {
+    position: relative;
+    width: 72%;
+    height: 72%;
+    filter: drop-shadow(0 0 clamp(4px, 2cqmin, 18px) color-mix(in srgb, var(--opsec-c-accent) 65%, transparent));
+}
+
+.vc-opsec-curtain-halo {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, var(--opsec-c-accent), transparent 40%, color-mix(in srgb, var(--opsec-c-accent) 50%, #00d4ff), transparent 80%);
+    mask: radial-gradient(circle, transparent 60%, #000 62%, #000 66%, transparent 68%);
+    animation: vc-opsec-spin 6s linear infinite;
+    opacity: 0.9;
+}
+
+.vc-opsec-curtain-black .vc-opsec-curtain-icon {
+    color: #26262b;
+    animation: none;
+}
+
+.vc-opsec-curtain-black .vc-opsec-curtain-icon svg {
+    filter: none;
+}
+
+.vc-opsec-curtain-black .vc-opsec-curtain-halo {
+    display: none;
+}
+
+@keyframes vc-opsec-float {
+    50% {
+        transform: translateY(-4%);
+    }
+}
+
+.vc-opsec-curtain-title {
+    font-size: clamp(9px, 4.2cqmin, 34px);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, #fff, color-mix(in srgb, var(--opsec-c-accent) 70%, #fff), #fff);
+    background-size: 200% 100%;
+    background-clip: text;
+    color: transparent;
+    animation: vc-opsec-shine 5s linear infinite;
+}
+
+.vc-opsec-curtain-hint {
+    font-size: clamp(6px, 2cqmin, 15px);
+    color: rgb(230 230 234 / 55%);
+}
+
+.vc-opsec-curtain-black .vc-opsec-curtain-title {
+    background: none;
+    color: #3a3a40;
+    animation: none;
+}
+
+.vc-opsec-curtain-black .vc-opsec-curtain-hint {
+    color: #2a2a30;
+}
+
+.vc-opsec-matrix {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.85;
+}
+
+.vc-opsec-curtain-matrix .vc-opsec-curtain-center {
+    padding: 2.5cqmin 5cqmin;
+    border-radius: 2cqmin;
+    background: rgb(0 0 0 / 70%);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--opsec-c-accent) 40%, transparent), 0 0 8cqmin rgb(0 0 0 / 80%);
+}
+
+.vc-opsec-curtain-matrix .vc-opsec-curtain-title {
+    font-family: var(--font-code, monospace);
+    background: none;
+    color: var(--opsec-c-accent);
+    text-shadow: 0 0 1.5cqmin var(--opsec-c-accent);
+}
+
+/* Fake Windows update */
+
+.vc-opsec-update {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(2px, 1cqmin, 8px);
+    text-align: center;
+    font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
+.vc-opsec-update-spinner {
+    position: relative;
+    width: clamp(18px, 7cqmin, 56px);
+    aspect-ratio: 1;
+    margin-bottom: clamp(8px, 5cqmin, 44px);
+}
+
+.vc-opsec-update-spinner i {
+    position: absolute;
+    inset: 0;
+    animation: vc-opsec-orbit 5.5s infinite;
+}
+
+.vc-opsec-update-spinner i::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 12%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateX(-50%);
+}
+
+.vc-opsec-update-spinner i:nth-child(2) { animation-delay: 0.24s; }
+.vc-opsec-update-spinner i:nth-child(3) { animation-delay: 0.48s; }
+.vc-opsec-update-spinner i:nth-child(4) { animation-delay: 0.72s; }
+.vc-opsec-update-spinner i:nth-child(5) { animation-delay: 0.96s; }
+
+@keyframes vc-opsec-orbit {
+    0% { transform: rotate(225deg); opacity: 1; animation-timing-function: ease-out; }
+    7% { transform: rotate(345deg); animation-timing-function: linear; }
+    30% { transform: rotate(455deg); animation-timing-function: ease-in-out; }
+    39% { transform: rotate(690deg); animation-timing-function: linear; }
+    70% { transform: rotate(815deg); opacity: 1; animation-timing-function: ease-out; }
+    75% { transform: rotate(945deg); animation-timing-function: ease-out; }
+    76% { transform: rotate(945deg); opacity: 0; }
+    100% { transform: rotate(945deg); opacity: 0; }
+}
+
+.vc-opsec-update-title {
+    font-size: clamp(8px, 3.6cqmin, 28px);
+    font-weight: 400;
+}
+
+.vc-opsec-update-sub {
+    margin-top: clamp(4px, 2cqmin, 16px);
+    font-size: clamp(6px, 2.2cqmin, 17px);
+    color: rgb(255 255 255 / 85%);
+}
+
+/* ---------- Fade in & out ---------- */
+
+.vc-opsec-anim-fade {
+    animation: vc-opsec-c-fade 0.35s ease-out;
+}
+
+.vc-opsec-anim-zoom {
+    animation: vc-opsec-c-fade 0.35s ease-out;
+}
+
+.vc-opsec-anim-zoom > * {
+    animation: vc-opsec-c-zoom 0.55s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+.vc-opsec-anim-shutter {
+    animation: vc-opsec-c-shutter 0.5s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+.vc-opsec-anim-glitch {
+    animation: vc-opsec-c-glitch 0.45s steps(1) both;
+}
+
+@keyframes vc-opsec-c-fade {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0) !important;
+    }
+}
+
+@keyframes vc-opsec-c-zoom {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+        filter: blur(8px);
+    }
+}
+
+@keyframes vc-opsec-c-shutter {
+    from {
+        transform: translateY(-100%);
+    }
+}
+
+@keyframes vc-opsec-c-glitch {
+    0% { clip-path: inset(0 0 85% 0); transform: translate(-3%, 0); opacity: 1; }
+    12% { clip-path: inset(40% 0 30% 0); transform: translate(3%, 0); }
+    25% { clip-path: inset(10% 0 60% 0); transform: translate(-2%, 1%); filter: hue-rotate(90deg); }
+    38% { clip-path: inset(70% 0 5% 0); transform: translate(2%, -1%); }
+    50% { clip-path: inset(0 0 40% 0); transform: translate(-1%, 0); filter: hue-rotate(-60deg); }
+    62% { clip-path: inset(30% 0 20% 0); transform: translate(1%, 0); }
+    75% { clip-path: inset(0 0 10% 0); transform: none; filter: none; }
+    100% { clip-path: inset(0); transform: none; }
+}
+
+.vc-opsec-curtain-leave {
+    pointer-events: none;
+    animation: vc-opsec-c-out 0.28s ease-in forwards !important;
+}
+
+.vc-opsec-anim-shutter.vc-opsec-curtain-leave {
+    animation: vc-opsec-c-shutter-out 0.3s cubic-bezier(0.55, 0, 0.8, 0.2) forwards !important;
+}
+
+.vc-opsec-anim-glitch.vc-opsec-curtain-leave {
+    animation: vc-opsec-c-glitch-out 0.28s steps(1) forwards !important;
+}
+
+@keyframes vc-opsec-c-out {
+    to {
+        opacity: 0;
+        transform: scale(1.03);
+    }
+}
+
+@keyframes vc-opsec-c-shutter-out {
+    to {
+        transform: translateY(-100%);
+    }
+}
+
+@keyframes vc-opsec-c-glitch-out {
+    0% { clip-path: inset(0 0 30% 0); transform: translate(2%, 0); }
+    30% { clip-path: inset(50% 0 10% 0); transform: translate(-3%, 0); }
+    60% { clip-path: inset(20% 0 60% 0); transform: translate(1%, 0); }
+    100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
+}
+
+/* ===================================================================== Streaming protection & blocklist */
+
+.vc-opsec-row-static {
+    cursor: default;
+}
+
+.vc-opsec-row-static:hover {
+    background: none;
+}
+
+.vc-opsec-dot-live {
+    background: var(--opsec-bad);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--opsec-bad) 25%, transparent);
+}
+
+.vc-opsec-dot-idle {
+    background: var(--opsec-muted);
+    animation: none;
+}
+
+.vc-opsec-guild-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 280px;
+    margin-right: -6px;
+    padding-right: 6px;
+    overflow-y: auto;
+}
+
+.vc-opsec-guild-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-opsec-guild-list::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: var(--opsec-soft-2) padding-box;
+}
+
+.vc-opsec-guild {
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.vc-opsec-guild:hover {
+    background: var(--opsec-soft);
+}
+
+.vc-opsec-guild-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 4px 2px;
+}
+
+.vc-opsec-guild-expand {
+    width: 24px;
+    height: 24px;
+    background: none;
+}
+
+.vc-opsec-guild-expand:hover {
+    transform: none;
+}
+
+.vc-opsec-guild-expand svg {
+    transition: transform 0.3s var(--opsec-spring);
+}
+
+.vc-opsec-guild-expand-open svg {
+    transform: rotate(90deg);
+}
+
+.vc-opsec-guild-icon {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    overflow: hidden;
+    object-fit: cover;
+    background: var(--opsec-soft-2);
+    color: var(--opsec-text);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.vc-opsec-guild-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vc-opsec-guild-toggle {
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.vc-opsec-guild-toggle:disabled {
+    cursor: not-allowed;
+}
+
+.vc-opsec-guild-channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 2px 8px 8px 34px;
+    animation: vc-opsec-fade 0.3s var(--opsec-ease);
+}
+
+.vc-opsec-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 3px 8px;
+    border: 1px solid var(--opsec-line);
+    border-radius: 99px;
+    background: var(--opsec-soft);
+    color: var(--opsec-muted);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.vc-opsec-chip:hover {
+    color: var(--opsec-text);
+}
+
+.vc-opsec-chip-on {
+    border-color: color-mix(in srgb, var(--opsec-a) 60%, transparent);
+    background: color-mix(in srgb, var(--opsec-a) 18%, transparent);
+    color: var(--opsec-text);
+}
+
+/* Checklist after stream start */
+
+.vc-opsec-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 8px;
+    color: var(--opsec-text);
+}
+
+.vc-opsec-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--opsec-line);
+    background: var(--opsec-soft);
+    animation: vc-opsec-rise 0.45s var(--opsec-ease) both;
+}
+
+.vc-opsec-checklist-num {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--opsec-grad);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* ===================================================================== Image editor */
+
+.vc-opsec-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 8px;
+    color: var(--opsec-text);
+}
+
+.vc-opsec-editor-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-opsec-editor-tools,
+.vc-opsec-editor-history {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--opsec-line);
+    background: var(--opsec-soft);
+}
+
+.vc-opsec-editor-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 9px;
+    background: none;
+    color: var(--opsec-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, transform 0.3s var(--opsec-spring);
+}
+
+.vc-opsec-editor-tool:hover:not(:disabled) {
+    color: var(--opsec-text);
+    background: var(--opsec-soft-2);
+}
+
+.vc-opsec-editor-tool:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.vc-opsec-editor-tool:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-opsec-editor-tool-active,
+.vc-opsec-editor-tool-active:hover:not(:disabled) {
+    color: #fff;
+    background: var(--opsec-grad);
+}
+
+.vc-opsec-editor-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+}
+
+.vc-opsec-editor-options .vc-opsec-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 6px 10px;
+}
+
+.vc-opsec-editor-options .vc-opsec-row-hint {
+    flex: 1 1 200px;
+}
+
+.vc-opsec-swatch-small {
+    width: 22px;
+    height: 22px;
+}
+
+.vc-opsec-editor-stage {
+    display: grid;
+    place-items: center;
+    height: min(62vh, 640px);
+    border-radius: 12px;
+    overflow: hidden;
+    background:
+        repeating-conic-gradient(rgb(128 128 128 / 14%) 0 25%, transparent 0 50%) 0 0 / 20px 20px,
+        rgb(0 0 0 / 25%);
+}
+
+.vc-opsec-editor-canvas {
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+    box-shadow: 0 6px 24px rgb(0 0 0 / 40%);
+}
+
+.vc-opsec-editor-canvas-text {
+    cursor: text;
+}
+
+.vc-opsec-editor-size {
+    align-self: flex-end;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--opsec-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================== More curtain styles */
+
+/* ---------- Icon picker ---------- */
+
+.vc-opsec-icon-picks {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+}
+
+.vc-opsec-icon-pick {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid var(--opsec-line);
+    border-radius: 6px;
+    background: var(--opsec-side);
+    color: var(--opsec-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.vc-opsec-icon-pick:hover {
+    color: var(--opsec-text);
+    border-color: var(--opsec-line-2);
+}
+
+.vc-opsec-icon-pick-active,
+.vc-opsec-icon-pick-active:hover {
+    color: var(--opsec-accent);
+    border-color: var(--opsec-accent);
+}
+
+.vc-opsec-icon-pick-custom {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Custom icon in the curtain */
+.vc-opsec-curtain-img {
+    position: relative;
+    width: 72%;
+    height: 72%;
+    border-radius: 18%;
+    object-fit: cover;
+}
+
+.vc-opsec-curtain-emoji {
+    position: relative;
+    font-size: clamp(22px, 12cqmin, 96px);
+    line-height: 1;
+}
+
+/* ---------- Thumbnails of the new styles ---------- */
+
+.vc-opsec-thumb-radar {
+    background:
+        conic-gradient(from 0deg, color-mix(in srgb, var(--opsec-c-accent) 55%, transparent), transparent 25%),
+        repeating-radial-gradient(circle, transparent 0 7px, color-mix(in srgb, var(--opsec-c-accent) 35%, transparent) 7px 8px),
+        #05100b;
+}
+
+.vc-opsec-thumb-aurora {
+    background:
+        radial-gradient(60% 80% at 20% 30%, color-mix(in srgb, var(--opsec-c-accent) 70%, transparent), transparent 70%),
+        radial-gradient(60% 80% at 80% 70%, #4c9bff99, transparent 70%),
+        #0b0d14;
+}
+
+.vc-opsec-thumb-lock {
+    background: linear-gradient(160deg, #1d2b3a, #0c1118);
+}
+
+.vc-opsec-thumb-clock {
+    font-size: 11px;
+    font-weight: 300;
+    color: #fff;
+}
+
+.vc-opsec-thumb-terminal {
+    background: #0a0c0a;
+    justify-items: start;
+    padding-left: 8px;
+}
+
+.vc-opsec-thumb-term {
+    font-family: var(--font-code, monospace);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--opsec-c-accent);
+}
+
+.vc-opsec-thumb-bsod {
+    background: #0078d7;
+    justify-items: start;
+    padding-left: 8px;
+}
+
+.vc-opsec-thumb-sad {
+    font-size: 16px;
+    color: #fff;
+}
+
+/* ---------- Radar ---------- */
+
+.vc-opsec-curtain-radar {
+    background:
+        radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--opsec-c-accent) 10%, transparent), transparent 60%),
+        rgb(4 10 8 / var(--opsec-c-opacity));
+}
+
+.vc-opsec-radar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90cqmin;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    transform: translate(-50%, -50%);
+}
+
+.vc-opsec-radar-rings {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+        linear-gradient(color-mix(in srgb, var(--opsec-c-accent) 25%, transparent), color-mix(in srgb, var(--opsec-c-accent) 25%, transparent)) center / 1px 100% no-repeat,
+        linear-gradient(color-mix(in srgb, var(--opsec-c-accent) 25%, transparent), color-mix(in srgb, var(--opsec-c-accent) 25%, transparent)) center / 100% 1px no-repeat,
+        repeating-radial-gradient(circle, transparent 0 calc(12.5% - 1px), color-mix(in srgb, var(--opsec-c-accent) 28%, transparent) calc(12.5% - 1px) 12.5%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--opsec-c-accent) 40%, transparent);
+}
+
+.vc-opsec-radar-sweep {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, color-mix(in srgb, var(--opsec-c-accent) 45%, transparent), transparent 22%);
+    animation: vc-opsec-spin 4s linear infinite;
+}
+
+.vc-opsec-radar-blip {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    width: 1.4cqmin;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--opsec-c-accent);
+    box-shadow: 0 0 2cqmin var(--opsec-c-accent);
+    opacity: 0;
+    animation: vc-opsec-blip 4s ease-out infinite;
+}
+
+@keyframes vc-opsec-blip {
+    0% { opacity: 0; }
+    5% { opacity: 1; }
+    60% { opacity: 0; }
+}
+
+/* ---------- Aurora ---------- */
+
+.vc-opsec-curtain-aurora {
+    background: rgb(8 9 16 / var(--opsec-c-opacity));
+}
+
+.vc-opsec-aurora {
+    position: absolute;
+    inset: -20%;
+    filter: blur(8cqmin);
+    opacity: 0.8;
+}
+
+.vc-opsec-aurora i {
+    position: absolute;
+    width: 60%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    animation: vc-opsec-drift 18s ease-in-out infinite alternate;
+}
+
+.vc-opsec-aurora i:nth-child(1) {
+    top: 5%;
+    left: 5%;
+    background: var(--opsec-c-accent);
+}
+
+.vc-opsec-aurora i:nth-child(2) {
+    right: 0;
+    bottom: 5%;
+    background: #4c9bff;
+    animation-duration: 22s;
+    animation-delay: -6s;
+}
+
+.vc-opsec-aurora i:nth-child(3) {
+    top: 30%;
+    left: 35%;
+    width: 45%;
+    background: #8b7bff;
+    animation-duration: 26s;
+    animation-delay: -12s;
+}
+
+@keyframes vc-opsec-drift {
+    50% { transform: translate(12%, -10%) scale(1.15); }
+    100% { transform: translate(-10%, 12%) scale(0.9); }
+}
+
+.vc-opsec-curtain-aurora .vc-opsec-curtain-halo {
+    display: none;
+}
+
+/* ---------- Lock screen ---------- */
+
+.vc-opsec-curtain-lock {
+    background:
+        linear-gradient(160deg, rgb(29 43 58 / var(--opsec-c-opacity)), rgb(10 14 20 / var(--opsec-c-opacity)));
+    align-content: center;
+}
+
+.vc-opsec-lock {
+    position: absolute;
+    top: 14%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #fff;
+    text-shadow: 0 0.4cqmin 2cqmin rgb(0 0 0 / 40%);
+}
+
+.vc-opsec-lock-time {
+    font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+    font-size: clamp(20px, 18cqmin, 150px);
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-opsec-lock-date {
+    margin-top: 1.5cqmin;
+    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    font-size: clamp(8px, 3.4cqmin, 28px);
+}
+
+.vc-opsec-curtain-lock .vc-opsec-curtain-center {
+    margin-top: 34cqmin;
+}
+
+.vc-opsec-curtain-lock .vc-opsec-curtain-icon {
+    width: clamp(20px, 9cqmin, 72px);
+    animation: none;
+}
+
+.vc-opsec-curtain-lock .vc-opsec-curtain-halo {
+    display: none;
+}
+
+.vc-opsec-curtain-lock .vc-opsec-curtain-title {
+    background: none;
+    color: #fff;
+    font-size: clamp(8px, 3cqmin, 24px);
+    font-weight: 600;
+    animation: none;
+}
+
+/* ---------- Terminal ---------- */
+
+.vc-opsec-curtain-terminal {
+    background: rgb(0 0 0 / var(--opsec-c-opacity));
+    backdrop-filter: blur(var(--opsec-c-blur)) !important;
+}
+
+.vc-opsec-term {
+    display: flex;
+    flex-direction: column;
+    width: min(92cqw, 150cqh);
+    height: 78cqh;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 1.2cqmin;
+    background: #0b0d0c;
+    box-shadow: 0 3cqmin 8cqmin rgb(0 0 0 / 60%);
+    font-family: "Cascadia Mono", Consolas, var(--font-code, monospace);
+    font-size: clamp(5px, 2.1cqmin, 15px);
+    text-align: left;
+}
+
+.vc-opsec-term-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 1cqmin;
+    padding: 1.2cqmin 1.6cqmin;
+    background: #1b1e1c;
+    color: #9aa19c;
+}
+
+.vc-opsec-term-bar i {
+    width: 1.4cqmin;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #ff5f57;
+}
+
+.vc-opsec-term-bar i:nth-child(2) { background: #febc2e; }
+.vc-opsec-term-bar i:nth-child(3) { background: #28c840; }
+
+.vc-opsec-term-bar span {
+    margin-left: 1cqmin;
+}
+
+.vc-opsec-term-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+    padding: 1.6cqmin;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--opsec-c-accent) 75%, #fff);
+}
+
+.vc-opsec-term-line {
+    flex: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.85;
+}
+
+.vc-opsec-term-prompt {
+    flex: none;
+    padding: 0 1.6cqmin 1.6cqmin;
+    color: #fff;
+}
+
+.vc-opsec-term-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1em;
+    margin-left: 0.3em;
+    vertical-align: text-bottom;
+    background: var(--opsec-c-accent);
+    animation: vc-opsec-caret 1s steps(1) infinite;
+}
+
+@keyframes vc-opsec-caret {
+    50% { opacity: 0; }
+}
+
+/* ---------- Blue screen ---------- */
+
+.vc-opsec-curtain-bsod {
+    justify-items: start;
+    background: #0078d7;
+    backdrop-filter: none !important;
+    color: #fff;
+    cursor: default;
+}
+
+.vc-opsec-bsod {
+    display: flex;
+    flex-direction: column;
+    gap: 3cqmin;
+    max-width: 70cqw;
+    padding-left: 12cqw;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.vc-opsec-bsod-face {
+    font-size: clamp(30px, 22cqmin, 180px);
+    line-height: 1;
+}
+
+.vc-opsec-bsod-text {
+    font-size: clamp(7px, 3.4cqmin, 26px);
+    line-height: 1.35;
+}
+
+.vc-opsec-bsod-small {
+    font-size: clamp(5px, 1.9cqmin, 14px);
+    opacity: 0.9;
+}
+
+/* Terminal: movie hacker scene */
+.vc-opsec-term-ps {
+    color: var(--opsec-c-accent);
+}
+
+.vc-opsec-term-cmd {
+    color: #fff;
+    opacity: 1;
+}
+
+.vc-opsec-term-hex {
+    opacity: 0.5;
+}
+
+.vc-opsec-term-progress {
+    white-space: pre;
+    opacity: 1;
+}

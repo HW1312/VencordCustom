@@ -1,0 +1,6 @@
+/* RamSaver: Blur effects cost a lot of GPU - turn them off. */
+*,
+*::before,
+*::after {
+    backdrop-filter: none !important;
+}

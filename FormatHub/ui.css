@@ -1,0 +1,672 @@
+/* ---------- Window ---------- */
+
+.vc-formathub-hub {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-formathub-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--background-mod-subtle, var(--background-modifier-accent, rgb(128 128 128 / 12%)));
+}
+
+.vc-formathub-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.12s, color 0.12s;
+}
+
+.vc-formathub-tab:hover {
+    color: var(--text-default, var(--text-normal));
+    background: var(--background-mod-subtle, rgb(128 128 128 / 12%));
+}
+
+.vc-formathub-tab-active,
+.vc-formathub-tab-active:hover {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-formathub-content {
+    height: min(620px, calc(100vh - 280px));
+    min-height: 320px;
+}
+
+.vc-formathub-split {
+    display: grid;
+    grid-template-columns: minmax(250px, 320px) 1fr;
+    gap: 14px;
+    height: 100%;
+}
+
+.vc-formathub-side {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.vc-formathub-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.vc-formathub-muted {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-formathub-bad {
+    font-size: 12px;
+    color: var(--text-feedback-critical, var(--status-danger, #f23f43));
+}
+
+.vc-formathub-info {
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--text-default, var(--text-normal));
+    background: rgb(88 101 242 / 12%);
+    border: 1px solid rgb(88 101 242 / 35%);
+}
+
+.vc-formathub-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.vc-formathub-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ---------- Sections & fields ---------- */
+
+.vc-formathub-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-formathub-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.vc-formathub-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-formathub-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-formathub-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border-default, var(--border-subtle, transparent));
+    background: var(--input-background-default, var(--background-base-lowest, var(--background-tertiary)));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+}
+
+.vc-formathub-input:focus {
+    border-color: var(--border-focus, var(--brand-500, #5865f2));
+}
+
+.vc-formathub-mono {
+    font-family: var(--font-code, monospace);
+    font-size: 13px;
+}
+
+.vc-formathub-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border-default, var(--border-subtle, transparent));
+    background: var(--input-background-default, var(--background-base-lowest, var(--background-tertiary)));
+    color: var(--text-muted);
+}
+
+.vc-formathub-search:focus-within {
+    border-color: var(--border-focus, var(--brand-500, #5865f2));
+}
+
+.vc-formathub-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 0;
+    border: none;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    outline: none;
+}
+
+/* ---------- Buttons ---------- */
+
+.vc-formathub-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    background: var(--control-secondary-background-default, var(--background-mod-strong, rgb(128 128 128 / 20%)));
+    color: var(--text-default, var(--text-normal));
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.12s, filter 0.12s;
+}
+
+.vc-formathub-btn:hover:not(:disabled) {
+    background: var(--control-secondary-background-hover, var(--background-mod-strong, rgb(128 128 128 / 30%)));
+}
+
+.vc-formathub-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vc-formathub-btn-brand,
+.vc-formathub-btn-brand:hover:not(:disabled) {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-formathub-btn-brand:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.vc-formathub-btn-danger,
+.vc-formathub-btn-danger:hover:not(:disabled) {
+    background: var(--control-critical-primary-background-default, var(--status-danger, #f23f43));
+    color: var(--control-critical-primary-text-default, #fff);
+}
+
+.vc-formathub-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    cursor: pointer;
+}
+
+.vc-formathub-icon-btn:hover {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    background: var(--background-mod-subtle, rgb(128 128 128 / 15%));
+}
+
+.vc-formathub-star-on,
+.vc-formathub-star-on:hover {
+    color: var(--status-warning, #f0b232);
+}
+
+.vc-formathub-link-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+}
+
+.vc-formathub-link-btn:hover {
+    text-decoration: underline;
+}
+
+.vc-formathub-chips,
+.vc-formathub-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vc-formathub-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-formathub-chip:hover {
+    color: var(--text-default, var(--text-normal));
+    background: var(--background-mod-subtle, rgb(128 128 128 / 12%));
+}
+
+.vc-formathub-chip-active,
+.vc-formathub-chip-active:hover {
+    border-color: var(--brand-500, #5865f2);
+    background: rgb(88 101 242 / 18%);
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-formathub-chip-count {
+    min-width: 16px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--background-mod-strong, rgb(128 128 128 / 25%));
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+}
+
+.vc-formathub-tab-active .vc-formathub-chip-count {
+    background: rgb(255 255 255 / 25%);
+}
+
+/* ---------- Picker list ---------- */
+
+.vc-formathub-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+}
+
+.vc-formathub-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-base-lower, var(--background-secondary));
+}
+
+.vc-formathub-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 2px;
+}
+
+.vc-formathub-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-formathub-picker-grid .vc-formathub-item {
+    justify-content: center;
+    padding: 4px;
+}
+
+.vc-formathub-item:hover {
+    background: var(--background-mod-subtle, rgb(128 128 128 / 15%));
+}
+
+.vc-formathub-item-selected,
+.vc-formathub-item-selected:hover {
+    background: rgb(88 101 242 / 22%);
+    box-shadow: inset 0 0 0 1px var(--brand-500, #5865f2);
+}
+
+.vc-formathub-item-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.vc-formathub-item-emoji {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+.vc-formathub-item-prefix {
+    width: 24px;
+    flex-shrink: 0;
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.vc-formathub-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-formathub-item-name,
+.vc-formathub-item-sub {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-formathub-item-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.vc-formathub-item-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ---------- Entries ---------- */
+
+.vc-formathub-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.vc-formathub-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-base-lower, var(--background-secondary));
+}
+
+.vc-formathub-entry:hover {
+    border-color: var(--background-mod-strong, var(--interactive-muted, rgb(128 128 128 / 40%)));
+}
+
+.vc-formathub-entry-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.vc-formathub-entry-label {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vc-formathub-entry-hint {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-formathub-entry-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.vc-formathub-entry-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+
+.vc-formathub-syntax {
+    display: block;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: var(--background-base-lowest, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-family: var(--font-code, monospace);
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    user-select: text;
+}
+
+.vc-formathub-preview {
+    min-width: 0;
+    padding: 3px 4px;
+    font-size: 15px;
+    line-height: 1.375;
+    word-wrap: break-word;
+    user-select: text;
+    white-space: pre-wrap;
+}
+
+.vc-formathub-preview pre {
+    margin: 0;
+}
+
+/* ---------- Decoder ---------- */
+
+.vc-formathub-decoder {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 14px;
+    height: 100%;
+}
+
+.vc-formathub-decoder-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.vc-formathub-textarea {
+    min-height: 160px;
+    resize: vertical;
+    font-family: var(--font-code, monospace);
+    font-size: 13px;
+}
+
+.vc-formathub-tokens {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.vc-formathub-token {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-left-width: 4px;
+    background: var(--background-base-lower, var(--background-secondary));
+}
+
+.vc-formathub-token-ok {
+    border-left-color: var(--status-positive, #23a55a);
+}
+
+.vc-formathub-token-warn {
+    border-left-color: var(--status-warning, #f0b232);
+}
+
+.vc-formathub-token-bad {
+    border-color: rgb(242 63 67 / 45%);
+    border-left-color: var(--status-danger, #f23f43);
+    background: rgb(242 63 67 / 8%);
+}
+
+.vc-formathub-token-bad .vc-formathub-token-title {
+    color: var(--text-feedback-critical, var(--status-danger, #f23f43));
+}
+
+.vc-formathub-token-kind {
+    flex-shrink: 0;
+    width: 110px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    padding-top: 2px;
+}
+
+.vc-formathub-token-main {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-formathub-token-title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.vc-formathub-token-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Settings ---------- */
+
+.vc-formathub-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-formathub-settings-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: linear-gradient(135deg, rgb(88 101 242 / 18%), transparent 70%);
+}
+
+.vc-formathub-settings-hero > .vc-formathub-option-text {
+    flex: 1;
+}
+
+.vc-formathub-settings-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-formathub-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-mod-subtle, rgb(128 128 128 / 8%));
+}
+
+.vc-formathub-card .vc-formathub-row {
+    justify-content: space-between;
+}
+
+.vc-formathub-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.vc-formathub-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ---------- Narrow windows ---------- */
+
+@media (width <= 900px) {
+    .vc-formathub-split,
+    .vc-formathub-decoder,
+    .vc-formathub-columns {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+
+    .vc-formathub-entry-body {
+        grid-template-columns: 1fr;
+    }
+}

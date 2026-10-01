@@ -1,0 +1,1535 @@
+/* ===================================================================== Radar */
+
+.vc-radar-app,
+.vc-radar-modal-body,
+.vc-radar-hl-chip {
+    --radar-a: #1fbf82;
+    --radar-b: #00a8fc;
+    --radar-grad: linear-gradient(135deg, var(--radar-a), var(--radar-b));
+    --radar-good: var(--status-positive, #23a55a);
+    --radar-warn: var(--status-warning, #f0b232);
+    --radar-bad: var(--status-danger, #f23f43);
+    --radar-text: var(--text-default, var(--text-normal, #dbdee1));
+    --radar-muted: var(--text-muted, #949ba4);
+    --radar-line: var(--border-subtle, rgb(128 128 128 / 18%));
+    --radar-soft: color-mix(in srgb, var(--radar-text) 5%, transparent);
+    --radar-soft-2: color-mix(in srgb, var(--radar-text) 9%, transparent);
+    --radar-input: var(--input-background-default, var(--input-background, color-mix(in srgb, var(--radar-text) 7%, transparent)));
+    --radar-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+    --radar-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- Title bar ---------- */
+
+.vc-radar-btn-titlebar,
+.vc-radar-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-radar-titlebar-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.vc-radar-btn-titlebar .vc-radar-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    transition: color 0.2s, transform 0.3s var(--radar-spring, ease);
+}
+
+.vc-radar-btn-titlebar:hover .vc-radar-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    transform: rotate(20deg);
+}
+
+.vc-radar-btn-titlebar[class*="selected"] .vc-radar-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+.vc-radar-btn-titlebar-hot .vc-radar-icon {
+    color: #1fbf82 !important;
+}
+
+.vc-radar-badge {
+    position: absolute;
+    top: -6px;
+    right: -9px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 15px;
+    text-align: center;
+    color: #fff;
+    background: var(--status-danger, #f23f43);
+    box-shadow: 0 0 0 2px var(--background-base-lowest, var(--background-tertiary, #1e1f22));
+    pointer-events: none;
+    animation: vc-radar-badge 0.5s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+@keyframes vc-radar-badge {
+    from {
+        transform: scale(0);
+    }
+}
+
+/* ---------- Popout / base layout ---------- */
+
+.vc-radar-popout {
+    width: 460px;
+    height: min(660px, calc(100vh - 72px));
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--background-surface-higher, var(--background-floating, #232428));
+    border: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    box-shadow: 0 16px 48px rgb(0 0 0 / 35%), 0 0 0 1px rgb(0 0 0 / 6%);
+    transform-origin: top left;
+    animation: vc-radar-pop 0.32s cubic-bezier(0.34, 1.3, 0.5, 1);
+}
+
+@keyframes vc-radar-pop {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.94);
+    }
+}
+
+.vc-radar-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: var(--radar-text);
+    font-size: 14px;
+}
+
+.vc-radar-app-modal {
+    height: auto;
+}
+
+.vc-radar-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px 12px;
+}
+
+.vc-radar-app-modal .vc-radar-head {
+    padding: 0 0 12px;
+}
+
+.vc-radar-logo {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-sweep {
+    transform-origin: 12px 12px;
+    animation: vc-radar-spin 3.2s linear infinite;
+}
+
+@keyframes vc-radar-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.vc-radar-head-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-radar-head-title {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.vc-radar-head-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--radar-good);
+    animation: vc-radar-breathe 2.4s ease-in-out infinite;
+}
+
+.vc-radar-dot-off {
+    background: var(--radar-muted);
+    animation: none;
+}
+
+@keyframes vc-radar-breathe {
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ---------- Tabs ---------- */
+
+.vc-radar-tabs {
+    position: relative;
+    display: flex;
+    gap: 2px;
+    margin: 0 14px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--radar-soft);
+    border: 1px solid var(--radar-line);
+}
+
+.vc-radar-app-modal .vc-radar-tabs {
+    margin: 0;
+}
+
+.vc-radar-tab {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--radar-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.25s;
+}
+
+.vc-radar-tab-icon-only {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+}
+
+.vc-radar-tab-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-radar-tab:hover {
+    color: var(--radar-text);
+}
+
+.vc-radar-tab-active {
+    color: #fff !important;
+}
+
+.vc-radar-tab-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    border-radius: 9px;
+    background: var(--radar-grad);
+}
+
+.vc-radar-tab-badge {
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+    color: #fff;
+    background: var(--radar-bad);
+}
+
+.vc-radar-tab-badge-soft {
+    background: var(--radar-soft-2);
+    color: inherit;
+}
+
+.vc-radar-tab-active .vc-radar-tab-badge-soft {
+    background: rgb(255 255 255 / 25%);
+}
+
+.vc-radar-animated {
+    transition: transform 0.42s var(--radar-spring), width 0.42s var(--radar-spring);
+}
+
+/* ---------- Content ---------- */
+
+.vc-radar-scroller {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden auto;
+    padding: 14px 8px 16px 14px;
+    scrollbar-gutter: stable;
+}
+
+.vc-radar-scroller::-webkit-scrollbar {
+    width: 10px;
+}
+
+.vc-radar-scroller::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vc-radar-scroller::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 8px;
+    background: var(--radar-soft-2) padding-box;
+}
+
+.vc-radar-app-modal .vc-radar-scroller {
+    overflow: visible;
+    padding: 14px 0 8px;
+}
+
+.vc-radar-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: vc-radar-pane-r 0.38s var(--radar-ease);
+}
+
+.vc-radar-pane-left {
+    animation-name: vc-radar-pane-l;
+}
+
+@keyframes vc-radar-pane-r {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+}
+
+@keyframes vc-radar-pane-l {
+    from {
+        opacity: 0;
+        transform: translateX(-18px);
+    }
+}
+
+.vc-radar-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--radar-muted);
+}
+
+.vc-radar-section-right {
+    margin-left: auto;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.vc-radar-link-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-radar-link-btn:hover {
+    text-decoration: underline;
+}
+
+.vc-radar-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+}
+
+.vc-radar-spacer {
+    flex: 1;
+}
+
+.vc-radar-row-hint {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--radar-muted);
+}
+
+.vc-radar-text-bad {
+    color: var(--radar-bad);
+}
+
+.vc-radar-note {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--radar-muted);
+    background: var(--radar-soft);
+    border: 1px dashed var(--radar-line);
+}
+
+.vc-radar-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: var(--radar-soft);
+    border: 1px solid var(--radar-line);
+    overflow: hidden;
+}
+
+.vc-radar-card > * + * {
+    border-top: 1px solid var(--radar-line);
+}
+
+/* ---------- Rows & switches ---------- */
+
+.vc-radar-row,
+.vc-radar-row-static {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+}
+
+.vc-radar-row {
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s;
+}
+
+.vc-radar-row:hover {
+    background: var(--radar-soft);
+}
+
+.vc-radar-row:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--radar-a);
+}
+
+.vc-radar-row-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.vc-radar-row-icon {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+    transition: color 0.25s, background 0.25s;
+}
+
+.vc-radar-row-icon-on {
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-row-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-radar-row-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.vc-radar-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 38px;
+    height: 22px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--radar-muted, #949ba4) 45%, transparent);
+    cursor: pointer;
+    transition: background 0.25s;
+}
+
+.vc-radar-switch-on {
+    background: var(--radar-a, #1fbf82);
+}
+
+.vc-radar-switch-disabled {
+    opacity: 0.5;
+}
+
+.vc-radar-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+    transition: transform 0.35s var(--radar-spring, ease);
+}
+
+.vc-radar-switch-on .vc-radar-switch-knob {
+    transform: translateX(16px);
+}
+
+/* ---------- Segments ---------- */
+
+.vc-radar-seg {
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--radar-soft-2);
+    width: fit-content;
+    max-width: 100%;
+}
+
+.vc-radar-seg-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    border-radius: 7px;
+    background: var(--background-surface-highest, var(--background-primary, #fff));
+    box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+}
+
+.vc-radar-seg-item {
+    position: relative;
+    z-index: 1;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--radar-muted);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.vc-radar-seg-small .vc-radar-seg-item {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.vc-radar-seg-item:hover,
+.vc-radar-seg-item-active {
+    color: var(--radar-text);
+}
+
+/* ---------- Buttons ---------- */
+
+.vc-radar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.2s;
+}
+
+.vc-radar-btn:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.vc-radar-btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.vc-radar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vc-radar-btn-small {
+    padding: 5px 10px;
+    font-size: 13px;
+}
+
+.vc-radar-btn-primary {
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-btn-secondary {
+    color: var(--radar-text);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-btn-danger {
+    color: #fff;
+    background: var(--radar-bad);
+}
+
+.vc-radar-btn-ghost {
+    color: var(--radar-muted);
+    background: transparent;
+}
+
+.vc-radar-icon-btn {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--radar-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.vc-radar-icon-btn:hover:not(:disabled) {
+    color: var(--radar-text);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-icon-btn-danger:hover:not(:disabled) {
+    color: var(--radar-bad);
+}
+
+.vc-radar-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ---------- Lists ---------- */
+
+.vc-radar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-radar-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--radar-soft);
+    border: 1px solid var(--radar-line);
+    transition: background 0.15s, border-color 0.15s;
+    animation: vc-radar-fade 0.3s var(--radar-ease);
+}
+
+@keyframes vc-radar-fade {
+    from {
+        opacity: 0;
+        transform: translateY(3px);
+    }
+}
+
+.vc-radar-item-click {
+    cursor: pointer;
+}
+
+.vc-radar-item-click:hover {
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-item-unread {
+    border-color: color-mix(in srgb, var(--radar-a) 55%, transparent);
+    box-shadow: inset 3px 0 0 var(--radar-a);
+}
+
+.vc-radar-item-done {
+    opacity: 0.7;
+}
+
+.vc-radar-item-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.vc-radar-item-kind {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    display: grid;
+    place-items: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--radar-grad);
+    box-shadow: 0 0 0 2px var(--background-surface-higher, var(--background-floating, #232428));
+}
+
+.vc-radar-item-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.vc-radar-item-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.vc-radar-item-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.vc-radar-item-time {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-item-body {
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.vc-radar-item-rule,
+.vc-radar-item-note {
+    font-size: 11px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-item-note {
+    font-style: italic;
+}
+
+.vc-radar-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+}
+
+.vc-radar-item:hover .vc-radar-item-actions,
+.vc-radar-rule:hover .vc-radar-rule-buttons {
+    opacity: 1;
+}
+
+.vc-radar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 28px 16px;
+    text-align: center;
+}
+
+.vc-radar-empty-icon {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    color: var(--radar-a);
+    background: color-mix(in srgb, var(--radar-a) 14%, transparent);
+    margin-bottom: 4px;
+}
+
+.vc-radar-empty-title {
+    font-weight: 700;
+}
+
+.vc-radar-empty .vc-radar-btn {
+    margin-top: 8px;
+}
+
+.vc-radar-avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-avatar-square {
+    border-radius: 8px;
+}
+
+.vc-radar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ---------- Rules ---------- */
+
+.vc-radar-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--radar-soft);
+    border: 1px solid var(--radar-line);
+    transition: opacity 0.2s;
+}
+
+.vc-radar-rule-off {
+    opacity: 0.6;
+}
+
+.vc-radar-trigger-badge {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-rule-off .vc-radar-trigger-badge {
+    background: var(--radar-muted);
+}
+
+.vc-radar-rule-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.vc-radar-rule-name {
+    font-weight: 700;
+}
+
+.vc-radar-rule-summary {
+    font-size: 12px;
+    color: var(--radar-muted);
+    overflow-wrap: anywhere;
+}
+
+.vc-radar-rule-summary b {
+    color: var(--radar-text);
+    font-weight: 600;
+}
+
+.vc-radar-rule-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vc-radar-rule-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-rule-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.vc-radar-rule-buttons {
+    display: flex;
+    gap: 2px;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+/* ---------- Reminders & bookmarks ---------- */
+
+.vc-radar-when {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    width: 64px;
+    padding: 6px 4px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-when-soon {
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-when-missed {
+    color: #000;
+    background: var(--radar-warn);
+}
+
+.vc-radar-pill-warn {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #000;
+    background: var(--radar-warn);
+}
+
+.vc-radar-snap {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--radar-soft);
+    border-left: 3px solid var(--radar-a);
+}
+
+.vc-radar-snap-compact {
+    padding: 5px 8px;
+}
+
+.vc-radar-snap-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-radar-snap-top {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+}
+
+.vc-radar-snap-author {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vc-radar-snap-content {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.vc-radar-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vc-radar-tag {
+    padding: 2px 8px;
+    border: none;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.vc-radar-tag:hover {
+    color: var(--radar-text);
+}
+
+.vc-radar-tag-on {
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+/* ---------- Inputs ---------- */
+
+.vc-radar-input,
+.vc-radar-select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--radar-line);
+    border-radius: 8px;
+    outline: none;
+    color: var(--radar-text);
+    background: var(--radar-input);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.vc-radar-select {
+    width: auto;
+    padding: 5px 8px;
+    font-size: 13px;
+}
+
+.vc-radar-select option {
+    color: var(--radar-text);
+    background: var(--background-surface-higher, var(--background-floating, #232428));
+}
+
+.vc-radar-input:focus,
+.vc-radar-select:focus {
+    border-color: var(--radar-a);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--radar-a) 25%, transparent);
+}
+
+.vc-radar-input-bad,
+.vc-radar-input-bad:focus {
+    border-color: var(--radar-bad);
+}
+
+.vc-radar-input::placeholder {
+    color: var(--radar-muted);
+    opacity: 0.8;
+}
+
+.vc-radar-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+input[type="time"].vc-radar-input,
+input[type="datetime-local"].vc-radar-input {
+    color-scheme: light dark;
+}
+
+.vc-radar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.vc-radar-field-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--radar-muted);
+}
+
+.vc-radar-field-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vc-radar-field-row > .vc-radar-field:first-child {
+    width: 120px;
+}
+
+.vc-radar-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vc-radar-range input,
+.vc-radar-row-static input[type="range"] {
+    flex: 1;
+    max-width: 180px;
+    accent-color: var(--radar-a);
+}
+
+.vc-radar-range-value {
+    min-width: 40px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+    color: var(--radar-muted);
+}
+
+.vc-radar-picker {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-radar-picker-box {
+    position: relative;
+}
+
+.vc-radar-picker-box .vc-radar-input {
+    padding-left: 32px;
+}
+
+.vc-radar-picker-search {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: var(--radar-muted);
+    pointer-events: none;
+}
+
+.vc-radar-picker-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    max-height: 240px;
+    margin-top: 4px;
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--background-surface-highest, var(--background-floating, #2b2d31));
+    border: 1px solid var(--radar-line);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.vc-radar-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--radar-text);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-radar-picker-item:hover {
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-picker-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-radar-picker-empty {
+    padding: 10px;
+    font-size: 12px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-chips,
+.vc-radar-taginput {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vc-radar-taginput {
+    align-items: center;
+    padding: 5px 6px;
+    border: 1px solid var(--radar-line);
+    border-radius: 8px;
+    background: var(--radar-input);
+}
+
+.vc-radar-taginput:focus-within {
+    border-color: var(--radar-a);
+}
+
+.vc-radar-taginput-input {
+    flex: 1;
+    min-width: 120px;
+    padding: 3px 4px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--radar-text);
+    font-size: 14px;
+}
+
+.vc-radar-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    padding: 2px 4px 2px 6px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--radar-a) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--radar-a) 35%, transparent);
+}
+
+.vc-radar-chip .vc-radar-avatar {
+    margin-left: -3px;
+}
+
+.vc-radar-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-radar-chip-x {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.vc-radar-chip-x:hover {
+    opacity: 1;
+    background: var(--radar-soft-2);
+}
+
+/* ---------- Editor ---------- */
+
+.vc-radar-modal-body {
+    color: var(--radar-text);
+    padding-bottom: 8px;
+}
+
+.vc-radar-editor,
+.vc-radar-stack,
+.vc-radar-action-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vc-radar-action-body {
+    padding: 0 12px 12px;
+}
+
+.vc-radar-presets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vc-radar-preset {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--radar-line);
+    border-radius: 12px;
+    background: var(--radar-soft);
+    color: var(--radar-text);
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.2s var(--radar-spring), border-color 0.2s, background 0.2s;
+}
+
+.vc-radar-preset:hover {
+    transform: translateY(-2px);
+    border-color: var(--radar-a);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-preset-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-preset-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.vc-radar-preset-title {
+    font-weight: 700;
+}
+
+.vc-radar-trigger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+}
+
+.vc-radar-trigger-tile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--radar-line);
+    border-radius: 10px;
+    background: var(--radar-soft);
+    color: var(--radar-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.vc-radar-trigger-tile:hover {
+    color: var(--radar-text);
+    border-color: color-mix(in srgb, var(--radar-a) 50%, transparent);
+}
+
+.vc-radar-trigger-tile-on {
+    color: #fff !important;
+    border-color: transparent;
+    background: var(--radar-grad);
+}
+
+.vc-radar-disclosure {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--radar-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+
+.vc-radar-disclosure:hover {
+    color: var(--radar-text);
+}
+
+.vc-radar-chev {
+    display: inline-block;
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.vc-radar-chev-open {
+    transform: rotate(90deg);
+}
+
+.vc-radar-hours {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-hours .vc-radar-input {
+    width: 110px;
+}
+
+.vc-radar-action {
+    border-radius: 12px;
+    background: var(--radar-soft);
+    border: 1px solid var(--radar-line);
+    overflow: hidden;
+}
+
+.vc-radar-action-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+}
+
+.vc-radar-action > .vc-radar-row {
+    border-top: 1px solid var(--radar-line);
+}
+
+.vc-radar-action-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: #fff;
+    background: var(--radar-grad);
+}
+
+.vc-radar-add-actions,
+.vc-radar-suggest,
+.vc-radar-picks,
+.vc-radar-sounds,
+.vc-radar-days,
+.vc-radar-colors {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-radar-add-action,
+.vc-radar-suggest-chip,
+.vc-radar-pick,
+.vc-radar-sound,
+.vc-radar-day {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1px dashed var(--radar-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--radar-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.vc-radar-sound,
+.vc-radar-pick,
+.vc-radar-day {
+    border-style: solid;
+    background: var(--radar-soft);
+}
+
+.vc-radar-add-action:hover,
+.vc-radar-suggest-chip:hover,
+.vc-radar-pick:hover,
+.vc-radar-sound:hover,
+.vc-radar-day:hover {
+    color: var(--radar-text);
+    border-color: var(--radar-a);
+}
+
+.vc-radar-pick {
+    padding: 7px 12px;
+    font-size: 13px;
+}
+
+.vc-radar-sound-on,
+.vc-radar-pick-on,
+.vc-radar-day-on {
+    color: #fff !important;
+    border-color: transparent !important;
+    background: var(--radar-grad);
+}
+
+.vc-radar-day {
+    justify-content: center;
+    min-width: 34px;
+    padding: 5px 6px;
+}
+
+.vc-radar-color {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s var(--radar-spring);
+}
+
+.vc-radar-color:hover {
+    transform: scale(1.12);
+}
+
+.vc-radar-color-on {
+    border-color: var(--radar-text);
+    box-shadow: 0 0 0 2px var(--background-surface-higher, var(--background-floating, #232428)) inset;
+}
+
+.vc-radar-color-input {
+    width: 32px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* ---------- Highlight under messages ---------- */
+
+.vc-radar-hl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 2px 4px 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--radar-text);
+    background: color-mix(in srgb, var(--vc-radar-hl, #f0b232) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vc-radar-hl, #f0b232) 45%, transparent);
+}
+
+.vc-radar-hl-chip .vc-radar-icon {
+    color: var(--vc-radar-hl, #f0b232);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-radar-sweep,
+    .vc-radar-dot,
+    .vc-radar-pane,
+    .vc-radar-item,
+    .vc-radar-popout {
+        animation: none;
+    }
+}

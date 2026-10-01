@@ -1,0 +1,887 @@
+/* ---------- Narrow Discord while panels are open ---------- */
+
+html.vc-splitview-active #app-mount {
+    width: calc(100% - var(--vc-splitview-width, 0px)) !important;
+    right: auto !important;
+}
+
+body.vc-splitview-resizing,
+body.vc-splitview-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+/* ---------- Title bar ---------- */
+
+.vc-splitview-btn,
+.vc-splitview-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-splitview-btn {
+    position: relative;
+}
+
+.vc-splitview-btn .vc-splitview-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-splitview-btn:hover .vc-splitview-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-splitview-btn[class*="selected"] .vc-splitview-icon,
+.vc-splitview-btn-active .vc-splitview-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+.vc-splitview-btn-active::after {
+    content: "";
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand-500, #5865f2);
+    pointer-events: none;
+}
+
+/* ---------- Container ---------- */
+
+.vc-splitview-panels {
+    -webkit-app-region: no-drag;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: row;
+    background: var(--background-base-lower, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 15px;
+}
+
+.vc-splitview-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    background: var(--background-base-lower, var(--background-primary));
+    border-left: 1px solid var(--border-subtle, var(--background-modifier-accent));
+}
+
+.vc-splitview-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -3px;
+    width: 6px;
+    z-index: 2;
+    cursor: col-resize;
+    -webkit-app-region: no-drag;
+}
+
+.vc-splitview-divider:hover {
+    background: var(--brand-500, #5865f2);
+    opacity: 0.6;
+}
+
+/* ---------- Header ---------- */
+
+.vc-splitview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    height: 48px;
+    padding: 0 8px 0 12px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border-subtle, var(--background-modifier-accent));
+}
+
+.vc-splitview-header-icon,
+.vc-splitview-list-icon {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vc-splitview-header-icon-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-default, var(--text-normal));
+    background: var(--background-modifier-accent, rgb(128 128 128 / 25%));
+}
+
+.vc-splitview-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-splitview-header-name {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+}
+
+.vc-splitview-header-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-splitview-header-actions {
+    display: flex;
+    gap: 2px;
+    -webkit-app-region: no-drag;
+}
+
+.vc-splitview-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+}
+
+.vc-splitview-icon-btn:hover:not(:disabled) {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-splitview-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.vc-splitview-icon-btn-danger:hover:not(:disabled) {
+    color: var(--status-danger, #f23f43);
+}
+
+/* ---------- Message list ---------- */
+
+.vc-splitview-list-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.vc-splitview-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-anchor: none;
+    scrollbar-width: thin;
+}
+
+.vc-splitview-list-content {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 0 12px;
+}
+
+.vc-splitview-load-older,
+.vc-splitview-list-start {
+    align-self: center;
+    margin: 8px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-splitview-load-older {
+    padding: 4px 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.vc-splitview-load-older:hover:not(:disabled) {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-splitview-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.vc-splitview-day {
+    display: flex;
+    align-items: center;
+    margin: 12px 12px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.vc-splitview-day::before,
+.vc-splitview-day::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle, var(--background-modifier-accent));
+}
+
+.vc-splitview-day span {
+    padding: 0 8px;
+}
+
+.vc-splitview-message {
+    position: relative;
+    padding: 1px 12px 1px 0;
+    line-height: 1.375;
+    word-wrap: break-word;
+}
+
+.vc-splitview-message:hover {
+    background: var(--background-message-hover, rgb(128 128 128 / 6%));
+}
+
+.vc-splitview-group-start {
+    margin-top: 12px;
+}
+
+.vc-splitview-mentioned {
+    background: var(--background-mentioned, rgb(240 177 50 / 10%));
+    box-shadow: inset 2px 0 0 var(--info-warning-foreground, #f0b232);
+}
+
+.vc-splitview-mentioned:hover {
+    background: var(--background-mentioned-hover, rgb(240 177 50 / 14%));
+}
+
+.vc-splitview-pending .vc-splitview-content {
+    opacity: 0.5;
+}
+
+.vc-splitview-failed .vc-splitview-content {
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-splitview-flash {
+    animation: vc-splitview-flash 1.6s ease-out;
+}
+
+@keyframes vc-splitview-flash {
+    0%,
+    40% {
+        background: var(--brand-500, #5865f2);
+        background: rgb(88 101 242 / 25%);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.vc-splitview-row {
+    display: flex;
+}
+
+.vc-splitview-gutter {
+    flex: none;
+    width: 60px;
+    display: flex;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.vc-splitview-avatar {
+    width: 36px;
+    height: 36px;
+    margin-top: 2px;
+    border-radius: 50%;
+    cursor: pointer;
+    object-fit: cover;
+}
+
+.vc-splitview-gutter-time {
+    visibility: hidden;
+    padding-top: 3px;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-splitview-message:hover .vc-splitview-gutter-time {
+    visibility: visible;
+}
+
+.vc-splitview-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-splitview-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vc-splitview-name {
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+    cursor: pointer;
+}
+
+.vc-splitview-name:hover {
+    text-decoration: underline;
+}
+
+.vc-splitview-bot-tag {
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 15px;
+    color: #fff;
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-splitview-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-splitview-time:hover {
+    text-decoration: underline;
+}
+
+.vc-splitview-content {
+    white-space: pre-wrap;
+    user-select: text;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-splitview-content code {
+    white-space: pre-wrap;
+}
+
+.vc-splitview-edited {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.vc-splitview-muted {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.vc-splitview-error-text {
+    font-size: 13px;
+    color: var(--status-danger, var(--text-danger, #f23f43));
+}
+
+.vc-splitview-system .vc-splitview-gutter {
+    font-size: 16px;
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-splitview-system {
+    display: flex;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+/* Reply line */
+.vc-splitview-reply {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 0 2px 60px;
+    font-size: 13px;
+    min-width: 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.vc-splitview-reply::before {
+    content: "";
+    position: absolute;
+    left: -34px;
+    top: 50%;
+    width: 28px;
+    height: 10px;
+    border-top: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+    border-left: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+    border-top-left-radius: 6px;
+    box-sizing: border-box;
+}
+
+.vc-splitview-reply-avatar {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.vc-splitview-reply-name {
+    font-weight: 600;
+    flex: none;
+}
+
+.vc-splitview-reply-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-muted);
+}
+
+.vc-splitview-reply:hover .vc-splitview-reply-text {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-splitview-command {
+    color: var(--text-link, #00a8fc);
+}
+
+/* Attachments */
+.vc-splitview-attachments {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.vc-splitview-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: zoom-in;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+}
+
+.vc-splitview-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-base-lowest, var(--background-secondary));
+    color: var(--text-link, #00a8fc);
+    text-decoration: none;
+}
+
+.vc-splitview-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-splitview-file-size {
+    flex: none;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Embeds */
+.vc-splitview-embed {
+    display: flex;
+    gap: 12px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border-left: 4px solid var(--background-modifier-accent, rgb(128 128 128 / 40%));
+    background: var(--background-base-lowest, var(--background-secondary));
+}
+
+.vc-splitview-embed-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-splitview-embed-provider,
+.vc-splitview-embed-author {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.vc-splitview-embed-author {
+    font-weight: 600;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-splitview-embed-title {
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+}
+
+a.vc-splitview-embed-title {
+    color: var(--text-link, #00a8fc);
+}
+
+.vc-splitview-embed-desc {
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+
+.vc-splitview-embed-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.vc-splitview-embed-thumb {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* Stickers & reactions */
+.vc-splitview-stickers {
+    margin-top: 4px;
+}
+
+.vc-splitview-sticker {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
+.vc-splitview-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.vc-splitview-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+}
+
+.vc-splitview-reaction img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.vc-splitview-reaction-emoji {
+    font-size: 15px;
+    line-height: 18px;
+}
+
+.vc-splitview-reaction-me {
+    border-color: var(--brand-500, #5865f2);
+    background: rgb(88 101 242 / 15%);
+    color: var(--text-default, var(--text-normal));
+}
+
+/* New messages pill */
+.vc-splitview-new-pill {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 14px;
+    border: none;
+    border-radius: 14px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-medium, 0 4px 8px rgb(0 0 0 / 24%));
+}
+
+/* ---------- Input ---------- */
+
+.vc-splitview-composer {
+    flex: none;
+    padding: 0 12px 4px;
+}
+
+.vc-splitview-input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 8px 8px 12px;
+    border-radius: 8px;
+    background: var(--channeltextarea-background, var(--background-base-lowest, var(--background-secondary)));
+    border: 1px solid var(--border-subtle, transparent);
+}
+
+.vc-splitview-input-disabled {
+    opacity: 0.6;
+}
+
+.vc-splitview-input {
+    flex: 1;
+    min-height: 22px;
+    max-height: 180px;
+    padding: 2px 0;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: var(--text-default, var(--text-normal));
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.375;
+}
+
+.vc-splitview-input::placeholder {
+    color: var(--text-muted);
+}
+
+.vc-splitview-send,
+.vc-splitview-button {
+    flex: none;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-splitview-send:disabled,
+.vc-splitview-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.vc-splitview-send:hover:not(:disabled),
+.vc-splitview-button:hover:not(:disabled) {
+    background: var(--brand-560, #4752c4);
+}
+
+.vc-splitview-typing {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-splitview-typing-dots {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.vc-splitview-typing-dots i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentcolor;
+    animation: vc-splitview-dot 1.2s infinite ease-in-out;
+}
+
+.vc-splitview-typing-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.vc-splitview-typing-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes vc-splitview-dot {
+    0%,
+    60%,
+    100% {
+        opacity: 0.3;
+    }
+
+    30% {
+        opacity: 1;
+    }
+}
+
+/* ---------- Drop zone ---------- */
+
+.vc-splitview-dropzone {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 1001;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    border: 2px dashed var(--brand-500, #5865f2);
+    border-radius: 12px;
+    background: var(--background-surface-higher, var(--background-floating));
+    color: var(--text-default, var(--text-normal));
+    opacity: 0.92;
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+}
+
+.vc-splitview-dropzone * {
+    pointer-events: none;
+}
+
+.vc-splitview-dropzone-over {
+    background: rgb(88 101 242 / 25%);
+    opacity: 1;
+}
+
+.vc-splitview-dropzone-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-splitview-dropzone-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ---------- Popout & settings ---------- */
+
+.vc-splitview-popout {
+    width: 300px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 12px;
+    background: var(--background-surface-higher, var(--background-floating));
+    border: 1px solid var(--border-subtle, transparent);
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-splitview-popout-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-splitview-popout-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.vc-splitview-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-splitview-settings > .vc-splitview-button {
+    align-self: flex-start;
+}
+
+.vc-splitview-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.vc-splitview-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+}
+
+.vc-splitview-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.vc-splitview-list-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-splitview-list-text {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.vc-splitview-list-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-splitview-list-text:hover .vc-splitview-list-name {
+    text-decoration: underline;
+}
+
+.vc-splitview-list-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

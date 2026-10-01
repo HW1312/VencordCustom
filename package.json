@@ -1,0 +1,11 @@
+{
+    "name": "vencord-stuff",
+    "private": true,
+    "scripts": {
+        "build": "node build.mjs",
+        "inject": "node build.mjs --inject",
+        "package": "node build.mjs --package",
+        "release": "node build.mjs --release",
+        "update": "node build.mjs --update"
+    }
+}
