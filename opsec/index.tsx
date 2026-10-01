@@ -97,7 +97,6 @@ export const settings = definePluginSettings({
     guardBlurDms: { type: OptionType.BOOLEAN, description: "Blur DMs", default: true, hidden: true, onChange: () => scheduleApply() },
     guardRevealOnHover: { type: OptionType.BOOLEAN, description: "Reveal on hover", default: false, hidden: true, onChange: () => scheduleApply() },
     guardStreamerMode: { type: OptionType.BOOLEAN, description: "Streamer Mode", default: false, hidden: true, onChange: () => scheduleApply() },
-    guardChecklist: { type: OptionType.BOOLEAN, description: "Checklist", default: true, hidden: true },
     /** Server IDs, comma-separated */
     guardHiddenGuilds: { type: OptionType.STRING, description: "Hidden servers", default: "", hidden: true, onChange: () => scheduleApply() },
     /** Channel IDs, comma-separated */
@@ -137,9 +136,15 @@ type IdListKey = "guardHiddenGuilds" | "guardHiddenChannels";
 export const getIdList = (key: IdListKey) => (settings.store[key] || "").split(",").filter(Boolean);
 
 export function toggleId(key: IdListKey, id: string, on: boolean) {
+    setIds(key, [id], on);
+}
+
+export function setIds(key: IdListKey, idsToSet: string[], on: boolean) {
     const ids = new Set(getIdList(key));
-    if (on) ids.add(id);
-    else ids.delete(id);
+    for (const id of idsToSet) {
+        if (on) ids.add(id);
+        else ids.delete(id);
+    }
     settings.store[key] = [...ids].join(",");
 }
 
@@ -151,7 +156,6 @@ configureGuard(() => {
         blurDms: s.guardBlurDms,
         revealOnHover: s.guardRevealOnHover,
         streamerMode: s.guardStreamerMode,
-        checklist: s.guardChecklist,
         hiddenGuilds: getIdList("guardHiddenGuilds"),
         hiddenChannels: getIdList("guardHiddenChannels")
     };

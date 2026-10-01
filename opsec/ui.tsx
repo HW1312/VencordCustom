@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
 import { Check, CHECKS, CheckStatus, getAuditSummary, loadConsents, onConsentsChange, runFix } from "./audit";
 import { BLOCKLIST_SOURCE, getBlocklistStatus, onBlocklistChange, refreshBlocklist } from "./blocklist";
 import { buildCurtain, CURTAIN_ICONS, CurtainAnimation, CurtainIconName, CurtainOptions, CurtainStyle, DEFAULT_CURTAIN_TEXT, isCurtainShown, MASK_PATH, onCurtainChange, showCurtain, toggleCurtain } from "./curtain";
-import { getConfig, getCurtainOptions, getIdList, getPanicKey, setOption, setProfile, settings, toggleId, UploadEditorMode } from "./index";
+import { getConfig, getCurtainOptions, getIdList, getPanicKey, setOption, setIds, setProfile, settings, toggleId, UploadEditorMode } from "./index";
 import { DEFAULT_KEYBIND, isModifierCode, isValidKeybind, Keybind, keybindConflict, keybindFromEvent, keybindParts, recording, serializeKeybind } from "./keybind";
 import type { LinkAnalysis } from "./links";
 import { ConfigKey, Profile } from "./profiles";
@@ -717,6 +717,9 @@ function GuardPicker({ disabled }: { disabled: boolean; }) {
     const list = [...guilds]
         .filter(g => !q || g.name.toLowerCase().includes(q))
         .sort((a, b) => Number(hiddenGuilds.has(b.id)) - Number(hiddenGuilds.has(a.id)) || a.name.localeCompare(b.name));
+    const ids = list.map(g => g.id);
+    const allHidden = ids.every(id => hiddenGuilds.has(id));
+    const noneHidden = !ids.some(id => hiddenGuilds.has(id));
 
     return (
         <div className={classes(cl("card-pad"), cl("row-sub"), disabled && cl("row-disabled"))}>
@@ -725,31 +728,47 @@ function GuardPicker({ disabled }: { disabled: boolean; }) {
                 <span className={cl("range-value")}>{hiddenGuilds.size} {hiddenGuilds.size === 1 ? "server" : "servers"} · {hiddenChannels.size} {hiddenChannels.size === 1 ? "channel" : "channels"}</span>
             </div>
             <input className={cl("input")} value={query} placeholder="Search servers …" onChange={e => setQuery(e.currentTarget.value)} disabled={disabled} />
+            <div className={cl("guild-bulk")}>
+                <button className={classes(cl("btn"), cl("btn-small"), cl("btn-ghost"))} disabled={disabled || allHidden} onClick={() => setIds("guardHiddenGuilds", ids, true)}>
+                    <Icon name="eyeOff" size={14} /> {q ? `Hide ${list.length} found` : "Hide all"}
+                </button>
+                <button className={classes(cl("btn"), cl("btn-small"), cl("btn-ghost"))} disabled={disabled || noneHidden} onClick={() => setIds("guardHiddenGuilds", ids, false)}>
+                    <Icon name="eye" size={14} /> {q ? `Unhide ${list.length} found` : "Unhide all"}
+                </button>
+            </div>
             <div className={cl("guild-list")}>
                 {list.map(g => {
                     const on = hiddenGuilds.has(g.id);
                     const expanded = open === g.id;
                     return (
-                        <div key={g.id} className={cl("guild")}>
-                            <div className={cl("guild-row")}>
+                        <div key={g.id} className={classes(cl("guild"), on && cl("guild-on"))}>
+                            <div
+                                className={cl("guild-row")}
+                                role="switch"
+                                aria-checked={on}
+                                aria-disabled={disabled}
+                                tabIndex={disabled ? -1 : 0}
+                                onClick={() => !disabled && toggleId("guardHiddenGuilds", g.id, !on)}
+                                onKeyDown={e => {
+                                    if (disabled || (e.key !== " " && e.key !== "Enter")) return;
+                                    e.preventDefault();
+                                    toggleId("guardHiddenGuilds", g.id, !on);
+                                }}
+                            >
+                                <GuildIcon id={g.id} icon={g.icon} name={g.name} />
+                                <span className={cl("guild-name")}>{g.name}</span>
+                                {on && <span className={cl("guild-badge")}><Icon name="eyeOff" size={12} /> Hidden</span>}
                                 <Tip text="Hide individual channels">
-                                    <button className={classes(cl("icon-btn"), cl("guild-expand"), expanded && cl("guild-expand-open"))} disabled={disabled} onClick={() => setOpen(expanded ? null : g.id)}>
+                                    <button
+                                        className={classes(cl("icon-btn"), cl("guild-expand"), expanded && cl("guild-expand-open"))}
+                                        disabled={disabled}
+                                        onClick={e => { e.stopPropagation(); setOpen(expanded ? null : g.id); }}
+                                        onKeyDown={e => e.stopPropagation()}
+                                    >
                                         <Icon name="chevron" size={16} />
                                     </button>
                                 </Tip>
-                                <GuildIcon id={g.id} icon={g.icon} name={g.name} />
-                                <span className={cl("guild-name")}>{g.name}</span>
-                                <Tip text={on ? "Server is hidden on stream" : "Hide server on stream"}>
-                                    <button
-                                        className={cl("guild-toggle")}
-                                        role="switch"
-                                        aria-checked={on}
-                                        disabled={disabled}
-                                        onClick={() => toggleId("guardHiddenGuilds", g.id, !on)}
-                                    >
-                                        <Toggle checked={on} disabled={disabled} />
-                                    </button>
-                                </Tip>
+                                <Toggle checked={on} disabled={disabled} />
                             </div>
                             {expanded && <GuildChannels guildId={g.id} hidden={hiddenChannels} />}
                         </div>
@@ -762,7 +781,7 @@ function GuardPicker({ disabled }: { disabled: boolean; }) {
 }
 
 function GuardSettings({ enabled }: { enabled: boolean; }) {
-    const s = settings.use(["guardNotifications", "guardBlurDms", "guardRevealOnHover", "guardStreamerMode", "guardChecklist"]);
+    const s = settings.use(["guardNotifications", "guardBlurDms", "guardRevealOnHover", "guardStreamerMode"]);
     const { active, preview } = useGuard();
     const off = !enabled;
 
@@ -787,8 +806,6 @@ function GuardSettings({ enabled }: { enabled: boolean; }) {
             label="Mute notifications" hint="No desktop popups & sounds from Discord, no Vencord popups. Uses Discord's Streamer Mode (turned on along with it)." />
         <ToggleRow sub disabled={off} checked={s.guardStreamerMode} onChange={v => settings.store.guardStreamerMode = v}
             label="Turn on Discord's Streamer Mode" hint="Hides email, connections and invite links, among other things. Your previous state is restored afterwards." />
-        <ToggleRow sub disabled={off} checked={s.guardChecklist} onChange={v => settings.store.guardChecklist = v}
-            label="Checklist after stream start" hint="Password manager, email, tokens open? End the stream with one click via “End stream”." />
         <GuardPicker disabled={off} />
     </>;
 }

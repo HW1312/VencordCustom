@@ -6,55 +6,29 @@
 
 import "./ui.css";
 
-import { classNameFactory, vencordRootNode } from "@api/Styles";
+import { vencordRootNode } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { sendMessage } from "@utils/discord";
+import { openUserProfile, sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
-    ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, NavigationRouter, Parser, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
-    PrivateChannelSortStore, ReadStateStore, SelectedChannelStore, showToast, Toasts, TypingStore, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
+    ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, MessageActions, NavigationRouter, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
+    PrivateChannelSortStore, ReadStateStore, RestAPI, SelectedChannelStore, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
     useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
 
 import { getCommands, matchCommands, OptionType, PopoutCommand } from "./commands";
+import { collectComponentMedia, IS_COMPONENTS_V2, MessageComponents } from "./components";
 import { isInCall, logger, openCallPopout, settings } from "./index";
+import { copyImage, copyText, mediaAttrs, mediaFromElement, MediaItem, MediaMeta, MediaViewer, openExternal, saveMedia } from "./media";
+import { ContextMenu, MenuItem, MenuState } from "./menu";
 import { RawMessage, useChannelMessages } from "./messages";
+import {
+    ANNOUNCE_PATH, CALL_PATH, CDN, CHEVRON_PATH, cl, CLOSE_PATH, COPY_PATH, DEAF_PATH, DOWNLOAD_PATH, EDIT_PATH, FallbackImg, FILE_PATH, fitBox, GifVideo, HASH_PATH, Icon, ID_PATH,
+    isAnimated, isSpoiler, LINK_PATH, MAIN_PATH, Markdown, MAX_PATH, MIN_PATH, MUTE_PATH, PIN_PATH, PLAY_PATH, POPOUT_PATH, REPLY_PATH, SIDEBAR_PATH, sized, SPEAKER_PATH, Spoiler, tip,
+    TRASH_PATH, USER_PATH, ZOOM_PATH
+} from "./shared";
 
-const cl = classNameFactory("vc-chatpopout-");
-
-// ---------------------------------------------------------------- Icons
-
-export const POPOUT_PATH = "M14 3a1 1 0 1 0 0 2h3.6l-7.3 7.3a1 1 0 0 0 1.4 1.4L19 6.4V10a1 1 0 1 0 2 0V4a1 1 0 0 0-1-1h-6ZM5 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 1 0-2 0v5H5V7h5a1 1 0 1 0 0-2H5Z";
-const CLOSE_PATH = "M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4Z";
-const MIN_PATH = "M5 12a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Z";
-const MAX_PATH = "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v12h12V6H6Z";
-const PIN_PATH = "M16 3a1 1 0 0 1 .7 1.7L16 5.4v4.2l2.7 2.7a1 1 0 0 1-.7 1.7h-5v6a1 1 0 1 1-2 0v-6H6a1 1 0 0 1-.7-1.7L8 9.6V5.4l-.7-.7A1 1 0 0 1 8 3h8Z";
-const MAIN_PATH = "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 4v10h5V8H4Zm7 0v10h9V8h-9Z";
-const CALL_PATH = "M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-5v2h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2H6a2 2 0 0 1-2-2V5Zm7.2 3.1a.6.6 0 0 0-.9.5v3.8a.6.6 0 0 0 .9.5l3-1.9a.6.6 0 0 0 0-1l-3-1.9Z";
-const FILE_PATH = "M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.4a2 2 0 0 0-.6-1.4l-4.4-4.4A2 2 0 0 0 13.6 2H6Zm7 1.8L18.2 9H14a1 1 0 0 1-1-1V3.8Z";
-const MUTE_PATH = "M3.3 3.3a1 1 0 0 1 1.4 0l16 16a1 1 0 0 1-1.4 1.4l-3.4-3.4A7 7 0 0 1 13 18.9V21a1 1 0 1 1-2 0v-2.1A7 7 0 0 1 5 12a1 1 0 1 1 2 0 5 5 0 0 0 7.5 4.3l-1.6-1.6A3 3 0 0 1 9 12V10.4L3.3 4.7a1 1 0 0 1 0-1.4ZM12 2a3 3 0 0 1 3 3v5.2l-6-6A3 3 0 0 1 12 2Zm6.6 12.4-1.6-1.6c.1-.3.1-.5.1-.8a1 1 0 1 1 2 0c0 .8-.2 1.6-.5 2.4Z";
-const SIDEBAR_PATH = "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm6 0v14h10V5H9Zm-2 0H5v14h2V5Z";
-const HASH_PATH = "M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z";
-const SPEAKER_PATH = "M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5ZM15.16 16.51c-.57.28-1.16-.2-1.16-.83v-.14c0-.43.28-.8.63-1.02a3 3 0 0 0 0-5.04c-.35-.23-.63-.6-.63-1.02v-.14c0-.63.59-1.1 1.16-.83a5 5 0 0 1 0 9.02Z";
-const ANNOUNCE_PATH = "M19.56 2a3 3 0 0 0-2.46 1.28 3.85 3.85 0 0 1-1.86 1.42l-8.9 3.18a.5.5 0 0 0-.34.47v10.09a3 3 0 0 0 2.27 2.9l.62.16c1.57.4 3.15-.56 3.55-2.12l.92-3.68a.5.5 0 0 1 .65-.35l2.7.96a3.85 3.85 0 0 1 1.86 1.42 3 3 0 0 0 5.43-1.75V5A3 3 0 0 0 19.56 2ZM4 9a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h.5a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 0-.5-.5H4Z";
-const CHEVRON_PATH = "M5.3 9.3a1 1 0 0 1 1.4 0l5.3 5.29 5.3-5.3a1 1 0 1 1 1.4 1.42l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.42Z";
-const DEAF_PATH = "M3.3 3.3a1 1 0 0 1 1.4 0l16 16a1 1 0 0 1-1.4 1.4l-1.5-1.5A2 2 0 0 1 17 20h-1a2 2 0 0 1-2-2v-3.6L6.5 6.9A7 7 0 0 0 5 11v1h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3v-8c0-1.8.6-3.5 1.6-4.9l-1.3-1.4a1 1 0 0 1 0-1.4ZM12 3a9 9 0 0 1 9 9v5.2l-2-2V12a7 7 0 0 0-11.6-5.3L6 5.3A9 9 0 0 1 12 3Z";
-
-export function Icon({ path, size = 18, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
-
-/**
- * Tooltip in the popout window. Discord's own tooltip would appear in the main window,
- * so this is a pure CSS recreation with Discord's colors, font and arrow.
- */
-function tip(text: string, pos: "top" | "bottom" = "top", align: "center" | "start" | "end" = "center") {
-    return { "data-tip": text, "data-tip-pos": pos, "data-tip-align": align };
-}
+export { Icon, POPOUT_PATH };
 
 function IconButton({ path, label, onClick, active, danger, disabled }: {
     path: string; label: string; onClick(): void; active?: boolean; danger?: boolean; disabled?: boolean;
@@ -75,7 +49,6 @@ function IconButton({ path, label, onClick, active, danger, disabled }: {
 
 // ---------------------------------------------------------------- Helpers
 
-const CDN = "https://cdn.discordapp.com";
 const GROUP_MS = 7 * 60 * 1000;
 const LOCALE = "en-US";
 const TIME: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
@@ -122,22 +95,14 @@ function formatFull(d: Date) {
 const formatDay = (d: Date) => d.toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
-function sized(url: string, w: number, h: number) {
-    return `${url}${url.includes("?") ? "&" : "?"}width=${Math.round(w)}&height=${Math.round(h)}`;
-}
-
-function fitBox(w?: number, h?: number, maxW = 300, maxH = 240) {
-    if (!w || !h) return { width: undefined, height: undefined };
-    const s = Math.min(1, maxW / w, maxH / h);
-    return { width: Math.round(w * s), height: Math.round(h * s) };
-}
-
 function formatSize(bytes?: number) {
     if (!bytes) return "";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
+const toColor = (n: unknown) => typeof n === "number" ? `#${n.toString(16).padStart(6, "0")}` : undefined;
 
 function userAvatar(id: string, author?: any, size = 80) {
     const user = UserStore.getUser(id);
@@ -187,109 +152,161 @@ function useChannelInfo(channelId: string) {
     }, [channel, guild, recipientKey]);
 }
 
-/** Window context: document (for scrolling/lookup) and image preview */
+/** Composer actions that the context menu can trigger */
+interface ComposerApi {
+    reply(m: RawMessage): void;
+    edit(m: RawMessage): void;
+    /** Replaces the selection in the input (or inserts at the cursor) */
+    replaceSelection(text: string): void;
+    textarea(): HTMLTextAreaElement | null;
+}
+
+/** Window context: document (for scrolling/lookup), media viewer, open messages and input */
 interface WindowCtx {
     doc: () => Document;
-    zoom(url: string): void;
+    openMedia(items: MediaItem[], original: string, meta?: MediaMeta): void;
+    messages: { current: RawMessage[]; };
+    composer: { current: ComposerApi | null; };
+}
+
+// ---------------------------------------------------------------- Media of a message
+
+function attachmentItem(a: any): MediaItem | null {
+    if (!a?.url) return null;
+    const type: string = a.content_type ?? "";
+    const isImage = type.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif)$/i.test(a.filename ?? "");
+    const isVideo = type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(a.filename ?? "");
+    if (!isImage && !isVideo) return null;
+    return { url: a.proxy_url ?? a.url, original: a.url, kind: isVideo ? "video" : "image", name: a.filename, width: a.width, height: a.height };
+}
+
+function embedMedia(e: any): MediaItem | null {
+    const img = e.type === "image" || e.type === "gifv" ? e.thumbnail ?? e.image : e.image;
+    if (!img?.url) return null;
+    return { url: img.proxy_url ?? img.url, original: img.url, kind: "image", width: img.width, height: img.height };
+}
+
+/** Everything in a message that the viewer can show, in display order */
+function collectMedia(m: RawMessage): MediaItem[] {
+    const v2 = ((m as any).flags ?? 0) & IS_COMPONENTS_V2;
+    const items: MediaItem[] = v2 ? [] : (m.attachments ?? []).map(attachmentItem).filter(Boolean) as MediaItem[];
+    collectComponentMedia((m as any).components, m, items);
+    for (const e of m.embeds ?? []) {
+        if (e.type === "gifv" && e.video) continue;
+        const item = embedMedia(e);
+        if (item) items.push(item);
+    }
+    return items;
 }
 
 // ---------------------------------------------------------------- Message parts
 
-function Markdown({ content, channelId, messageId }: { content: string; channelId: string; messageId: string; }) {
-    const nodes = useMemo(() => {
-        try {
-            return Parser.parse(content, true, { channelId, messageId, allowLinks: true, allowHeading: true, allowList: true, allowEmojiLinks: true, viewingChannelId: channelId });
-        } catch (e) {
-            logger.error("Couldn't render markdown", e);
-            return content;
-        }
-    }, [content, channelId, messageId]);
+function Attachment({ a, open }: { a: any; open(original: string): void; }) {
+    const item = attachmentItem(a);
+    const box = fitBox(a.width, a.height);
+    let content: React.ReactNode;
 
-    return <ErrorBoundary noop fallback={() => <span>{content}</span>}>{nodes}</ErrorBoundary>;
+    if (item?.kind === "image") {
+        // Resizing through the media proxy makes animated images static – load those unscaled
+        const src = a.proxy_url && box.width && !isAnimated(a) ? sized(a.proxy_url, box.width * 2, box.height! * 2) : item.url;
+        content = <FallbackImg className={cl("image")} src={src} fallback={a.url} alt={a.filename} width={box.width} height={box.height} onClick={() => open(a.url)} {...mediaAttrs(item)} />;
+    } else if (item?.kind === "video") {
+        content = <video className={cl("image")} src={item.url} controls preload="metadata" width={box.width} height={box.height} {...mediaAttrs(item)} />;
+    } else {
+        content = (
+            <a className={cl("file")} href={a.url} target="_blank" rel="noreferrer noopener">
+                <Icon path={FILE_PATH} size={22} />
+                <span className={cl("file-name")}>{a.filename}</span>
+                <span className={cl("file-size")}>{formatSize(a.size)}</span>
+            </a>
+        );
+    }
+    return isSpoiler(a) ? <Spoiler>{content}</Spoiler> : <>{content}</>;
 }
 
-/** Image that falls back to the original URL if the media proxy fails */
-function FallbackImg({ src, fallback, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { fallback?: string; }) {
-    const [failed, setFailed] = useState(false);
-    const url = failed && fallback ? fallback : src;
-    return <img {...props} src={url} loading="lazy" onError={() => !failed && fallback && fallback !== src && setFailed(true)} />;
-}
-
-/** Autoplaying, muted, looping video like Discord's GIF player */
-function GifVideo({ src, fallback, poster, width, height }: { src: string; fallback?: string; poster?: string; width?: number; height?: number; }) {
-    const [failed, setFailed] = useState(false);
+function EmbedImage({ media, open, maxW, maxH, className }: { media: any; open(original: string): void; maxW?: number; maxH?: number; className?: string; }) {
+    const box = fitBox(media.width, media.height, maxW, maxH);
+    const item: MediaItem = { url: media.proxy_url ?? media.url, original: media.url, kind: "image" };
     return (
-        <video
-            className={cl("image")}
-            src={failed && fallback ? fallback : src}
-            poster={poster}
-            width={width}
-            height={height}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            onError={() => !failed && fallback && fallback !== src && setFailed(true)}
+        <FallbackImg
+            className={classes(cl("image"), className)}
+            src={item.url}
+            fallback={media.url}
+            width={box.width}
+            height={box.height}
+            alt=""
+            onClick={() => open(media.url)}
+            {...mediaAttrs(item)}
         />
     );
 }
 
-function Attachment({ a, ctx }: { a: any; ctx: WindowCtx; }) {
-    const type: string = a.content_type ?? "";
-    const isImage = type.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif)$/i.test(a.filename ?? "");
-    const isVideo = type.startsWith("video/");
-    const box = fitBox(a.width, a.height);
-
-    if (isImage && a.url) {
-        // Resizing through the media proxy breaks (large) animated GIFs – load those unscaled
-        const isGif = type === "image/gif" || /\.gif$/i.test(a.filename ?? "");
-        const src = a.proxy_url && box.width && !isGif ? sized(a.proxy_url, box.width * 2, box.height! * 2) : (a.proxy_url ?? a.url);
-        return <FallbackImg className={cl("image")} src={src} fallback={a.url} alt={a.filename} width={box.width} height={box.height} onClick={() => ctx.zoom(a.proxy_url ?? a.url)} />;
-    }
-    if (isVideo && a.url) {
-        return <video className={cl("image")} src={a.proxy_url ?? a.url} controls preload="metadata" width={box.width} height={box.height} />;
-    }
-    return (
-        <a className={cl("file")} href={a.url} target="_blank" rel="noreferrer noopener">
-            <Icon path={FILE_PATH} size={22} />
-            <span className={cl("file-name")}>{a.filename}</span>
-            <span className={cl("file-size")}>{formatSize(a.size)}</span>
-        </a>
-    );
-}
-
-function Embed({ e, channelId, messageId, ctx }: { e: any; channelId: string; messageId: string; ctx: WindowCtx; }) {
+function Embed({ e, channelId, messageId, open }: { e: any; channelId: string; messageId: string; open(original: string): void; }) {
     const thumb = e.thumbnail ?? null;
     const image = e.image ?? null;
 
-    // Tenor/Giphy GIFs are really looping MP4 videos – the thumbnail is only a still frame
+    // Tenor/Giphy/Klipy GIFs are really looping MP4 videos – the thumbnail is only a still frame
     if (e.type === "gifv" && e.video) {
         const box = fitBox(e.video.width ?? thumb?.width, e.video.height ?? thumb?.height);
-        return <GifVideo src={e.video.proxy_url ?? e.video.url} fallback={e.video.url} poster={thumb?.proxy_url ?? thumb?.url} width={box.width} height={box.height} />;
+        const item: MediaItem = { url: e.video.proxy_url ?? e.video.url, original: e.url ?? e.video.url, kind: "video" };
+        return <GifVideo src={item.url} fallback={e.video.url} poster={thumb?.proxy_url ?? thumb?.url} width={box.width} height={box.height} {...mediaAttrs(item)} />;
     }
     if ((e.type === "image" || e.type === "gifv") && (thumb || image)) {
-        const img = thumb ?? image;
-        const box = fitBox(img.width, img.height);
-        return <FallbackImg className={cl("image")} src={img.proxy_url ?? img.url} fallback={img.url} width={box.width} height={box.height} alt="" onClick={() => ctx.zoom(img.proxy_url ?? img.url)} />;
+        return <EmbedImage media={thumb ?? image} open={open} />;
     }
-    if (!e.title && !e.description && !e.author?.name && !image && !thumb) return null;
+    if (!e.title && !e.description && !e.author?.name && !image && !thumb && !e.fields?.length && !e.footer?.text) return null;
 
-    const color = typeof e.color === "number" ? `#${e.color.toString(16).padStart(6, "0")}` : undefined;
-    const imgBox = image ? fitBox(image.width, image.height, 280, 200) : null;
+    const color = toColor(e.color);
+    // Videos (YouTube & co.) show the thumbnail big with a play button, like Discord
+    const bigThumb = thumb && !image && (e.type === "video" || !!e.video);
+    const md = (content: string) => <Markdown content={content} channelId={channelId} messageId={messageId} />;
+    const date = e.timestamp ? new Date(e.timestamp) : null;
 
     return (
         <div className={cl("embed")} style={color ? { borderLeftColor: color } : undefined}>
             <div className={cl("embed-body")}>
-                {e.provider?.name && <div className={cl("embed-provider")}>{e.provider.name}</div>}
-                {e.author?.name && <div className={cl("embed-author")}>{e.author.name}</div>}
+                {e.provider?.name && (e.provider.url
+                    ? <a className={cl("embed-provider")} href={e.provider.url} target="_blank" rel="noreferrer noopener">{e.provider.name}</a>
+                    : <div className={cl("embed-provider")}>{e.provider.name}</div>)}
+                {e.author?.name && (
+                    <div className={cl("embed-author")}>
+                        {e.author.icon_url && <img className={cl("embed-author-icon")} src={e.author.proxy_icon_url ?? e.author.icon_url} alt="" />}
+                        {e.author.url
+                            ? <a href={e.author.url} target="_blank" rel="noreferrer noopener">{e.author.name}</a>
+                            : <span>{e.author.name}</span>}
+                    </div>
+                )}
                 {e.title && (e.url
                     ? <a className={cl("embed-title")} href={e.url} target="_blank" rel="noreferrer noopener">{e.title}</a>
-                    : <div className={cl("embed-title")}>{e.title}</div>)}
-                {e.description && <div className={cl("embed-desc")}><Markdown content={e.description} channelId={channelId} messageId={messageId} /></div>}
-                {image && <img className={cl("embed-image")} src={image.proxy_url ?? image.url} width={imgBox?.width} height={imgBox?.height} loading="lazy" alt="" onClick={() => ctx.zoom(image.proxy_url ?? image.url)} />}
+                    : <div className={cl("embed-title")}>{md(e.title)}</div>)}
+                {e.description && <div className={cl("embed-desc")}>{md(e.description)}</div>}
+                {!!e.fields?.length && (
+                    <div className={cl("embed-fields")}>
+                        {e.fields.map((f: any, i: number) => (
+                            <div key={i} className={classes(cl("embed-field"), f.inline && cl("embed-field-inline"))}>
+                                <div className={cl("embed-field-name")}>{md(f.name)}</div>
+                                <div className={cl("embed-field-value")}>{md(f.value)}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {image && <EmbedImage media={image} open={open} maxW={400} maxH={300} className={cl("embed-image")} />}
+                {bigThumb && (
+                    <a className={cl("embed-video")} href={e.url} target="_blank" rel="noreferrer noopener" {...mediaAttrs({ url: thumb.proxy_url ?? thumb.url, original: thumb.url, kind: "image" })}>
+                        <FallbackImg className={cl("image")} src={thumb.proxy_url ?? thumb.url} fallback={thumb.url} alt="" {...fitBox(thumb.width, thumb.height, 400, 225)} />
+                        <span className={cl("embed-play")}><Icon path={PLAY_PATH} size={22} /></span>
+                    </a>
+                )}
+                {(e.footer?.text || date) && (
+                    <div className={cl("embed-footer")}>
+                        {e.footer?.icon_url && <img className={cl("embed-footer-icon")} src={e.footer.proxy_icon_url ?? e.footer.icon_url} alt="" />}
+                        <span>{[e.footer?.text, date && formatFull(date)].filter(Boolean).join(" • ")}</span>
+                    </div>
+                )}
             </div>
-            {thumb && !image && <img className={cl("embed-thumb")} src={thumb.proxy_url ?? thumb.url} loading="lazy" alt="" />}
+            {thumb && !image && !bigThumb && (
+                <EmbedImage media={thumb} open={open} maxW={80} maxH={80} className={cl("embed-thumb")} />
+            )}
         </div>
     );
 }
@@ -340,11 +357,19 @@ function ReplyLine({ m, guildId, ctx }: { m: RawMessage; guildId: string | null;
 
     return (
         <div className={cl("reply")} onClick={jump}>
-            <img className={cl("reply-avatar")} src={a.avatar} alt="" />
-            <span className={cl("reply-name")} style={{ color: a.color }}>{a.name}</span>
+            <img className={cl("reply-avatar")} src={a.avatar} alt="" data-user-id={a.id} />
+            <span className={cl("reply-name")} style={{ color: a.color }} data-user-id={a.id}>{a.name}</span>
             <span className={cl("reply-text")}>{preview.length > 120 ? preview.slice(0, 120) + "…" : preview}</span>
         </div>
     );
+}
+
+/** Like Discord: a message that is only a link to a GIF/image shows just the media */
+function isOnlyMediaLink(m: RawMessage) {
+    const content = m.content?.trim();
+    if (!content || !/^<?https?:\/\/\S+>?$/.test(content) || m.embeds?.length !== 1) return false;
+    const e = m.embeds[0];
+    return e.type === "gifv" || e.type === "image";
 }
 
 // ---------------------------------------------------------------- Message
@@ -356,8 +381,8 @@ function Message({ m, guildId, grouped, meId, ctx }: { m: RawMessage; guildId: s
     const mentioned = !!meId && (m.mention_everyone || m.mentions?.some((u: any) => u?.id === meId));
     const command = (m as any).interaction_metadata?.name ?? (m as any).interaction?.name;
     const jump = () => openInMain(m.channel_id, guildId, m.id);
-    // Like Discord: a message that is only a GIF link shows just the GIF
-    const onlyGif = !!m.content && m.embeds?.length === 1 && m.embeds[0].type === "gifv" && m.content.trim() === m.embeds[0].url;
+    const v2 = !!(((m as any).flags ?? 0) & IS_COMPONENTS_V2);
+    const open = (original: string) => ctx.openMedia(collectMedia(m), original, { author: a.name, avatar: a.avatar, date });
 
     const time = (
         <span className={cl("time")} {...tip(`${date.toLocaleString(LOCALE)} · show in main window`)} onClick={jump}>
@@ -367,11 +392,11 @@ function Message({ m, guildId, grouped, meId, ctx }: { m: RawMessage; guildId: s
 
     if (isSystem) {
         return (
-            <div id={`vc-chatpopout-msg-${m.id}`} className={classes(cl("message"), cl("system"))}>
+            <div id={`vc-chatpopout-msg-${m.id}`} data-message-id={m.id} className={classes(cl("message"), cl("system"))}>
                 <div className={cl("row")}>
                     <div className={cl("gutter")}>→</div>
                     <div className={cl("body")}>
-                        <span className={cl("name")} style={{ color: a.color }}>{a.name}</span>{" "}
+                        <span className={cl("name")} style={{ color: a.color }} data-user-id={a.id}>{a.name}</span>{" "}
                         <span className={cl("muted")}>{SYSTEM_TEXT[m.type] ?? "System message"}</span>{" "}
                         {time}
                         {m.content && m.type !== 7 && <div className={cl("content")}><Markdown content={m.content} channelId={m.channel_id} messageId={m.id} /></div>}
@@ -384,6 +409,7 @@ function Message({ m, guildId, grouped, meId, ctx }: { m: RawMessage; guildId: s
     return (
         <div
             id={`vc-chatpopout-msg-${m.id}`}
+            data-message-id={m.id}
             className={classes(cl("message"), !grouped && cl("group-start"), mentioned && cl("mentioned"), m._pending && cl("pending"), m._failed && cl("failed"))}
         >
             {m.type === 19 && <ReplyLine m={m} guildId={guildId} ctx={ctx} />}
@@ -392,29 +418,31 @@ function Message({ m, guildId, grouped, meId, ctx }: { m: RawMessage; guildId: s
                 <div className={cl("gutter")}>
                     {grouped
                         ? <span className={cl("gutter-time")} onClick={jump} {...tip("Show in main window", "top", "start")}>{date.toLocaleTimeString(LOCALE, TIME)}</span>
-                        : <img className={cl("avatar")} src={a.avatar} alt="" />}
+                        : <img className={cl("avatar")} src={a.avatar} alt="" data-user-id={a.id} />}
                 </div>
                 <div className={cl("body")}>
                     {!grouped && (
                         <div className={cl("meta")}>
-                            <span className={cl("name")} style={{ color: a.color }}>{a.name}</span>
+                            <span className={cl("name")} style={{ color: a.color }} data-user-id={a.id}>{a.name}</span>
                             {m.author?.bot && <span className={cl("bot-tag")}>{m.author?.discriminator === "0000" ? "WEBHOOK" : "APP"}</span>}
                             {time}
                         </div>
                     )}
-                    {m.content && !onlyGif && (
+                    {m.content && !isOnlyMediaLink(m) && (
                         <div className={cl("content")}>
                             <Markdown content={m.content} channelId={m.channel_id} messageId={m.id} />
                             {m.edited_timestamp && <span className={cl("edited")}> (edited)</span>}
                         </div>
                     )}
-                    {!!m.attachments?.length && (
+                    {/* Components V2 messages place their attachments inside the components */}
+                    {!v2 && !!m.attachments?.length && (
                         <div className={cl("attachments")}>
-                            {m.attachments.map(att => <Attachment key={att.id ?? att.url} a={att} ctx={ctx} />)}
+                            {m.attachments.map(att => <Attachment key={att.id ?? att.url} a={att} open={open} />)}
                         </div>
                     )}
                     <Stickers items={m.sticker_items} />
-                    {m.embeds?.map((e, i) => <Embed key={i} e={e} channelId={m.channel_id} messageId={m.id} ctx={ctx} />)}
+                    {m.embeds?.map((e, i) => <Embed key={i} e={e} channelId={m.channel_id} messageId={m.id} open={open} />)}
+                    <MessageComponents components={(m as any).components} ctx={{ message: m, open, jump }} />
                     <Reactions reactions={m.reactions} />
                     {m._failed && <div className={cl("error-text")}>Failed to send</div>}
                 </div>
@@ -436,6 +464,7 @@ function canGroup(prev: RawMessage | undefined, m: RawMessage) {
 function MessageList({ channelId, guildId, ctx }: { channelId: string; guildId: string | null; ctx: WindowCtx; }) {
     const { messages, loading, loadingOlder, hasMore, error, newCount, loadOlder, reload } = useChannelMessages(channelId);
     const meId = UserStore.getCurrentUser()?.id;
+    ctx.messages.current = messages;
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -560,7 +589,7 @@ function TypingLine({ channelId, guildId }: { channelId: string; guildId: string
         const me = UserStore.getCurrentUser()?.id;
         return Object.keys(TypingStore.getTypingUsers(channelId) ?? {}).filter(id => id !== me).join(",");
     });
-    if (!ids) return <div className={cl("typing")} />;
+    if (!ids) return null;
 
     const names = ids.split(",").map(id => displayName(id, guildId));
     const text = names.length > 3 ? "Several people are typing…" : names.length === 1 ? `${names[0]} is typing…` : `${names.join(", ")} are typing…`;
@@ -716,19 +745,49 @@ function CommandForm({ cmd, onCancel, onDone }: { cmd: PopoutCommand; onCancel()
     );
 }
 
-function Composer({ channel, name }: { channel: any; name: string; }) {
+type ComposeMode =
+    | { type: "reply"; message: RawMessage; mention: boolean; }
+    | { type: "edit"; message: RawMessage; draft: string; };
+
+function editMessage(channelId: string, messageId: string, content: string) {
+    try {
+        return Promise.resolve(MessageActions.editMessage(channelId, messageId, { content }));
+    } catch {
+        return RestAPI.patch({ url: `/channels/${channelId}/messages/${messageId}`, body: { content } });
+    }
+}
+
+export function deleteMessage(channelId: string, messageId: string) {
+    const fail = (e: any) => {
+        logger.error("Couldn't delete message", e);
+        showToast("Couldn't delete message", Toasts.Type.FAILURE);
+    };
+    try {
+        Promise.resolve(MessageActions.deleteMessage(channelId, messageId)).catch(fail);
+    } catch {
+        RestAPI.del({ url: `/channels/${channelId}/messages/${messageId}` }).catch(fail);
+    }
+}
+
+function canEdit(m: RawMessage | undefined) {
+    return !!m && m.author?.id === UserStore.getCurrentUser()?.id && NORMAL_TYPES.has(m.type) && !m._pending && !m._failed;
+}
+
+function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: WindowCtx; }) {
     const channelId: string = channel.id;
+    const guildId: string | null = channel.guild_id ?? null;
     const [text, setText] = useState(() => drafts.get(channelId) ?? "");
     const ref = useRef<HTMLTextAreaElement>(null);
     const canSend = useCanSend(channel);
     const { showTyping } = settings.use(["showTyping"]);
+    const [mode, setMode] = useState<ComposeMode | null>(null);
 
     // Slash commands
     const [commands, setCommands] = useState<PopoutCommand[] | null>(null);
     const [active, setActive] = useState<PopoutCommand | null>(null);
     const [selected, setSelected] = useState(0);
     const [dismissed, setDismissed] = useState(false);
-    const slash = canSend && !active && !dismissed && /^\/[^\n]*$/.test(text) && !/^\/\S+\s+\S/.test(text);
+    const slash = canSend && !active && !dismissed && mode?.type !== "edit" && /^\/[^\n]*$/.test(text) && !/^\/\S+\s+\S/.test(text);
     const matches = useMemo(() => commands ? matchCommands(commands, text.slice(1)) : [], [commands, text]);
 
     useEffect(() => {
@@ -748,16 +807,64 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
         el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
     }, [text, active]);
 
+    const focus = (caret?: number) => setTimeout(() => {
+        const el = ref.current;
+        if (!el) return;
+        el.focus();
+        if (caret != null) el.setSelectionRange(caret, caret);
+    }, 0);
+
     useEffect(() => {
         const t = setTimeout(() => ref.current?.focus(), 150);
         return () => clearTimeout(t);
     }, []);
 
-    const update = (v: string) => {
+    const update = (v: string, keepDraft = mode?.type !== "edit") => {
         setText(v);
+        if (!keepDraft) return;
         if (v) drafts.set(channelId, v);
         else drafts.delete(channelId);
     };
+
+    const startEdit = (m: RawMessage) => {
+        setActive(null);
+        setMode({ type: "edit", message: m, draft: mode?.type === "edit" ? mode.draft : text });
+        update(m.content ?? "", false);
+        focus((m.content ?? "").length);
+    };
+
+    const cancelMode = () => {
+        if (mode?.type === "edit") update(mode.draft, false);
+        setMode(null);
+        focus();
+    };
+
+    // Actions for the context menu
+    const textRef = useRef(text);
+    textRef.current = text;
+    const modeRef = useRef(mode);
+    modeRef.current = mode;
+    useEffect(() => {
+        ctx.composer.current = {
+            reply(m) {
+                setActive(null);
+                if (modeRef.current?.type === "edit") update(modeRef.current.draft, false);
+                setMode({ type: "reply", message: m, mention: m.author?.id !== UserStore.getCurrentUser()?.id });
+                focus();
+            },
+            edit: startEdit,
+            replaceSelection(insert) {
+                const el = ref.current;
+                const value = textRef.current;
+                const start = el?.selectionStart ?? value.length;
+                const end = el?.selectionEnd ?? value.length;
+                update(value.slice(0, start) + insert + value.slice(end));
+                focus(start + insert.length);
+            },
+            textarea: () => ref.current
+        };
+        return () => { ctx.composer.current = null; };
+    });
 
     const pick = (cmd: PopoutCommand) => {
         setActive(cmd);
@@ -766,11 +873,23 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
 
     const closeCommand = () => {
         setActive(null);
-        setTimeout(() => ref.current?.focus(), 0);
+        focus();
     };
 
     const send = () => {
         const content = text.trim();
+        if (mode?.type === "edit") {
+            const m = mode.message;
+            if (content && content !== m.content) {
+                editMessage(channelId, m.id, content).catch((e: any) => {
+                    logger.error("Couldn't edit message", e);
+                    showToast("Couldn't edit message", Toasts.Type.FAILURE);
+                });
+            }
+            cancelMode();
+            return;
+        }
+
         if (!content || !canSend) return;
         if (content.length > 2000) {
             showToast("Message is too long (max. 2000 characters)", Toasts.Type.FAILURE);
@@ -789,10 +908,16 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
             }
         }
 
+        const options = mode?.type === "reply" ? {
+            messageReference: { guild_id: guildId ?? undefined, channel_id: channelId, message_id: mode.message.id },
+            allowedMentions: mode.mention ? undefined : { parse: ["users", "roles", "everyone"], replied_user: false }
+        } : {};
+
         lastSent.set(channelId, Date.now());
         update("");
+        setMode(null);
         try {
-            Promise.resolve(sendMessage(channelId, { content }, false)).catch((e: any) => {
+            Promise.resolve(sendMessage(channelId, { content }, false, options as any)).catch((e: any) => {
                 logger.error("Couldn't send message", e);
                 const slowmode = e?.body?.code === 20016 || e?.status === 429;
                 showToast(slowmode ? "Slowmode is active – please wait a moment" : "Couldn't send message", Toasts.Type.FAILURE);
@@ -823,14 +948,31 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
             setDismissed(true);
             return;
         }
+        if (mode && e.key === "Escape") {
+            e.preventDefault();
+            cancelMode();
+            return;
+        }
+        // Like Discord: arrow up in an empty input edits your last message
+        if (e.key === "ArrowUp" && !text && !mode) {
+            const last = [...ctx.messages.current].reverse().find(canEdit);
+            if (last) {
+                e.preventDefault();
+                startEdit(last);
+            }
+            return;
+        }
         if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             send();
         }
     };
 
+    const replyName = mode?.type === "reply" ? authorInfo(mode.message.author, guildId).name : "";
+
     return (
         <div className={cl("composer")}>
+            {showTyping && <TypingLine channelId={channelId} guildId={guildId} />}
             {slash && (
                 <CommandSuggestions
                     items={matches}
@@ -843,21 +985,48 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
             {active
                 ? <CommandForm key={active.key} cmd={active} onCancel={closeCommand} onDone={closeCommand} />
                 : (
-                    <div className={classes(cl("input-wrap"), !canSend && cl("input-disabled"))}>
-                        <textarea
-                            ref={ref}
-                            className={cl("input")}
-                            rows={1}
-                            value={canSend ? text : ""}
-                            disabled={!canSend}
-                            placeholder={canSend ? `Message ${name} – "/" for commands` : "You don't have permission to send messages here."}
-                            onChange={e => update(e.currentTarget.value)}
-                            onKeyDown={onKeyDown}
-                        />
-                        {canSend && <button className={cl("send")} onClick={send} disabled={!text.trim()}>Send</button>}
+                    <div className={classes(cl("input-box"), mode && cl("input-box-mode"))}>
+                        {mode && (
+                            <div className={cl("mode-bar")}>
+                                <Icon path={mode.type === "reply" ? REPLY_PATH : EDIT_PATH} size={14} />
+                                <span className={cl("mode-text")}>
+                                    {mode.type === "reply"
+                                        ? <>Replying to <b>{replyName}</b></>
+                                        : <>Editing message <span className={cl("muted")}>· Esc to cancel · Enter to save</span></>}
+                                </span>
+                                {mode.type === "reply" && (
+                                    <button
+                                        className={classes(cl("mode-mention"), mode.mention && cl("mode-mention-on"))}
+                                        {...tip(mode.mention ? "Ping is on" : "Ping is off")}
+                                        onClick={() => setMode({ ...mode, mention: !mode.mention })}
+                                    >
+                                        @ {mode.mention ? "ON" : "OFF"}
+                                    </button>
+                                )}
+                                <button className={cl("icon-btn")} aria-label="Cancel" {...tip("Cancel (Esc)", "top", "end")} onClick={cancelMode}>
+                                    <Icon path={CLOSE_PATH} size={14} />
+                                </button>
+                            </div>
+                        )}
+                        <div className={classes(cl("input-wrap"), !canSend && cl("input-disabled"))}>
+                            <textarea
+                                ref={ref}
+                                className={cl("input")}
+                                rows={1}
+                                value={canSend ? text : ""}
+                                disabled={!canSend}
+                                placeholder={canSend ? `Message ${name} – "/" for commands` : "You don't have permission to send messages here."}
+                                onChange={e => update(e.currentTarget.value)}
+                                onKeyDown={onKeyDown}
+                            />
+                            {canSend && (
+                                <button className={cl("send")} onClick={send} disabled={!text.trim()}>
+                                    {mode?.type === "edit" ? "Save" : "Send"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
-            {showTyping && <TypingLine channelId={channelId} guildId={channel.guild_id ?? null} />}
         </div>
     );
 }
@@ -885,7 +1054,7 @@ function VoiceBar({ channelId, guildId }: { channelId: string; guildId: string |
             <span className={cl("voice-dot")} />
             <div className={cl("voice-people")}>
                 {people.slice(0, 10).map(p => (
-                    <span key={p.id} className={cl("voice-person")} {...tip(displayName(p.id, guildId) + (p.live ? " (live)" : ""), "bottom", "start")}>
+                    <span key={p.id} className={cl("voice-person")} data-user-id={p.id} {...tip(displayName(p.id, guildId) + (p.live ? " (live)" : ""), "bottom", "start")}>
                         <img src={userAvatar(p.id, UserStore.getUser(p.id), 48)} alt="" />
                         {(p.deaf || p.muted) && <span className={cl("voice-flag")}><Icon path={p.deaf ? DEAF_PATH : MUTE_PATH} size={10} /></span>}
                         {p.live && <span className={cl("voice-live")}>LIVE</span>}
@@ -1092,15 +1261,6 @@ function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSideba
     );
 }
 
-function Lightbox({ url, onClose }: { url: string; onClose(): void; }) {
-    return (
-        <div className={cl("lightbox")} onClick={onClose}>
-            <img src={url} alt="" onClick={e => e.stopPropagation()} />
-            <a className={cl("lightbox-open")} href={url} target="_blank" rel="noreferrer noopener" onClick={e => e.stopPropagation()}>Open in browser</a>
-        </div>
-    );
-}
-
 function ChannelView({ channel, name, showVoice, ctx }: { channel: any; name: string; showVoice: boolean; ctx: WindowCtx; }) {
     const guildId: string | null = channel.guild_id ?? null;
     return (
@@ -1109,10 +1269,146 @@ function ChannelView({ channel, name, showVoice, ctx }: { channel: any; name: st
             <ErrorBoundary message="Couldn't display messages.">
                 <MessageList channelId={channel.id} guildId={guildId} ctx={ctx} />
             </ErrorBoundary>
-            <Composer channel={channel} name={name} />
+            <Composer channel={channel} name={name} ctx={ctx} />
         </>
     );
 }
+
+// ---------------------------------------------------------------- Context menu
+
+function canSendIn(channel: any) {
+    if (!channel) return false;
+    if (channel.isPrivate?.()) return true;
+    return PermissionStore.can(channel.isThread?.() ? PermissionsBits.SEND_MESSAGES_IN_THREADS : PermissionsBits.SEND_MESSAGES, channel);
+}
+
+async function readClipboard(win: Window): Promise<string> {
+    const clip = (window as any).DiscordNative?.clipboard;
+    if (typeof clip?.read === "function") return String(await clip.read() ?? "");
+    return win.navigator.clipboard.readText();
+}
+
+/** Builds the menu for whatever was right-clicked – most specific first, like Discord */
+function buildMenu(target: Element, ctx: WindowCtx, channel: any): MenuItem[][] {
+    const doc = ctx.doc();
+    const win = doc.defaultView ?? window;
+    const guildId: string | null = channel?.guild_id ?? null;
+    const sections: MenuItem[][] = [];
+
+    // Text fields: cut, copy, paste
+    const field = target.closest<HTMLTextAreaElement | HTMLInputElement>("textarea, input");
+    if (field) {
+        const selected = field.value.slice(field.selectionStart ?? 0, field.selectionEnd ?? 0);
+        // execCommand keeps the browser's undo history and fires React's onChange
+        const insert = (text: string) => {
+            field.focus();
+            doc.execCommand("insertText", false, text);
+        };
+        sections.push([
+            ...(selected ? [
+                { id: "cut", label: "Cut", action: () => { copyText(selected, "Cut"); field.focus(); doc.execCommand("delete"); } },
+                { id: "copy", label: "Copy", icon: COPY_PATH, action: () => copyText(selected) }
+            ] : []),
+            { id: "paste", label: "Paste", action: () => readClipboard(win).then(insert).catch(e => logger.error("Couldn't paste", e)) },
+            { id: "select-all", label: "Select All", action: () => { field.focus(); field.select(); } }
+        ]);
+        return sections;
+    }
+
+    // Selected text
+    const selection = doc.getSelection()?.toString() ?? "";
+    if (selection.trim()) sections.push([{ id: "copy", label: "Copy", icon: COPY_PATH, action: () => copyText(selection) }]);
+
+    const msgEl = target.closest("[data-message-id]");
+    const message = msgEl ? ctx.messages.current.find(m => m.id === msgEl.getAttribute("data-message-id")) : undefined;
+
+    // Images & videos
+    const media = mediaFromElement(target);
+    if (media) {
+        const label = media.kind === "video" ? "Video" : "Image";
+        const items: MenuItem[] = [];
+        if (message && media.kind === "image") {
+            const a = authorInfo(message.author, guildId);
+            items.push({ id: "view", label: "View Image", icon: ZOOM_PATH, action: () => ctx.openMedia(collectMedia(message), media.original, { author: a.name, avatar: a.avatar, date: new Date(message.timestamp) }) });
+        }
+        if (media.kind === "image") items.push({ id: "copy-image", label: "Copy Image", icon: COPY_PATH, action: () => copyImage(media, win) });
+        items.push(
+            { id: "save", label: `Save ${label}`, icon: DOWNLOAD_PATH, action: () => saveMedia(media, win) },
+            { id: "copy-media-link", label: "Copy Link", icon: LINK_PATH, action: () => copyText(media.original, "Link copied") },
+            { id: "open-media", label: "Open in Browser", icon: POPOUT_PATH, action: () => openExternal(media.original, doc) }
+        );
+        sections.push(items);
+    }
+
+    // Links (except media links, which are covered above)
+    const link = target.closest<HTMLAnchorElement>("a[href]");
+    if (link && /^https?:/i.test(link.href) && !media) {
+        sections.push([
+            { id: "open-link", label: "Open Link", icon: POPOUT_PATH, action: () => openExternal(link.href, doc) },
+            { id: "copy-link", label: "Copy Link", icon: LINK_PATH, action: () => copyText(link.href, "Link copied") }
+        ]);
+    }
+
+    // Users (avatar, name, call bar)
+    const userId = target.closest("[data-user-id]")?.getAttribute("data-user-id");
+    if (userId && userId !== "0") {
+        const items: MenuItem[] = [];
+        if (canSendIn(channel) && ctx.composer.current) {
+            items.push({ id: "mention", label: "Mention", action: () => ctx.composer.current?.replaceSelection(`<@${userId}> `) });
+        }
+        items.push(
+            {
+                id: "profile",
+                label: "Profile (in main window)",
+                icon: USER_PATH,
+                action: () => {
+                    window.focus();
+                    openUserProfile(userId).catch(e => logger.error("Couldn't open profile", e));
+                }
+            },
+            { id: "copy-user-id", label: "Copy User ID", icon: ID_PATH, action: () => copyText(userId, "User ID copied") }
+        );
+        sections.push(items);
+    }
+
+    // Message
+    if (message && !message._pending) {
+        const me = UserStore.getCurrentUser()?.id;
+        const own = message.author?.id === me;
+        const normal = NORMAL_TYPES.has(message.type);
+        const canManage = !channel?.isPrivate?.() && PermissionStore.can(PermissionsBits.MANAGE_MESSAGES, channel);
+        const link = `https://discord.com${channelPath(message.channel_id, guildId, message.id)}`;
+
+        const actions: MenuItem[] = [];
+        if (normal && canSendIn(channel) && ctx.composer.current) {
+            actions.push({ id: "reply", label: "Reply", icon: REPLY_PATH, action: () => ctx.composer.current?.reply(message) });
+        }
+        if (canEdit(message)) actions.push({ id: "edit", label: "Edit Message", icon: EDIT_PATH, action: () => ctx.composer.current?.edit(message) });
+        if (message.content) actions.push({ id: "copy-text", label: "Copy Text", icon: COPY_PATH, action: () => copyText(message.content) });
+        actions.push(
+            { id: "copy-message-link", label: "Copy Message Link", icon: LINK_PATH, action: () => copyText(link, "Message link copied") },
+            { id: "show-main", label: "Show in Main Window", icon: MAIN_PATH, action: () => openInMain(message.channel_id, guildId, message.id) }
+        );
+        sections.push(actions);
+
+        const extra: MenuItem[] = [{ id: "copy-message-id", label: "Copy Message ID", icon: ID_PATH, action: () => copyText(message.id, "Message ID copied") }];
+        if (!message._failed && (own || canManage)) {
+            extra.push({
+                id: "delete",
+                label: "Delete Message",
+                icon: TRASH_PATH,
+                danger: true,
+                confirm: "Click again to delete",
+                action: () => deleteMessage(message.channel_id, message.id)
+            });
+        }
+        sections.push(extra);
+    }
+
+    return sections.filter(s => s.length);
+}
+
+// ---------------------------------------------------------------- Window
 
 function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId: string; windowKey: string; }) {
     const rootRef = useRef<HTMLDivElement>(null);
@@ -1136,11 +1432,18 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
     const { channel } = info;
     const guildId: string | null = channel?.guild_id ?? null;
     const { showVoice } = settings.use(["showVoice"]);
-    const [zoom, setZoom] = useState<string | null>(null);
+    const [viewer, setViewer] = useState<{ items: MediaItem[]; index: number; meta?: MediaMeta; } | null>(null);
+    const [menu, setMenu] = useState<MenuState | null>(null);
+    const closeMenu = useCallback(() => setMenu(null), []);
 
     const ctx = useMemo<WindowCtx>(() => ({
         doc: () => rootRef.current?.ownerDocument ?? document,
-        zoom: setZoom
+        openMedia(items, original, meta) {
+            const index = items.findIndex(i => i.original === original);
+            if (index >= 0) setViewer({ items, index, meta });
+        },
+        messages: { current: [] },
+        composer: { current: null }
     }), []);
 
     // Prepare the popout document: copy theme classes and make sure Vencord styles are present
@@ -1157,17 +1460,23 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
         if (doc) doc.title = `${info.prefix}${info.name}`;
     }, [info.name, info.prefix]);
 
-    // Esc closes the image preview
-    useEffect(() => {
-        const doc = rootRef.current?.ownerDocument;
-        if (!doc || !zoom) return;
-        const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
-        doc.addEventListener("keydown", onKey);
-        return () => doc.removeEventListener("keydown", onKey);
-    }, [zoom]);
+    // Capture phase: Discord components inside messages (mentions etc.) would otherwise open their menu in the main window
+    const onContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = e.target as Element;
+        if (target.closest(`.${cl("menu")}`)) return;
+        let sections: MenuItem[][] = [];
+        try {
+            sections = buildMenu(target, ctx, channel);
+        } catch (err) {
+            logger.error("Couldn't build context menu", err);
+        }
+        setMenu(sections.length ? { x: e.clientX, y: e.clientY, sections } : null);
+    };
 
     return (
-        <div ref={rootRef} className={cl("window")}>
+        <div ref={rootRef} className={cl("window")} onContextMenuCapture={onContextMenu}>
             <TitleBar info={info} windowKey={windowKey} channelId={channelId} guildId={guildId} sidebar={sidebar} onToggleSidebar={toggleSidebar} />
             <div className={cl("main")}>
                 {sidebar && (
@@ -1185,7 +1494,8 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
                         </div>}
                 </div>
             </div>
-            {zoom && <Lightbox url={zoom} onClose={() => setZoom(null)} />}
+            {viewer && <ErrorBoundary noop><MediaViewer {...viewer} onClose={() => setViewer(null)} /></ErrorBoundary>}
+            {menu && <ErrorBoundary noop><ContextMenu state={menu} onClose={closeMenu} /></ErrorBoundary>}
         </div>
     );
 }

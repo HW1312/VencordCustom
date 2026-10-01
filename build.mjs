@@ -108,8 +108,17 @@ if (args.has("--release")) {
     const assets = ["patcher.js", "preload.js", "renderer.js", "renderer.css"]
         .map(f => `"${join(RELEASE, "dist", f)}"`)
         .concat(`"${join(ROOT, "VencordCustom.zip")}"`);
-    const notes = git("log -1 --format=%s").replace(/"/g, "'");
+    // Release notes = commit body, shown as changelog in the UpdateButton plugin. One line per change:
+    //   - Added: Plugin X in the Plugin Hub
+    //   - Fixed: Popout shows GIFs again
+    //   - Removed: Stream checklist
+    // Without a body the commit title is used.
+    const body = git("log -1 --format=%b").split(/\r?\n/)
+        .filter(l => l.trim() && !/^co-authored-by:/i.test(l.trim()))
+        .join("\n");
+    const notesFile = join(RELEASE, "notes.md");
+    writeFileSync(notesFile, body || git("log -1 --format=%s"));
 
-    run(`gh release create ${hash} ${assets.join(" ")} --repo ${REPO} --target ${git("rev-parse HEAD")} --title "VencordCustom ${hash}" --notes "${notes}"`, ROOT);
+    run(`gh release create ${hash} ${assets.join(" ")} --repo ${REPO} --target ${git("rev-parse HEAD")} --title "VencordCustom ${hash}" --notes-file "${notesFile}"`, ROOT);
     console.log(`\nRelease ${hash} veröffentlicht. Freunde bekommen es beim nächsten Discord-Start.`);
 }

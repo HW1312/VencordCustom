@@ -6,24 +6,16 @@
  *  - mute desktop notifications & sounds (via Discord's own Streamer Mode) and
  *    hide Vencord popups
  *  - optionally turn on Discord's Streamer Mode
- *  - checklist right after the stream starts with "End stream"
  *
  * Detection like the stock plugin "StreamerModeOnStream" (STREAM_CREATE/STREAM_DELETE) plus STREAM_START,
- * so the protection kicks in before the first frame is transmitted. Discord's stream start can't be intercepted
- * without an invented patch – that's why the checklist appears right after the start.
+ * so the protection kicks in before the first frame is transmitted.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { classNameFactory } from "@api/Styles";
 import { Logger } from "@utils/Logger";
-import { findByPropsLazy } from "@webpack";
-import { ApplicationStreamingStore, FluxDispatcher, Modal, openModal, showToast, StreamerModeStore, Toasts } from "@webpack/common";
+import { ApplicationStreamingStore, FluxDispatcher, showToast, SortedGuildStore, StreamerModeStore, Toasts } from "@webpack/common";
 
-const cl = classNameFactory("vc-opsec-");
 const logger = new Logger("OpSec");
-
-/** Same lookup as in the stock plugin "UserVoiceShow" */
-const VoiceActions = findByPropsLazy("selectVoiceChannel", "selectChannel");
 
 export interface GuardOptions {
     enabled: boolean;
@@ -31,14 +23,13 @@ export interface GuardOptions {
     blurDms: boolean;
     revealOnHover: boolean;
     streamerMode: boolean;
-    checklist: boolean;
     hiddenGuilds: string[];
     hiddenChannels: string[];
 }
 
 let getOptions: () => GuardOptions = () => ({
     enabled: false, notifications: true, blurDms: true, revealOnHover: false, streamerMode: false,
-    checklist: true, hiddenGuilds: [], hiddenChannels: []
+    hiddenGuilds: [], hiddenChannels: []
 });
 
 export function configureGuard(provider: () => GuardOptions) {
@@ -67,8 +58,24 @@ const emit = () => listeners.forEach(l => l());
 
 const DM_LINK = 'a[href^="/channels/@me/"]';
 const snowflake = (id: string) => /^\d{15,21}$/.test(id);
+const TIP_CLASS = "vc-opsec-hide-tips";
 
-export function buildGuardCss(o: GuardOptions) {
+interface FolderInfo { id: string; guildIds: string[]; }
+
+function getFolders(): FolderInfo[] {
+    try {
+        return (SortedGuildStore.getGuildFolders?.() ?? [])
+            .filter((f: any) => f.folderId != null && f.guildIds?.length)
+            .map((f: any) => ({ id: String(f.folderId), guildIds: f.guildIds as string[] }));
+    } catch {
+        return [];
+    }
+}
+
+/** Folders that contain at least one hidden server (their tooltip lists all server names) */
+let sensitiveFolders = new Set<string>();
+
+export function buildGuardCss(o: GuardOptions, folders: FolderInfo[] = []) {
     const rules: string[] = [];
 
     if (o.blurDms) {
@@ -93,6 +100,25 @@ export function buildGuardCss(o: GuardOptions) {
         rules.push(guilds.map(id =>
             `div[class*="listItem"]:has([data-list-item-id="guildsnav___${id}"]):not(:has([data-list-item-id^="guildsnav___"]:not([data-list-item-id="guildsnav___${id}"])))`
         ).join(",\n") + " {\n    display: none !important;\n}");
+
+        // Folders: hide completely if every server in it is hidden, otherwise only the icons of the hidden servers
+        const hiddenSet = new Set(guilds);
+        const fullyHidden: string[] = [];
+        const partial: string[] = [];
+        for (const f of folders) {
+            const hits = f.guildIds.filter(id => hiddenSet.has(id));
+            if (!hits.length) continue;
+            if (hits.length === f.guildIds.length) fullyHidden.push(f.id);
+            else partial.push(...hits.map(id => `[data-list-item-id="guildsnav___${f.id}"] img[src*="/icons/${id}/"]`));
+        }
+        if (fullyHidden.length) rules.push(fullyHidden.map(id => {
+            const item = `[data-list-item-id="guildsnav___${id}"]`;
+            return `[class*="folderGroup"]:has(${item}),\n`
+                + `div[class*="listItem"]:has(${item}):not(:has([data-list-item-id^="guildsnav___"]:not(${item})))`;
+        }).join(",\n") + " {\n    display: none !important;\n}");
+        if (partial.length) rules.push(partial.join(",\n") + " {\n    visibility: hidden !important;\n}");
+        // Folder tooltips list the server names – suppressed while hovering such a folder (see trackFolderHover)
+        rules.push(`html.${TIP_CLASS} [role="tooltip"],\nhtml.${TIP_CLASS} [class*="layerContainer"] [class*="tooltip"] {\n    display: none !important;\n}`);
     }
 
     const channels = o.hiddenChannels.filter(snowflake);
@@ -107,8 +133,42 @@ export function buildGuardCss(o: GuardOptions) {
     return rules.join("\n");
 }
 
+function onPointerOver(e: PointerEvent) {
+    const item = (e.target as Element | null)?.closest?.('[data-list-item-id^="guildsnav___"]');
+    const id = item?.getAttribute("data-list-item-id")?.slice("guildsnav___".length);
+    document.documentElement.classList.toggle(TIP_CLASS, !!id && sensitiveFolders.has(id));
+}
+
+function trackFolderHover(on: boolean) {
+    document.removeEventListener("pointerover", onPointerOver, true);
+    document.documentElement.classList.remove(TIP_CLASS);
+    if (on) document.addEventListener("pointerover", onPointerOver, true);
+}
+
+/** Folder layout can change mid-stream (server moved into a folder) → rebuild the rules */
+const onFoldersChange = () => applyCss(streaming || isGuardPreview());
+let watchingFolders = false;
+
+function watchFolders(on: boolean) {
+    if (on === watchingFolders) return;
+    watchingFolders = on;
+    try {
+        if (on) SortedGuildStore.addChangeListener(onFoldersChange);
+        else SortedGuildStore.removeChangeListener(onFoldersChange);
+    } catch (e) {
+        logger.error("Failed to watch server folders", e);
+    }
+}
+
 function applyCss(on: boolean) {
-    const css = on ? buildGuardCss(getOptions()) : "";
+    const o = getOptions();
+    watchFolders(on && o.hiddenGuilds.length > 0);
+    const folders = on ? getFolders() : [];
+    const hidden = new Set(o.hiddenGuilds);
+    sensitiveFolders = new Set(folders.filter(f => f.guildIds.some(id => hidden.has(id))).map(f => f.id));
+    trackFolderHover(sensitiveFolders.size > 0);
+
+    const css = on ? buildGuardCss(o, folders) : "";
     if (!css) {
         style?.remove();
         style = null;
@@ -160,52 +220,6 @@ function applyStreamerMode(on: boolean) {
     }
 }
 
-// ---------------------------------------------------------------- Checklist
-
-const CHECKLIST = [
-    { title: "Password manager & accounts", hint: "Vault locked, no logged-in admin/banking pages open?" },
-    { title: "Email & other chats", hint: "Inbox, WhatsApp, Telegram … closed or minimized?" },
-    { title: "Tokens & keys", hint: "No .env files, API keys, Discord tokens or recovery codes visible?" },
-    { title: "Personal info", hint: "Address, ID, invoices, bank statements, filenames with real names?" },
-    { title: "Notifications from other apps", hint: "Windows shows popups from mail & co. on stream too – is \"Do not disturb\" on?" }
-];
-
-export function endStream() {
-    try {
-        VoiceActions.selectVoiceChannel(null);
-    } catch (e) {
-        logger.error("Failed to end stream", e);
-        showToast("OpSec: Failed to end stream – please hang up manually", Toasts.Type.FAILURE);
-    }
-}
-
-function showChecklist() {
-    openModal(props => (
-        <Modal
-            {...props}
-            size="sm"
-            title="You are streaming now"
-            subtitle="Quick check: is there anything on your screen that nobody should see?"
-            actions={[
-                { text: "End stream", variant: "critical-primary", onClick: () => { endStream(); props.onClose(); } },
-                { text: "All clear", variant: "primary", onClick: props.onClose }
-            ]}
-        >
-            <div className={`${cl("checklist")} vc-keep-motion`}>
-                {CHECKLIST.map((c, i) => (
-                    <div key={c.title} className={cl("checklist-item")} style={{ animationDelay: `${i * 40}ms` }}>
-                        <span className={cl("checklist-num")}>{i + 1}</span>
-                        <span className={cl("row-text")}>
-                            <span className={cl("row-label")}>{c.title}</span>
-                            <span className={cl("row-hint")}>{c.hint}</span>
-                        </span>
-                    </div>
-                ))}
-            </div>
-        </Modal>
-    ));
-}
-
 // ---------------------------------------------------------------- Toggling
 
 function ownStreamActive() {
@@ -221,7 +235,6 @@ function setStreaming(on: boolean) {
     streaming = on;
     applyCss(on || isGuardPreview());
     applyStreamerMode(on);
-    if (on && getOptions().checklist) showChecklist();
     emit();
 }
 
