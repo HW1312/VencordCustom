@@ -204,12 +204,15 @@ export function useChannelMessages(channelId: string): ChannelMessages {
     useEffect(() => subscribe(channelId, e => {
         switch (e.type) {
             case "create": {
-                const msg = normalize(e.message, e.optimistic);
+                // Discord doesn't always flag its local copy as optimistic – it is recognizable by the
+                // "SENDING" state or by its id being the nonce (the server assigns a real id)
+                const optimistic = e.optimistic || e.message.state === "SENDING" || (!!e.message.nonce && e.message.id === e.message.nonce);
+                const msg = normalize(e.message, optimistic);
                 setMessages(prev => {
                     if (prev.some(m => m.id === msg.id)) return prev;
-                    // Replace an own, optimistically shown message with the server's confirmation
-                    if (msg.nonce && !e.optimistic) {
-                        const i = prev.findIndex(m => m._pending && (m.id === msg.nonce || m.nonce === msg.nonce));
+                    // Replace the locally shown copy of an own message with the server's confirmation
+                    if (msg.nonce && !optimistic) {
+                        const i = prev.findIndex(m => m.id === msg.nonce || (m._pending && m.nonce === msg.nonce));
                         if (i >= 0) {
                             const next = prev.slice();
                             next[i] = msg;
@@ -218,7 +221,7 @@ export function useChannelMessages(channelId: string): ChannelMessages {
                     }
                     return [...prev, msg];
                 });
-                if (!e.optimistic) setNewCount(c => c + 1);
+                if (!optimistic) setNewCount(c => c + 1);
                 break;
             }
             case "update":

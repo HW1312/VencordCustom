@@ -143,81 +143,86 @@
     text-transform: uppercase;
 }
 
+/* One card for the whole changelog, one line per change like a diff */
 .vc-updatebtn-changes-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     max-height: 220px;
+    padding: 10px 12px;
     overflow-y: auto;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+    border-radius: 8px;
+    background: var(--background-modifier-hover, rgb(255 255 255 / 3%));
+}
+
+.vc-updatebtn-changes-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.vc-updatebtn-changes-list::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgb(255 255 255 / 12%);
 }
 
 .vc-updatebtn-change {
-    display: flex;
+    display: grid;
+    grid-template-columns: 12px 1fr;
     gap: 8px;
     font-size: 13px;
     line-height: 18px;
 }
 
-.vc-updatebtn-release + .vc-updatebtn-release {
-    margin-top: 8px;
+.vc-updatebtn-sign {
+    font-family: var(--font-code, monospace);
+    font-size: 15px;
+    font-weight: 800;
+    text-align: center;
 }
 
-.vc-updatebtn-release {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.vc-updatebtn-sign-new {
+    color: #4ade80;
 }
 
+.vc-updatebtn-sign-removed {
+    color: #f87171;
+}
+
+.vc-updatebtn-sign-fix,
+.vc-updatebtn-sign-improved {
+    color: #60a5fa;
+}
+
+.vc-updatebtn-sign-other {
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-updatebtn-change-msg {
+    min-width: 0;
+    color: var(--text-default, #dbdee1);
+    overflow-wrap: anywhere;
+}
+
+/* Several releases: thin divider with the date */
 .vc-updatebtn-release-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 1px;
     color: var(--text-muted, #949ba4);
     font-size: 11px;
     font-weight: 600;
 }
 
-.vc-updatebtn-badge {
-    flex: none;
-    min-width: 58px;
-    padding: 1px 0;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 16px;
-    text-align: center;
-    text-transform: uppercase;
+.vc-updatebtn-release-date::after {
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle, rgb(255 255 255 / 8%));
+    content: "";
 }
 
-.vc-updatebtn-badge-new {
-    background: rgb(166 107 255 / 18%);
-    color: #c39bff;
-}
-
-.vc-updatebtn-badge-fix {
-    background: rgb(35 165 90 / 18%);
-    color: #57d68d;
-}
-
-.vc-updatebtn-badge-improved {
-    background: rgb(0 168 252 / 16%);
-    color: #4dc3ff;
-}
-
-.vc-updatebtn-badge-removed {
-    background: rgb(242 63 67 / 16%);
-    color: #ff7a7d;
-}
-
-.vc-updatebtn-bullet {
-    flex: none;
-    width: 5px;
-    height: 5px;
-    margin: 7px 4px 0;
-    border-radius: 50%;
-    background: var(--text-muted, #949ba4);
-}
-
-.vc-updatebtn-change-msg {
-    min-width: 0;
-    overflow-wrap: anywhere;
+.vc-updatebtn-release-date:first-child {
+    margin-top: 0;
 }
 
 .vc-updatebtn-actions {

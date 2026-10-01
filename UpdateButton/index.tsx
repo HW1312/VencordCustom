@@ -18,7 +18,7 @@ import { relaunch } from "@utils/native";
 import definePlugin, { OptionType } from "@utils/types";
 import { checkForUpdates, update } from "@utils/updater";
 import { findComponentByCodeLazy } from "@webpack";
-import { Popout, useEffect, useRef, useState } from "@webpack/common";
+import { Popout, React, useEffect, useRef, useState } from "@webpack/common";
 
 import gitHash from "~git-hash";
 
@@ -182,7 +182,9 @@ function restart() {
 const DOWNLOAD_PATH = "M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z";
 const REFRESH_PATH = "M4 12a8 8 0 0 1 14.32-4.9V5a1 1 0 1 1 2 0v5a1 1 0 0 1-1 1h-5a1 1 0 1 1 0-2h2.6A6 6 0 1 0 18 12a1 1 0 1 1 2 0A8 8 0 1 1 4 12Z";
 
-const KIND_LABEL: Record<Exclude<Kind, null>, string> = { new: "Added", fix: "Fixed", improved: "Improved", removed: "Removed" };
+/** Like a diff: + added, - removed, ✓ fixed */
+const SIGN: Record<Exclude<Kind, null>, string> = { new: "+", removed: "−", fix: "✓", improved: "↑" };
+const ORDER: Kind[] = ["new", "improved", "fix", "removed", null];
 
 const PREVIEW_NOTES: Release[] = [{
     hash: "preview",
@@ -219,17 +221,15 @@ function Changelog({ releases, ready }: { releases: Release[]; ready: boolean; }
             <div className={cl("changes-head")}>{ready ? "What's new" : "In this version"}</div>
             <div className={cl("changes-list")}>
                 {releases.map(r => (
-                    <div key={r.hash} className={cl("release")}>
+                    <React.Fragment key={r.hash}>
                         {releases.length > 1 && <div className={cl("release-date")}>{formatDate(r.date)}</div>}
-                        {r.items.map((it, i) => (
+                        {[...r.items].sort((x, y) => ORDER.indexOf(x.kind) - ORDER.indexOf(y.kind)).map((it, i) => (
                             <div key={i} className={cl("change")}>
-                                {it.kind
-                                    ? <span className={classes(cl("badge"), cl(`badge-${it.kind}`))}>{KIND_LABEL[it.kind]}</span>
-                                    : <span className={cl("bullet")} />}
+                                <span className={classes(cl("sign"), cl(`sign-${it.kind ?? "other"}`))}>{it.kind ? SIGN[it.kind] : "•"}</span>
                                 <span className={cl("change-msg")}>{it.text}</span>
                             </div>
                         ))}
-                    </div>
+                    </React.Fragment>
                 ))}
             </div>
         </div>
