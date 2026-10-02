@@ -2088,3 +2088,628 @@ video.vc-chatpopout-viewer-media {
 .vc-chatpopout-comp-sep-line.vc-chatpopout-comp-sep-large {
     margin: 12px 0;
 }
+
+/* ---------- Profile card (recreation of the Discord profile popout) ---------- */
+
+.vc-chatpopout-profile {
+    position: fixed;
+    z-index: 150;
+    width: 300px;
+    max-height: calc(100vh - 16px);
+    overflow: hidden auto;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
+    border-radius: 10px;
+    background: var(--background-surface-higher, var(--background-floating, #111214));
+    box-shadow: var(--shadow-high, 0 12px 32px rgb(0 0 0 / 40%));
+    animation: vc-chatpopout-menu-in 0.12s ease-out;
+}
+
+.vc-chatpopout-profile::-webkit-scrollbar {
+    width: 6px;
+}
+
+.vc-chatpopout-profile-banner {
+    height: 60px;
+}
+
+.vc-chatpopout-profile-banner-image {
+    height: 105px;
+    background-position: center;
+    background-size: cover;
+}
+
+.vc-chatpopout-profile-avatar-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: -40px 0 0 16px;
+}
+
+.vc-chatpopout-profile-avatar {
+    width: 80px;
+    height: 80px;
+    box-sizing: border-box;
+    border: 6px solid var(--background-surface-higher, var(--background-floating, #111214));
+    border-radius: 50%;
+    background: var(--background-surface-higher, #111214);
+    object-fit: cover;
+}
+
+.vc-chatpopout-profile-status {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    width: 16px;
+    height: 16px;
+    box-sizing: border-box;
+    border: 4px solid var(--background-surface-higher, var(--background-floating, #111214));
+    border-radius: 50%;
+}
+
+.vc-chatpopout-profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 6px 16px 16px;
+}
+
+.vc-chatpopout-profile-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--header-primary, #f2f3f5);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+}
+
+.vc-chatpopout-profile-name > span:first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-profile-username {
+    margin-top: -8px;
+    color: var(--header-secondary, #b5bac1);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.vc-chatpopout-profile-pronouns {
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-profile-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 6px;
+    align-self: flex-start;
+    border-radius: 8px;
+    background: var(--background-modifier-hover, rgb(255 255 255 / 4%));
+}
+
+.vc-chatpopout-profile-badges img {
+    width: 20px;
+    height: 20px;
+}
+
+.vc-chatpopout-profile-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-chatpopout-profile-label {
+    color: var(--header-secondary, #b5bac1);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.vc-chatpopout-profile-bio {
+    max-height: 120px;
+    overflow: hidden auto;
+    font-size: 14px;
+    line-height: 18px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.vc-chatpopout-profile-since {
+    color: var(--text-default, #dbdee1);
+    font-size: 14px;
+}
+
+.vc-chatpopout-profile-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vc-chatpopout-profile-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    padding: 2px 6px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+    font-size: 12px;
+    font-weight: 500;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-profile-role-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.vc-chatpopout-profile-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.vc-chatpopout-profile-btn {
+    flex: 1;
+    min-height: 32px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--button-secondary-background, #4e5058);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: filter 0.12s;
+}
+
+.vc-chatpopout-profile-btn:hover {
+    filter: brightness(1.15);
+}
+
+.vc-chatpopout-profile-btn-primary {
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-chatpopout-profile-btn-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    padding: 0;
+}
+
+/* Mentions are clickable like in Discord */
+.vc-chatpopout-content [class*="mention"] {
+    cursor: pointer;
+}
+
+/* ---------- Call bar: collapsible list ---------- */
+
+.vc-chatpopout-voice-wrap {
+    position: relative;
+    z-index: 30;
+    flex: none;
+    border-bottom: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    background: color-mix(in srgb, var(--status-positive, #23a55a) 8%, var(--background-base-lower, #313338));
+}
+
+.vc-chatpopout-voice-wrap .vc-chatpopout-voice {
+    border-bottom: none;
+    background: none;
+}
+
+.vc-chatpopout-voice-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--text-muted, #949ba4);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-chatpopout-voice-toggle:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+    color: var(--interactive-hover, #dbdee1);
+}
+
+.vc-chatpopout-voice-chevron {
+    transform: rotate(-90deg);
+    transition: transform 0.15s;
+}
+
+.vc-chatpopout-voice-chevron-open {
+    transform: none;
+}
+
+.vc-chatpopout-voice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: min(220px, 35vh);
+    padding: 0 6px 6px 18px;
+    overflow: hidden auto;
+    animation: vc-chatpopout-rise 0.12s ease-out;
+}
+
+.vc-chatpopout-voice-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vc-chatpopout-voice-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.vc-chatpopout-voice-list::-webkit-scrollbar-thumb {
+    border-width: 2px;
+    background-color: var(--scrollbar-thin-thumb, rgb(255 255 255 / 20%));
+}
+
+.vc-chatpopout-voice-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--channels-default, var(--text-muted, #949ba4));
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-chatpopout-voice-row:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+    color: var(--interactive-hover, #dbdee1);
+}
+
+.vc-chatpopout-voice-row-avatar {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: box-shadow 0.1s;
+}
+
+.vc-chatpopout-voice-row-avatar img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vc-chatpopout-voice-speaking {
+    box-shadow: 0 0 0 2px var(--status-positive, #23a55a);
+}
+
+.vc-chatpopout-voice-row-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-voice-row-live {
+    flex: none;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+}
+
+.vc-chatpopout-voice-row-icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--interactive-normal, #b5bac1);
+}
+
+.vc-chatpopout-voice-row-icon-red {
+    color: var(--status-danger, #f23f43);
+}
+
+/* ---------- Menu: sub lists, checkboxes, volume slider ---------- */
+
+.vc-chatpopout-menu-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 32px;
+    margin-bottom: 4px;
+    padding: 6px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
+    border-radius: 4px 4px 0 0;
+    background: none;
+    color: var(--header-primary, #f2f3f5);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-chatpopout-menu-back:hover {
+    color: #fff;
+}
+
+.vc-chatpopout-menu-sub {
+    max-height: min(300px, 60vh);
+    overflow-y: auto;
+}
+
+.vc-chatpopout-menu-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+    border: 2px solid currentcolor;
+    border-radius: 4px;
+    opacity: 0.8;
+}
+
+.vc-chatpopout-menu-check-on {
+    border-color: var(--brand-500, #5865f2);
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    opacity: 1;
+}
+
+.vc-chatpopout-menu-item-active .vc-chatpopout-menu-check-on {
+    border-color: #fff;
+    background: #fff;
+    color: var(--brand-500, #5865f2);
+}
+
+.vc-chatpopout-menu-custom {
+    padding: 4px 8px 6px;
+}
+
+.vc-chatpopout-volume-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    color: var(--interactive-normal, #dbdee1);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.vc-chatpopout-volume-value {
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-chatpopout-volume-slider {
+    width: 100%;
+    height: 8px;
+    margin: 0;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--brand-500, #5865f2) var(--fill), var(--background-modifier-accent, rgb(255 255 255 / 14%)) var(--fill));
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+}
+
+.vc-chatpopout-volume-slider::-webkit-slider-thumb {
+    width: 10px;
+    height: 20px;
+    border: 1px solid rgb(0 0 0 / 15%);
+    border-radius: 3px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 30%);
+    cursor: grab;
+    appearance: none;
+}
+
+/* ---------- Streams: docked on the right or in their own window ---------- */
+
+.vc-chatpopout-live-btn {
+    cursor: pointer;
+    transition: filter 0.12s, transform 0.12s;
+}
+
+.vc-chatpopout-live-btn:hover {
+    filter: brightness(1.15);
+    transform: scale(1.06);
+}
+
+.vc-chatpopout-stream-dock {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    min-width: 280px;
+    border-left: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+    background: #000;
+}
+
+.vc-chatpopout-stream-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -4px;
+    z-index: 5;
+    width: 8px;
+    cursor: col-resize;
+}
+
+.vc-chatpopout-stream-resizer:hover,
+.vc-chatpopout-resizing .vc-chatpopout-stream-resizer {
+    background: linear-gradient(to right, transparent 3px, var(--brand-500, #5865f2) 3px, var(--brand-500, #5865f2) 5px, transparent 5px);
+}
+
+.vc-chatpopout-resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
+.vc-chatpopout-resizing iframe,
+.vc-chatpopout-resizing video,
+.vc-chatpopout-resizing canvas {
+    pointer-events: none;
+}
+
+.vc-chatpopout-stream-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 4px 6px 4px 12px;
+    background: var(--background-base-low, var(--background-secondary, #2b2d31));
+    border-bottom: 1px solid var(--border-subtle, rgb(128 128 128 / 18%));
+}
+
+.vc-chatpopout-stream-avatar {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.vc-chatpopout-stream-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--header-primary, #f2f3f5);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.vc-chatpopout-stream-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.vc-chatpopout-stream-video {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.vc-chatpopout-stream-video > :not(.vc-chatpopout-stream-preview, .vc-chatpopout-stream-loading) {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+}
+
+.vc-chatpopout-stream-video video,
+.vc-chatpopout-stream-video canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Last preview frame behind the video while it connects */
+.vc-chatpopout-stream-preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.35;
+    filter: blur(2px);
+}
+
+.vc-chatpopout-stream-loading,
+.vc-chatpopout-stream-empty {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgb(0 0 0 / 55%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.vc-chatpopout-stream-empty {
+    flex: 1;
+    justify-content: center;
+    background: none;
+    color: var(--text-muted, #949ba4);
+}
+
+.vc-chatpopout-stream-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgb(255 255 255 / 25%);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: vc-chatpopout-spin 0.8s linear infinite;
+}
+
+@keyframes vc-chatpopout-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Fullscreen: only the video */
+.vc-chatpopout-stream-dock:fullscreen .vc-chatpopout-stream-head,
+.vc-chatpopout-stream-window:fullscreen .vc-chatpopout-titlebar {
+    display: none;
+}
+
+.vc-chatpopout-stream-dock:fullscreen .vc-chatpopout-stream-resizer {
+    display: none;
+}
+
+.vc-chatpopout-stream-window {
+    background: #000;
+}
+
+/* Narrow window: the stream sits above the chat instead of next to it */
+@media (width < 640px) {
+    .vc-chatpopout-stream-dock {
+        position: absolute;
+        inset: 0 0 0 auto;
+        z-index: 6;
+        width: 100% !important;
+        border-left: none;
+    }
+
+    .vc-chatpopout-stream-resizer {
+        display: none;
+    }
+}
+
+/* Stream muted: red speaker in the header */
+.vc-chatpopout-icon-btn-muted {
+    color: var(--status-danger, #f23f43) !important;
+}

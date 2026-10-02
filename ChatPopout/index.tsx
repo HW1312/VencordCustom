@@ -62,6 +62,12 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Show a bar with the people in the call",
         default: true
+    },
+    voiceListOpen: {
+        type: OptionType.BOOLEAN,
+        description: "Call bar expanded to a list",
+        default: false,
+        hidden: true
     }
 });
 

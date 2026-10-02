@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { classNameFactory } from "@api/Styles";
+import { classNameFactory, vencordRootNode } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
-import { Parser, useMemo, useState } from "@webpack/common";
+import { GuildMemberStore, IconUtils, Parser, useEffect, useLayoutEffect, useMemo, UserStore, useState } from "@webpack/common";
 
 export const cl = classNameFactory("vc-chatpopout-");
 export const log = new Logger("ChatPopout");
@@ -140,4 +140,36 @@ export function Markdown({ content, channelId, messageId }: { content: string; c
     }, [content, channelId, messageId]);
 
     return <ErrorBoundary noop fallback={() => <span>{content}</span>}>{nodes}</ErrorBoundary>;
+}
+
+// ---------------------------------------------------------------- Users
+
+export function userAvatar(id: string, author?: any, size = 80) {
+    const user = UserStore.getUser(id);
+    if (user && !author?.bot) return IconUtils.getUserAvatarURL(user, false, size) as string;
+    if (author?.avatar) return `${CDN}/avatars/${id}/${author.avatar}.webp?size=${size}`;
+    return IconUtils.getDefaultAvatarURL(id, author?.discriminator) as string;
+}
+
+export function displayName(id: string, guildId: string | null) {
+    const u: any = UserStore.getUser(id);
+    return (guildId && GuildMemberStore.getNick(guildId, id)) || u?.globalName || u?.username || "Someone";
+}
+
+// ---------------------------------------------------------------- Popout window
+
+/** Prepares a popout document (theme classes, Vencord styles) and keeps its title up to date */
+export function usePopoutDocument(rootRef: React.RefObject<HTMLElement | null>, title: string) {
+    useLayoutEffect(() => {
+        const doc = rootRef.current?.ownerDocument;
+        if (!doc || doc === document) return;
+        doc.documentElement.className = document.documentElement.className;
+        doc.body.classList.add(...Array.from(document.body.classList));
+        if (!doc.querySelector("vencord-root")) doc.documentElement.appendChild(vencordRootNode.cloneNode(true));
+    }, []);
+
+    useEffect(() => {
+        const doc = rootRef.current?.ownerDocument;
+        if (doc) doc.title = title;
+    }, [title]);
 }

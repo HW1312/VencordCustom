@@ -6,27 +6,29 @@
 
 import "./ui.css";
 
-import { vencordRootNode } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { openUserProfile, sendMessage } from "@utils/discord";
+import { sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
     ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, MessageActions, NavigationRouter, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
-    PrivateChannelSortStore, ReadStateStore, RestAPI, SelectedChannelStore, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
+    PrivateChannelSortStore, ReadStateStore, RestAPI, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
     useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
 
 import { getCommands, matchCommands, OptionType, PopoutCommand } from "./commands";
 import { collectComponentMedia, IS_COMPONENTS_V2, MessageComponents } from "./components";
-import { isInCall, logger, openCallPopout, settings } from "./index";
+import { logger, settings } from "./index";
 import { copyImage, copyText, mediaAttrs, mediaFromElement, MediaItem, MediaMeta, MediaViewer, openExternal, saveMedia } from "./media";
 import { ContextMenu, MenuItem, MenuState } from "./menu";
 import { RawMessage, useChannelMessages } from "./messages";
+import { ProfileCard, ProfileTarget } from "./profile";
 import {
-    ANNOUNCE_PATH, CALL_PATH, CDN, CHEVRON_PATH, cl, CLOSE_PATH, COPY_PATH, DEAF_PATH, DOWNLOAD_PATH, EDIT_PATH, FallbackImg, FILE_PATH, fitBox, GifVideo, HASH_PATH, Icon, ID_PATH,
-    isAnimated, isSpoiler, LINK_PATH, MAIN_PATH, Markdown, MAX_PATH, MIN_PATH, MUTE_PATH, PIN_PATH, PLAY_PATH, POPOUT_PATH, REPLY_PATH, SIDEBAR_PATH, sized, SPEAKER_PATH, Spoiler, tip,
-    TRASH_PATH, USER_PATH, ZOOM_PATH
+    ANNOUNCE_PATH, CDN, CHEVRON_PATH, cl, CLOSE_PATH, COPY_PATH, displayName, DOWNLOAD_PATH, EDIT_PATH, FallbackImg, FILE_PATH, fitBox, GifVideo, HASH_PATH, Icon, ID_PATH,
+    isAnimated, isSpoiler, LINK_PATH, MAIN_PATH, Markdown, MAX_PATH, MIN_PATH, PIN_PATH, PLAY_PATH, POPOUT_PATH, REPLY_PATH, SIDEBAR_PATH, sized, SPEAKER_PATH, Spoiler, tip,
+    TRASH_PATH, usePopoutDocument, USER_PATH, userAvatar, ZOOM_PATH
 } from "./shared";
+import { VoiceBar, voiceMenuSections } from "./voice";
+import { openStreamWindow, startWatching, StreamDock, StreamTarget, streamTargetFor, useDockWidth } from "./watch";
 
 export { Icon, POPOUT_PATH };
 
@@ -104,23 +106,11 @@ function formatSize(bytes?: number) {
 
 const toColor = (n: unknown) => typeof n === "number" ? `#${n.toString(16).padStart(6, "0")}` : undefined;
 
-function userAvatar(id: string, author?: any, size = 80) {
-    const user = UserStore.getUser(id);
-    if (user && !author?.bot) return IconUtils.getUserAvatarURL(user, false, size) as string;
-    if (author?.avatar) return `${CDN}/avatars/${id}/${author.avatar}.webp?size=${size}`;
-    return IconUtils.getDefaultAvatarURL(id, author?.discriminator) as string;
-}
-
 function authorInfo(author: any, guildId: string | null) {
     const id: string = author?.id ?? "0";
     const member = guildId ? GuildMemberStore.getMember(guildId, id) : null;
     const name: string = member?.nick || author?.global_name || author?.globalName || author?.username || "Unknown";
     return { id, name, color: member?.colorString ?? undefined, avatar: userAvatar(id, author) };
-}
-
-function displayName(id: string, guildId: string | null) {
-    const u: any = UserStore.getUser(id);
-    return (guildId && GuildMemberStore.getNick(guildId, id)) || u?.globalName || u?.username || "Someone";
 }
 
 /** Name, icon and subtitle of a channel */
@@ -167,6 +157,8 @@ interface WindowCtx {
     openMedia(items: MediaItem[], original: string, meta?: MediaMeta): void;
     messages: { current: RawMessage[]; };
     composer: { current: ComposerApi | null; };
+    openProfile(el: Element, userId: string): void;
+    watchStream(userId: string): void;
 }
 
 // ---------------------------------------------------------------- Media of a message
@@ -1033,45 +1025,6 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
 
 // ---------------------------------------------------------------- Call bar
 
-function VoiceBar({ channelId, guildId }: { channelId: string; guildId: string | null; }) {
-    // As a string so the store hook compares a stable value
-    const key = useStateFromStores([VoiceStateStore], () => {
-        const states = VoiceStateStore.getVoiceStatesForChannel(channelId) ?? {};
-        return Object.values(states as Record<string, any>)
-            .map(s => `${s.userId}:${s.selfMute || s.mute ? 1 : 0}${s.selfDeaf || s.deaf ? 1 : 0}${s.selfStream ? 1 : 0}`)
-            .join(",");
-    });
-    const inCall = useStateFromStores([SelectedChannelStore], () => isInCall(channelId));
-
-    if (!key) return null;
-    const people = key.split(",").map(p => {
-        const [id, flags] = p.split(":");
-        return { id, muted: flags[0] === "1", deaf: flags[1] === "1", live: flags[2] === "1" };
-    });
-
-    return (
-        <div className={cl("voice")}>
-            <span className={cl("voice-dot")} />
-            <div className={cl("voice-people")}>
-                {people.slice(0, 10).map(p => (
-                    <span key={p.id} className={cl("voice-person")} data-user-id={p.id} {...tip(displayName(p.id, guildId) + (p.live ? " (live)" : ""), "bottom", "start")}>
-                        <img src={userAvatar(p.id, UserStore.getUser(p.id), 48)} alt="" />
-                        {(p.deaf || p.muted) && <span className={cl("voice-flag")}><Icon path={p.deaf ? DEAF_PATH : MUTE_PATH} size={10} /></span>}
-                        {p.live && <span className={cl("voice-live")}>LIVE</span>}
-                    </span>
-                ))}
-                {people.length > 10 && <span className={cl("voice-more")}>+{people.length - 10}</span>}
-            </div>
-            <span className={cl("voice-label")}>{people.length === 1 ? "1 in call" : `${people.length} in call`}</span>
-            {inCall && (
-                <button className={cl("voice-btn")} onClick={() => openCallPopout(channelId)} {...tip("Discord's call window with cameras & streams", "bottom", "end")}>
-                    <Icon path={CALL_PATH} size={14} /> Call Window
-                </button>
-            )}
-        </div>
-    );
-}
-
 // ---------------------------------------------------------------- Sidebar (channel list)
 
 const TEXT_TYPES = new Set([0, 5]); // text, announcement
@@ -1356,19 +1309,14 @@ function buildMenu(target: Element, ctx: WindowCtx, channel: any): MenuItem[][] 
         if (canSendIn(channel) && ctx.composer.current) {
             items.push({ id: "mention", label: "Mention", action: () => ctx.composer.current?.replaceSelection(`<@${userId}> `) });
         }
+        const userEl = target.closest("[data-user-id]")!;
         items.push(
-            {
-                id: "profile",
-                label: "Profile (in main window)",
-                icon: USER_PATH,
-                action: () => {
-                    window.focus();
-                    openUserProfile(userId).catch(e => logger.error("Couldn't open profile", e));
-                }
-            },
+            { id: "profile", label: "Profile", icon: USER_PATH, action: () => ctx.openProfile(userEl, userId) },
             { id: "copy-user-id", label: "Copy User ID", icon: ID_PATH, action: () => copyText(userId, "User ID copied") }
         );
         sections.push(items);
+        // Volume, mute, move … for people in this channel's call
+        sections.push(...voiceMenuSections(userId, channel, ctx.watchStream));
     }
 
     // Message
@@ -1408,6 +1356,49 @@ function buildMenu(target: Element, ctx: WindowCtx, channel: any): MenuItem[][] 
     return sections.filter(s => s.length);
 }
 
+/** Clicked @mention in a message → user ID (Discord's mention elements carry no ID) */
+function mentionUserId(target: Element, ctx: WindowCtx): string | null {
+    const mention = target.closest<HTMLElement>('[class*="mention"]');
+    const content = mention?.closest(`.${cl("content")}`);
+    const msgEl = mention?.closest("[data-message-id]");
+    if (!mention || !content || !msgEl) return null;
+    const m = ctx.messages.current.find(x => x.id === msgEl.getAttribute("data-message-id"));
+    if (!m) return null;
+
+    const text = (mention.textContent ?? "").trim();
+    if (!text.startsWith("@")) return null;
+
+    // By name: the message lists every mentioned user
+    const name = text.slice(1);
+    const guildId = ChannelStore.getChannel(m.channel_id)?.guild_id ?? null;
+    const byName = (m.mentions ?? []).find((u: any) => [
+        guildId && GuildMemberStore.getNick(guildId, u.id), u.global_name, u.globalName, u.username
+    ].includes(name));
+    if (byName) return byName.id;
+
+    // Otherwise by position: n-th mention in the text = n-th mention token in the content
+    const all = Array.from(content.querySelectorAll<HTMLElement>('[class*="mention"]'))
+        .filter(el => (el.textContent ?? "").trim().startsWith("@") && !el.parentElement?.closest('[class*="mention"]'));
+    const outer = all.find(el => el.contains(mention)) ?? mention;
+    const tokens = [...(m.content ?? "").matchAll(/<@!?(\d+)>|<@&\d+>|@everyone|@here/g)];
+    const token = tokens[all.indexOf(outer)];
+    return token?.[1] ?? null;
+}
+
+/** Opens an existing DM or creates it */
+async function dmChannelId(userId: string): Promise<string | null> {
+    const existing = ChannelStore.getDMFromUserId(userId);
+    if (existing) return existing;
+    try {
+        const { body } = await RestAPI.post({ url: "/users/@me/channels", body: { recipient_id: userId } });
+        return body?.id ?? null;
+    } catch (e) {
+        logger.error("Couldn't open DM", e);
+        showToast("Couldn't open DM", Toasts.Type.FAILURE);
+        return null;
+    }
+}
+
 // ---------------------------------------------------------------- Window
 
 function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId: string; windowKey: string; }) {
@@ -1435,6 +1426,14 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
     const [viewer, setViewer] = useState<{ items: MediaItem[]; index: number; meta?: MediaMeta; } | null>(null);
     const [menu, setMenu] = useState<MenuState | null>(null);
     const closeMenu = useCallback(() => setMenu(null), []);
+    const [profile, setProfile] = useState<ProfileTarget | null>(null);
+    const [stream, setStream] = useState<StreamTarget | null>(null);
+    const [dockWidth, setDockWidth] = useDockWidth(rootRef);
+    const channelRef = useRef(channelId);
+    channelRef.current = channelId;
+    const closeProfile = useCallback(() => setProfile(null), []);
+    const guildRef = useRef(guildId);
+    guildRef.current = guildId;
 
     const ctx = useMemo<WindowCtx>(() => ({
         doc: () => rootRef.current?.ownerDocument ?? document,
@@ -1443,25 +1442,62 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
             if (index >= 0) setViewer({ items, index, meta });
         },
         messages: { current: [] },
-        composer: { current: null }
+        composer: { current: null },
+        openProfile(el, userId) {
+            // Author object from the message as fallback for webhooks & users Discord hasn't loaded
+            const msgEl = el.closest("[data-message-id]");
+            const m = msgEl ? this.messages.current.find(x => x.id === msgEl.getAttribute("data-message-id")) : undefined;
+            const fallback = m?.author?.id === userId ? m.author : m?.mentions?.find((u: any) => u?.id === userId);
+            setProfile({ userId, guildId: guildRef.current, anchor: el.getBoundingClientRect(), fallback });
+        },
+        watchStream(userId) {
+            const target = streamTargetFor(userId, channelRef.current);
+            if (!target) {
+                showToast("This stream isn't available here", Toasts.Type.FAILURE);
+                return;
+            }
+            if (!startWatching(target)) return;
+            setStream(target);
+            // Make room for the stream next to the chat
+            const win = rootRef.current?.ownerDocument?.defaultView;
+            if (win && win.innerWidth < 900) {
+                try {
+                    win.resizeTo(win.outerWidth + 520, Math.max(win.outerHeight, 600));
+                } catch { /* not resizable */ }
+            }
+        }
     }), []);
 
-    // Prepare the popout document: copy theme classes and make sure Vencord styles are present
-    useLayoutEffect(() => {
-        const doc = rootRef.current?.ownerDocument;
-        if (!doc || doc === document) return;
-        doc.documentElement.className = document.documentElement.className;
-        doc.body.classList.add(...Array.from(document.body.classList));
-        if (!doc.querySelector("vencord-root")) doc.documentElement.appendChild(vencordRootNode.cloneNode(true));
-    }, []);
+    // Left click on avatar, name, @mention or someone in the call bar → profile card
+    const onClick = (e: React.MouseEvent) => {
+        const target = e.target as Element;
+        if (target.closest(`.${cl("profile")}, .${cl("menu")}`)) return;
+        // LIVE badge → watch the stream
+        const live = target.closest("[data-stream-user]")?.getAttribute("data-stream-user");
+        if (live) {
+            e.preventDefault();
+            e.stopPropagation();
+            ctx.watchStream(live);
+            return;
+        }
+        const userEl = target.closest("[data-user-id]");
+        const userId = userEl?.getAttribute("data-user-id") ?? mentionUserId(target, ctx);
+        if (!userId || userId === "0") return;
+        e.preventDefault();
+        e.stopPropagation();
+        ctx.openProfile(userEl ?? target.closest('[class*="mention"]') ?? target, userId);
+    };
 
-    useEffect(() => {
-        const doc = rootRef.current?.ownerDocument;
-        if (doc) doc.title = `${info.prefix}${info.name}`;
-    }, [info.name, info.prefix]);
+    const messageUser = async (userId: string) => {
+        const id = await dmChannelId(userId);
+        if (id) selectChannel(id);
+    };
+
+    usePopoutDocument(rootRef, `${info.prefix}${info.name}`);
 
     // Capture phase: Discord components inside messages (mentions etc.) would otherwise open their menu in the main window
     const onContextMenu = (e: React.MouseEvent) => {
+        if ((e.target as Element).closest(`.${cl("stream-dock")}`)) return;
         e.preventDefault();
         e.stopPropagation();
         const target = e.target as Element;
@@ -1476,7 +1512,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
     };
 
     return (
-        <div ref={rootRef} className={cl("window")} onContextMenuCapture={onContextMenu}>
+        <div ref={rootRef} className={cl("window")} onContextMenuCapture={onContextMenu} onClickCapture={onClick}>
             <TitleBar info={info} windowKey={windowKey} channelId={channelId} guildId={guildId} sidebar={sidebar} onToggleSidebar={toggleSidebar} />
             <div className={cl("main")}>
                 {sidebar && (
@@ -1493,9 +1529,36 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
                             <button className={cl("button")} onClick={() => PopoutActions.close(windowKey)}>Close window</button>
                         </div>}
                 </div>
+                {stream && (
+                    <ErrorBoundary noop>
+                        <StreamDock
+                            key={stream.streamKey}
+                            target={stream}
+                            width={dockWidth}
+                            onResize={setDockWidth}
+                            onClose={() => setStream(null)}
+                            onPopout={() => {
+                                const t = stream;
+                                openStreamWindow(t, () => setStream(t));
+                                setStream(null);
+                            }}
+                        />
+                    </ErrorBoundary>
+                )}
             </div>
             {viewer && <ErrorBoundary noop><MediaViewer {...viewer} onClose={() => setViewer(null)} /></ErrorBoundary>}
             {menu && <ErrorBoundary noop><ContextMenu state={menu} onClose={closeMenu} /></ErrorBoundary>}
+            {profile && (
+                <ErrorBoundary noop>
+                    <ProfileCard
+                        key={profile.userId}
+                        target={profile}
+                        onClose={closeProfile}
+                        onMessage={messageUser}
+                        onMention={channel && canSendIn(channel) ? id => ctx.composer.current?.replaceSelection(`<@${id}> `) : undefined}
+                    />
+                </ErrorBoundary>
+            )}
         </div>
     );
 }

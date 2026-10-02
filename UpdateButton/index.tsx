@@ -18,7 +18,7 @@ import { relaunch } from "@utils/native";
 import definePlugin, { OptionType } from "@utils/types";
 import { checkForUpdates, update } from "@utils/updater";
 import { findComponentByCodeLazy } from "@webpack";
-import { Popout, React, useEffect, useRef, useState } from "@webpack/common";
+import { Popout, useEffect, useRef, useState } from "@webpack/common";
 
 import gitHash from "~git-hash";
 
@@ -108,29 +108,29 @@ function parseNotes(body: string): NoteItem[] {
 async function loadNotes(force = false) {
     if (!force && Date.now() - state.notesLoaded < NOTES_MAX_AGE) return;
     try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=15`, { headers: { Accept: "application/vnd.github+json" } });
+        // no-cache: the API is cached for 60 s, a release published just now would be missing
+        const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=15`, { headers: { Accept: "application/vnd.github+json" }, cache: "no-cache" });
         if (!res.ok) throw new Error(`GitHub: HTTP ${res.status}`);
         const data = await res.json() as any[];
         set({
             notesLoaded: Date.now(),
+            // GitHub doesn't return them in date order – sort newest first
             releases: data.filter(r => !r.draft).map(r => ({
                 hash: String(r.name ?? "").split(" ").pop() ?? "",
                 date: Date.parse(r.published_at ?? r.created_at),
                 items: parseNotes(r.body)
-            }))
+            })).sort((a, b) => b.date - a.date)
         });
     } catch (e) {
         logger.error("Couldn't load release notes", e);
     }
 }
 
-/** Releases newer than the running version (newest first) – or, if up to date, the current one */
-function notesToShow(ready: boolean): Release[] {
+/** Only ever one version: the one being installed (update ready) or the one running – keeps the list short */
+function notesToShow(ready: boolean): Release | null {
     const { releases } = state;
-    const current = releases.findIndex(r => r.hash === gitHash);
-    if (ready) return (current < 0 ? releases.slice(0, 1) : releases.slice(0, current)).filter(r => r.items.length);
-    const own = releases[current] ?? releases[0];
-    return own?.items.length ? [own] : [];
+    const release = ready ? releases[0] : releases.find(r => r.hash === gitHash) ?? releases[0];
+    return release?.items.length ? release : null;
 }
 
 // ---------------------------------------------------------------- Updating
@@ -186,14 +186,14 @@ const REFRESH_PATH = "M4 12a8 8 0 0 1 14.32-4.9V5a1 1 0 1 1 2 0v5a1 1 0 0 1-1 1h
 const SIGN: Record<Exclude<Kind, null>, string> = { new: "+", removed: "−", fix: "✓", improved: "↑" };
 const ORDER: Kind[] = ["new", "improved", "fix", "removed", null];
 
-const PREVIEW_NOTES: Release[] = [{
+const PREVIEW_NOTES: Release = {
     hash: "preview",
     date: Date.now(),
     items: [
         { kind: "new", text: "Example plugin in the Plugin Hub" },
         { kind: "fix", text: "Example bug fix" }
     ]
-}];
+};
 
 function Svg({ path, size = 20 }: { path: string; size?: number; }) {
     return (
@@ -212,24 +212,19 @@ function ago(ts: number) {
     return `Checked ${Math.round(m / 60)} h ago`;
 }
 
-const formatDate = (ts: number) => new Date(ts).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 
-function Changelog({ releases, ready }: { releases: Release[]; ready: boolean; }) {
-    if (!releases.length) return null;
+function Changelog({ release, ready }: { release: Release | null; ready: boolean; }) {
+    if (!release) return null;
+    const items = [...release.items].sort((x, y) => ORDER.indexOf(x.kind) - ORDER.indexOf(y.kind));
     return (
         <div className={cl("changes")}>
             <div className={cl("changes-head")}>{ready ? "What's new" : "In this version"}</div>
             <div className={cl("changes-list")}>
-                {releases.map(r => (
-                    <React.Fragment key={r.hash}>
-                        {releases.length > 1 && <div className={cl("release-date")}>{formatDate(r.date)}</div>}
-                        {[...r.items].sort((x, y) => ORDER.indexOf(x.kind) - ORDER.indexOf(y.kind)).map((it, i) => (
-                            <div key={i} className={cl("change")}>
-                                <span className={classes(cl("sign"), cl(`sign-${it.kind ?? "other"}`))}>{it.kind ? SIGN[it.kind] : "•"}</span>
-                                <span className={cl("change-msg")}>{it.text}</span>
-                            </div>
-                        ))}
-                    </React.Fragment>
+                {items.map((it, i) => (
+                    <div key={i} className={cl("change")}>
+                        <span className={classes(cl("sign"), cl(`sign-${it.kind ?? "other"}`))}>{it.kind ? SIGN[it.kind] : "•"}</span>
+                        <span className={cl("change-msg")}>{it.text}</span>
+                    </div>
                 ))}
             </div>
         </div>
@@ -239,7 +234,11 @@ function Changelog({ releases, ready }: { releases: Release[]; ready: boolean; }
 function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
     const s = useUpdateState();
 
-    useEffect(() => { loadNotes(); }, []);
+    // Opening the panel checks right away if nothing has been checked yet (otherwise only refreshes the notes)
+    useEffect(() => {
+        if (!state.lastCheck) check();
+        else loadNotes(!state.releases.some(r => r.hash === gitHash));
+    }, []);
 
     const status = ready ? "Update ready – restart to apply"
         : s.status === "checking" ? "Checking for updates …"
@@ -247,7 +246,7 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
                 : s.status === "error" ? "Update check failed"
                     : "You're up to date";
 
-    const releases = preview ? PREVIEW_NOTES : notesToShow(ready);
+    const release = preview ? PREVIEW_NOTES : notesToShow(ready);
 
     return (
         <div className={cl("panel")}>
@@ -264,7 +263,7 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
                 </div>
             </div>
 
-            <Changelog releases={releases} ready={ready} />
+            <Changelog release={release} ready={ready} />
 
             <div className={cl("actions")}>
                 <button className={classes(cl("btn"), cl("btn-secondary"))} disabled={busy() || ready} onClick={() => check()}>

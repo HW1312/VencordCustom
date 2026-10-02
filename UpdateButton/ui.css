@@ -203,28 +203,6 @@
     overflow-wrap: anywhere;
 }
 
-/* Several releases: thin divider with the date */
-.vc-updatebtn-release-date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 4px 0 1px;
-    color: var(--text-muted, #949ba4);
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.vc-updatebtn-release-date::after {
-    flex: 1;
-    height: 1px;
-    background: var(--border-subtle, rgb(255 255 255 / 8%));
-    content: "";
-}
-
-.vc-updatebtn-release-date:first-child {
-    margin-top: 0;
-}
-
 .vc-updatebtn-actions {
     display: flex;
     gap: 8px;
