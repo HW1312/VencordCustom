@@ -15,7 +15,7 @@ import type { Activity } from "@vencord/discord-types";
 import type { ReactNode } from "react";
 import { findComponentByCodeLazy } from "@webpack";
 import {
-    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, PresenceStore, showToast, SnowflakeUtils, Toasts, useEffect, useMemo,
+    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, Parser, PresenceStore, showToast, SnowflakeUtils, Toasts, useEffect, useMemo,
     UserProfileStore, UserStore, useRef, useState, useStateFromStores
 } from "@webpack/common";
 
@@ -31,6 +31,7 @@ const RECENT_MAX = 8;
 // ---------------------------------------------------------------- Icons
 
 const COPY_PATH = "M15 2H5a2 2 0 0 0-2 2v12h2V4h10V2Zm3 4H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm0 14H9V8h9v12Z";
+const CHECK_PATH = "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z";
 const DICE_PATH = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm-4.5 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7.5 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z";
 
 function Icon({ path, size = 20, className }: { path: string; size?: number; className?: string; }) {
@@ -88,17 +89,29 @@ const BIO_LINES = 4;
 /** http(s) links and bare "www." links; trailing punctuation is not part of the link */
 const URL_RE = /\b((?:https?:\/\/|www\.)[^\s<>"]+[^\s<>".,;:!?)\]}'])/gi;
 
-function BioLink({ url }: { url: string; }) {
-    const href = /^https?:/i.test(url) ? url : `https://${url}`;
+function BioLink({ href, children }: { href: string; children: ReactNode; }) {
+    const [copied, setCopied] = useState(false);
+    const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    useEffect(() => () => clearTimeout(timer.current), []);
+
+    function copy() {
+        // DiscordNative's copy is synchronous and returns nothing, so wrap it to always get a promise
+        Promise.resolve().then(() => copyToClipboard(href)).then(() => {
+            setCopied(true);
+            clearTimeout(timer.current);
+            timer.current = setTimeout(() => setCopied(false), 1500);
+        }, () => showToast("Couldn't copy the link", Toasts.Type.FAILURE));
+    }
+
     return (
         <span className={cl("link-wrap")}>
-            <a className={cl("link")} href={href} target="_blank" rel="noreferrer noopener" title={href}>{url}</a>
+            <a className={cl("link")} href={href} target="_blank" rel="noreferrer noopener" title={href}>{children}</a>
             <button
-                className={cl("link-copy")}
-                title="Copy link"
-                onClick={() => copyToClipboard(href).then(() => showToast("Link copied", Toasts.Type.SUCCESS))}
+                className={classes(cl("link-copy"), copied && cl("link-copied"))}
+                title={copied ? "Copied!" : "Copy link"}
+                onClick={copy}
             >
-                <Icon path={COPY_PATH} size={12} />
+                <Icon key={copied ? "check" : "copy"} path={copied ? CHECK_PATH : COPY_PATH} size={12} />
             </button>
         </span>
     );
@@ -109,22 +122,64 @@ function linkify(text: string) {
     let last = 0;
     for (const m of text.matchAll(URL_RE)) {
         if (m.index! > last) parts.push(text.slice(last, m.index));
-        parts.push(<BioLink key={m.index} url={m[0]} />);
+        const href = /^https?:/i.test(m[0]) ? m[0] : `https://${m[0]}`;
+        parts.push(<BioLink key={m.index} href={href}>{m[0]}</BioLink>);
         last = m.index! + m[0].length;
     }
     if (last < text.length) parts.push(text.slice(last));
     return parts;
 }
 
+/**
+ * Discord's own markdown parser (emojis, bold, spoilers, headings, timestamps, ...) with its link rules
+ * swapped for our link with a copy button
+ */
+let bioParser: ((content: string, inline?: boolean, state?: Record<string, any>) => ReactNode[]) | null = null;
+
+function getBioParser() {
+    if (bioParser) return bioParser;
+    const rules: Record<string, any> = { ...Parser.defaultRules };
+    for (const name of ["url", "link", "autolink"]) {
+        if (!rules[name]) continue;
+        rules[name] = {
+            ...rules[name],
+            react: (node: any, output: (n: any, s: any) => ReactNode, state: any) => (
+                <BioLink key={state.key} href={node.target}>
+                    {node.content ? output(node.content, state) : node.target}
+                </BioLink>
+            )
+        };
+    }
+    return bioParser = Parser.reactParserFor(rules);
+}
+
+function renderBio(text: string): ReactNode {
+    try {
+        return getBioParser()(text, true, { allowLinks: true, allowEmojiLinks: true, allowHeading: true, allowList: true });
+    } catch {
+        return linkify(text);
+    }
+}
+
 /** Long bios are cut after a few lines with "Show more" instead of an inner scroll box */
 function Bio({ text }: { text: string; }) {
     const [expanded, setExpanded] = useState(false);
-    const clean = text.replace(/\n{3,}/g, "\n\n").trim();
-    const long = clean.split("\n").length > BIO_LINES || clean.length > 200;
+    // Every line of the bio is its own row, like in Discord's profile
+    const lines = text.replace(/\r/g, "").replace(/\n{3,}/g, "\n\n").trim().split("\n");
+    const long = lines.length > BIO_LINES;
+    const shown = long && !expanded ? lines.slice(0, BIO_LINES) : lines;
 
     return (
         <div className={cl("bio")}>
-            <div className={classes(cl("bio-text"), long && !expanded && cl("bio-clamped"))}>{linkify(clean)}</div>
+            <div className={cl("bio-text")}>
+                {shown.map((line, i) => (
+                    <div key={i} className={cl("bio-line")}>
+                        {line.trim()
+                            ? <ErrorBoundary fallback={() => <>{linkify(line)}</>}>{renderBio(line)}</ErrorBoundary>
+                            : <br />}
+                    </div>
+                ))}
+            </div>
             {long && (
                 <button className={cl("bio-more")} onClick={() => setExpanded(v => !v)}>
                     {expanded ? "Show less" : "Show more"}
