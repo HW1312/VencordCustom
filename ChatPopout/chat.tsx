@@ -1556,6 +1556,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
                         onClose={closeProfile}
                         onMessage={messageUser}
                         onMention={channel && canSendIn(channel) ? id => ctx.composer.current?.replaceSelection(`<@${id}> `) : undefined}
+                        onOpenMedia={(items, original) => { closeProfile(); ctx.openMedia(items, original); }}
                     />
                 </ErrorBoundary>
             )}

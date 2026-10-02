@@ -2102,6 +2102,31 @@ video.vc-chatpopout-viewer-media {
     background: var(--background-surface-higher, var(--background-floating, #111214));
     box-shadow: var(--shadow-high, 0 12px 32px rgb(0 0 0 / 40%));
     animation: vc-chatpopout-menu-in 0.12s ease-out;
+    user-select: text;
+}
+
+.vc-chatpopout-profile button,
+.vc-chatpopout-profile img,
+.vc-chatpopout-profile-banner {
+    user-select: none;
+}
+
+.vc-chatpopout-profile-clickable {
+    cursor: pointer;
+}
+
+.vc-chatpopout-profile-avatar.vc-chatpopout-profile-clickable:hover {
+    filter: brightness(0.85);
+}
+
+.vc-chatpopout-profile-badge {
+    position: relative;
+    display: flex;
+    border-radius: 4px;
+}
+
+.vc-chatpopout-profile-badge.vc-chatpopout-profile-clickable:hover {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 8%));
 }
 
 .vc-chatpopout-profile::-webkit-scrollbar {
@@ -2209,12 +2234,32 @@ video.vc-chatpopout-viewer-media {
 }
 
 .vc-chatpopout-profile-bio {
-    max-height: 120px;
-    overflow: hidden auto;
     font-size: 14px;
     line-height: 18px;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.vc-chatpopout-profile-bio-collapsed {
+    max-height: 126px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 18px), transparent);
+}
+
+.vc-chatpopout-profile-more {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-default, #dbdee1);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-chatpopout-profile-more:hover {
+    text-decoration: underline;
 }
 
 .vc-chatpopout-profile-since {
@@ -2283,10 +2328,33 @@ video.vc-chatpopout-viewer-media {
 
 .vc-chatpopout-profile-btn-icon {
     display: grid;
-    flex: none;
+    flex: 1;
     place-items: center;
-    width: 32px;
+    min-width: 36px;
+    height: 36px;
     padding: 0;
+}
+
+.vc-chatpopout-profile-btn-icon svg {
+    animation: vc-chatpopout-icon-in 0.2s ease-out;
+}
+
+.vc-chatpopout-profile-btn-copied {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-chatpopout-profile-btn-copied svg {
+    animation: vc-chatpopout-check-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes vc-chatpopout-icon-in {
+    from { transform: scale(0.6); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes vc-chatpopout-check-pop {
+    0% { transform: scale(0.3) rotate(-30deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 
 /* Mentions are clickable like in Discord */
