@@ -135,6 +135,22 @@ function notesToShow(ready: boolean): Release | null {
 
 // ---------------------------------------------------------------- Updating
 
+/**
+ * Fallback without Vencord's commit comparison (GitHub's /compare between the installed and the newest commit):
+ * only compares the newest release with the installed version and downloads it. Keeps updates working
+ * when the git history was rewritten and the installed commit has no common ancestor with the new one.
+ */
+async function updateDirectly(): Promise<boolean> {
+    const res = await VencordNative.updater.update();
+    if (!res.ok) throw res.error;
+    if (!res.value) return false;
+
+    const built = await VencordNative.updater.rebuild();
+    if (!built.ok) throw built.error;
+    if (!built.value) throw new Error("The update could not be installed");
+    return true;
+}
+
 async function check() {
     if (busy() || state.status === "ready") return;
     set({ status: "checking", error: "" });
@@ -147,7 +163,19 @@ async function check() {
     }
 
     try {
-        if (!await checkForUpdates()) {
+        let outdated: boolean;
+        try {
+            outdated = await checkForUpdates();
+        } catch (e) {
+            logger.warn("Normal update check failed, checking the latest release directly", e);
+            set({ status: "downloading" });
+            loadNotes(true);
+            const updated = await updateDirectly();
+            set({ status: updated ? "ready" : "latest", lastCheck: Date.now() });
+            return;
+        }
+
+        if (!outdated) {
             set({ status: "latest", lastCheck: Date.now() });
             loadNotes();
             return;
