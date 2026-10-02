@@ -8,7 +8,7 @@
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import {
-    ChannelStore, GuildMemberStore, PresenceStore, RelationshipStore, SnowflakeUtils, UserStore
+    ChannelStore, GuildMemberStore, RelationshipStore, SnowflakeUtils, UserStore
 } from "@webpack/common";
 
 import { openRouletteModal, renderTitleBarButton, SettingsPanel } from "./ui";
@@ -26,18 +26,6 @@ export const settings = definePluginSettings({
     showTitleBarButton: {
         type: OptionType.BOOLEAN,
         description: "Show icon in the title bar",
-        default: true,
-        hidden: true
-    },
-    onlyOnline: {
-        type: OptionType.BOOLEAN,
-        description: "Only people who are online right now",
-        default: true,
-        hidden: true
-    },
-    skipDnd: {
-        type: OptionType.BOOLEAN,
-        description: "Skip people on Do Not Disturb",
         default: true,
         hidden: true
     },
@@ -81,50 +69,60 @@ export interface Candidate {
     guildIds: string[];
 }
 
+export type SkipReason = "excluded" | "seen" | "bot" | "relationship" | "dm" | "new" | "lurker";
+
+export interface PoolResult {
+    pool: Candidate[];
+    /** Distinct people Discord has loaded from your servers */
+    loaded: number;
+    skipped: Record<SkipReason, number>;
+}
+
 /**
  * Everyone Discord has loaded as a member of one of your servers (people from member lists, chats and
  * voice channels you've seen), minus everyone who is unlikely to want a random DM.
  * Discord doesn't reveal whether someone accepts DMs from server members, so that can't be checked upfront.
  */
-export function getPool(): Candidate[] {
+export function getPool(): PoolResult {
     const s = settings.store;
     const me = UserStore.getCurrentUser()?.id;
     const excluded = new Set(s.excludedGuilds);
     const seen = s.skipSeen ? new Set(s.seen) : null;
     const minCreated = Date.now() - s.minAccountAgeDays * DAY;
+    const skipped: Record<SkipReason, number> = { excluded: 0, seen: 0, bot: 0, relationship: 0, dm: 0, new: 0, lurker: 0 };
 
+    // userId -> shared servers that aren't excluded (empty list = only in excluded servers)
     const byUser = new Map<string, string[]>();
     const all = GuildMemberStore.getMutableAllGuildsAndMembers();
     for (const guildId in all) {
-        if (excluded.has(guildId)) continue;
+        const skipGuild = excluded.has(guildId);
         for (const userId in all[guildId]) {
-            const list = byUser.get(userId);
-            if (list) list.push(guildId);
-            else byUser.set(userId, [guildId]);
+            let list = byUser.get(userId);
+            if (!list) byUser.set(userId, list = []);
+            if (!skipGuild) list.push(guildId);
         }
     }
+    if (me) byUser.delete(me);
 
     const pool: Candidate[] = [];
+    const skip = (r: SkipReason) => void skipped[r]++;
     for (const [id, guildIds] of byUser) {
-        if (id === me || seen?.has(id)) continue;
+        if (!guildIds.length) { skip("excluded"); continue; }
+        if (seen?.has(id)) { skip("seen"); continue; }
 
         const user = UserStore.getUser(id);
-        if (!user || user.bot || user.system) continue;
+        if (!user || user.bot || user.system) { skip("bot"); continue; }
 
         // Friends, blocked people and pending requests: any relationship at all
-        if (RelationshipStore.getRelationshipType(id) !== 0) continue;
-        if (s.skipExistingDms && ChannelStore.getDMFromUserId(id)) continue;
+        if (RelationshipStore.getRelationshipType(id) !== 0) { skip("relationship"); continue; }
+        if (s.skipExistingDms && ChannelStore.getDMFromUserId(id)) { skip("dm"); continue; }
 
-        const status = PresenceStore.getStatus(id) as string;
-        if (s.onlyOnline && (!status || status === "offline" || status === "invisible")) continue;
-        if (s.skipDnd && status === "dnd") continue;
-
-        if (SnowflakeUtils.extractTimestamp(id) > minCreated) continue;
-        if (guildIds.every(g => GuildMemberStore.isGuestOrLurker(g, id))) continue;
+        if (SnowflakeUtils.extractTimestamp(id) > minCreated) { skip("new"); continue; }
+        if (guildIds.every(g => GuildMemberStore.isGuestOrLurker(g, id))) { skip("lurker"); continue; }
 
         pool.push({ id, guildIds });
     }
-    return pool;
+    return { pool, loaded: byUser.size, skipped };
 }
 
 export function pickRandom<T>(list: T[]): T | undefined {

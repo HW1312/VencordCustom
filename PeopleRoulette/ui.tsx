@@ -8,16 +8,18 @@ import "./ui.css";
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
+import { copyToClipboard } from "@utils/clipboard";
 import { fetchUserProfile, openPrivateChannel, openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
 import type { Activity } from "@vencord/discord-types";
+import type { ReactNode } from "react";
 import { findComponentByCodeLazy } from "@webpack";
 import {
-    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, PresenceStore, SnowflakeUtils, useEffect, useMemo,
+    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, PresenceStore, showToast, SnowflakeUtils, Toasts, useEffect, useMemo,
     UserProfileStore, UserStore, useRef, useState, useStateFromStores
 } from "@webpack/common";
 
-import { Candidate, getPool, markSeen, pickRandom, resetSeen, settings } from "./index";
+import { Candidate, getPool, markSeen, pickRandom, PoolResult, resetSeen, settings, SkipReason } from "./index";
 
 const cl = classNameFactory("vc-roulette-");
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
@@ -28,6 +30,7 @@ const RECENT_MAX = 8;
 
 // ---------------------------------------------------------------- Icons
 
+const COPY_PATH = "M15 2H5a2 2 0 0 0-2 2v12h2V4h10V2Zm3 4H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm0 14H9V8h9v12Z";
 const DICE_PATH = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm-4.5 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7.5 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z";
 
 function Icon({ path, size = 20, className }: { path: string; size?: number; className?: string; }) {
@@ -80,6 +83,57 @@ function accountAge(id: string) {
 
 // ---------------------------------------------------------------- Card
 
+const BIO_LINES = 4;
+
+/** http(s) links and bare "www." links; trailing punctuation is not part of the link */
+const URL_RE = /\b((?:https?:\/\/|www\.)[^\s<>"]+[^\s<>".,;:!?)\]}'])/gi;
+
+function BioLink({ url }: { url: string; }) {
+    const href = /^https?:/i.test(url) ? url : `https://${url}`;
+    return (
+        <span className={cl("link-wrap")}>
+            <a className={cl("link")} href={href} target="_blank" rel="noreferrer noopener" title={href}>{url}</a>
+            <button
+                className={cl("link-copy")}
+                title="Copy link"
+                onClick={() => copyToClipboard(href).then(() => showToast("Link copied", Toasts.Type.SUCCESS))}
+            >
+                <Icon path={COPY_PATH} size={12} />
+            </button>
+        </span>
+    );
+}
+
+function linkify(text: string) {
+    const parts: ReactNode[] = [];
+    let last = 0;
+    for (const m of text.matchAll(URL_RE)) {
+        if (m.index! > last) parts.push(text.slice(last, m.index));
+        parts.push(<BioLink key={m.index} url={m[0]} />);
+        last = m.index! + m[0].length;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return parts;
+}
+
+/** Long bios are cut after a few lines with "Show more" instead of an inner scroll box */
+function Bio({ text }: { text: string; }) {
+    const [expanded, setExpanded] = useState(false);
+    const clean = text.replace(/\n{3,}/g, "\n\n").trim();
+    const long = clean.split("\n").length > BIO_LINES || clean.length > 200;
+
+    return (
+        <div className={cl("bio")}>
+            <div className={classes(cl("bio-text"), long && !expanded && cl("bio-clamped"))}>{linkify(clean)}</div>
+            {long && (
+                <button className={cl("bio-more")} onClick={() => setExpanded(v => !v)}>
+                    {expanded ? "Show less" : "Show more"}
+                </button>
+            )}
+        </div>
+    );
+}
+
 function PersonCard({ candidate, onClose }: { candidate: Candidate; onClose(): void; }) {
     const { id, guildIds } = candidate;
     const user = useStateFromStores([UserStore], () => UserStore.getUser(id));
@@ -96,12 +150,14 @@ function PersonCard({ candidate, onClose }: { candidate: Candidate; onClose(): v
 
     const name = user.globalName || user.username;
     const accent = profile?.accentColor != null ? `#${profile.accentColor.toString(16).padStart(6, "0")}` : undefined;
+    const bannerHash = profile?.banner ?? user.banner;
+    const banner = bannerHash ? IconUtils.getUserBannerURL({ id, banner: bannerHash, canAnimate: true, size: 600 }) : undefined;
     const guilds = guildIds.map(g => GuildStore.getGuild(g)).filter(Boolean);
     const nick = guildIds.map(g => GuildMemberStore.getNick(g, id)).find(Boolean);
 
     return (
         <div className={cl("card")}>
-            <div className={cl("banner")} style={accent ? { background: accent } : undefined} />
+            <div className={cl("banner")} style={banner ? { backgroundImage: `url(${banner})` } : accent ? { background: accent } : undefined} />
             <div className={cl("card-body")}>
                 <div className={cl("avatar-wrap")} onClick={() => openUserProfile(id)} title="Open profile">
                     <img className={cl("avatar")} src={user.getAvatarURL(undefined, 128, true)} alt="" />
@@ -116,7 +172,7 @@ function PersonCard({ candidate, onClose }: { candidate: Candidate; onClose(): v
                 </div>
 
                 {activity && <div className={cl("activity")}>{activity}</div>}
-                {profile?.bio && <div className={cl("bio")}>{profile.bio}</div>}
+                {profile?.bio && <Bio text={profile.bio} />}
 
                 <div className={cl("facts")}>
                     <span>Account {accountAge(id)} old</span>
@@ -151,6 +207,45 @@ function PersonCard({ candidate, onClose }: { candidate: Candidate; onClose(): v
     );
 }
 
+// ---------------------------------------------------------------- Pool stats
+
+const fmt = (n: number) => n.toLocaleString("en-US");
+
+const SKIP_LABELS: Record<SkipReason, string> = {
+    relationship: "Friends, blocked or pending requests",
+    dm: "Already in your DMs",
+    seen: "Already shown",
+    new: "Account too new",
+    bot: "Bots",
+    lurker: "Only lurking in the server",
+    excluded: "Only in excluded servers"
+};
+
+function PoolStats({ stats }: { stats: PoolResult; }) {
+    const rows = (Object.entries(stats.skipped) as [SkipReason, number][])
+        .filter(([, n]) => n > 0)
+        .sort(([, a], [, b]) => b - a);
+
+    return (
+        <div className={cl("stats")}>
+            <p>
+                Discord never sends your client the full member list of a server, only the people you have come
+                across: members shown in the member list, people in chats you opened and in voice channels. That is
+                the “loaded” number - it grows the more you use Discord. Loading everyone would mean scraping member
+                lists, which Discord treats as abuse and can lock accounts for, so the plugin doesn't do that.
+            </p>
+            <div className={cl("stats-rows")}>
+                {rows.map(([reason, n]) => (
+                    <div key={reason} className={cl("stats-row")}>
+                        <span>{SKIP_LABELS[reason]}</span>
+                        <span>−{fmt(n)}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ---------------------------------------------------------------- Roulette
 
 const SPIN_TIME = 1400;
@@ -160,14 +255,17 @@ function Roulette({ onClose }: { onClose(): void; }) {
     const [current, setCurrent] = useState<Candidate | null>(recent[0] ?? null);
     const [spinning, setSpinning] = useState(false);
     const [flicker, setFlicker] = useState<string | null>(null);
-    const [poolSize, setPoolSize] = useState(() => getPool().length);
+    const [stats, setStats] = useState<PoolResult>(getPool);
+    const [showStats, setShowStats] = useState(false);
+    const poolSize = stats.pool.length;
     const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
     useEffect(() => () => clearInterval(timer.current), []);
 
     function spin() {
-        const pool = getPool();
-        setPoolSize(pool.length);
+        const result = getPool();
+        const { pool } = result;
+        setStats(result);
         const winner = pickRandom(pool);
         if (!winner) {
             setCurrent(null);
@@ -184,7 +282,7 @@ function Roulette({ onClose }: { onClose(): void; }) {
                 markSeen(winner.id);
                 recent.unshift(winner);
                 recent.splice(RECENT_MAX);
-                setPoolSize(n => Math.max(0, n - 1));
+                setStats(getPool());
                 setFlicker(null);
                 setCurrent(winner);
                 setSpinning(false);
@@ -220,9 +318,11 @@ function Roulette({ onClose }: { onClose(): void; }) {
                 {current ? "Next person" : "Find someone"}
             </button>
 
-            <div className={cl("pool")}>
-                {poolSize} {poolSize === 1 ? "person" : "people"} in the pool
-            </div>
+            <button className={cl("pool")} onClick={() => setShowStats(v => !v)}>
+                {fmt(poolSize)} of {fmt(stats.loaded)} loaded people match your filters
+                <span className={cl("pool-why")}>{showStats ? "Hide" : "Why so few?"}</span>
+            </button>
+            {showStats && <PoolStats stats={stats} />}
 
             {recent.length > 1 && (
                 <div className={cl("recent")}>
@@ -256,7 +356,7 @@ function Roulette({ onClose }: { onClose(): void; }) {
 
 export function openRouletteModal() {
     openModal(props => (
-        <Modal {...props} size="sm" title="People Roulette" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
+        <Modal {...props} size="md" title="People Roulette" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
             <ErrorBoundary noop>
                 <Roulette onClose={props.onClose} />
             </ErrorBoundary>
@@ -267,15 +367,13 @@ export function openRouletteModal() {
 // ---------------------------------------------------------------- Settings
 
 const FILTERS = [
-    ["onlyOnline", "Only people who are online right now"],
-    ["skipDnd", "Skip people on Do Not Disturb"],
     ["skipExistingDms", "Skip people you already have a DM with"],
     ["skipSeen", "Don't show the same person twice"],
     ["showTitleBarButton", "Show icon in the title bar"]
 ] as const;
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
-    const s = settings.use(["onlyOnline", "skipDnd", "skipExistingDms", "skipSeen", "showTitleBarButton", "minAccountAgeDays", "excludedGuilds", "seen"]);
+    const s = settings.use(["skipExistingDms", "skipSeen", "showTitleBarButton", "minAccountAgeDays", "excludedGuilds", "seen"]);
     const guilds = useMemo(() => Object.values(GuildStore.getGuilds()).sort((a, b) => a.name.localeCompare(b.name)), []);
     const excluded = new Set(s.excludedGuilds);
 

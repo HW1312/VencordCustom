@@ -23,7 +23,7 @@
 }
 
 .vc-roulette-stage {
-    min-height: 300px;
+    min-height: 340px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,7 +79,9 @@
 }
 
 .vc-roulette-banner {
-    height: 64px;
+    height: 110px;
+    background-size: cover;
+    background-position: center;
     background: linear-gradient(135deg, var(--brand-500, #5865f2), #eb459e);
 }
 
@@ -141,8 +143,6 @@
 .vc-roulette-bio {
     width: 100%;
     box-sizing: border-box;
-    max-height: 110px;
-    overflow-y: auto;
     padding: 8px 10px;
     border-radius: 8px;
     background: var(--background-modifier-accent, rgb(128 128 128 / 12%));
@@ -230,6 +230,54 @@
     margin-top: 8px;
 }
 
+.vc-roulette-link {
+    color: var(--text-link, #00a8fc);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.vc-roulette-link:hover {
+    text-decoration: underline;
+}
+
+.vc-roulette-link-copy {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 4px;
+    padding: 2px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    cursor: pointer;
+}
+
+.vc-roulette-link-copy:hover {
+    color: var(--interactive-hover, #dbdee1);
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-roulette-bio-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.vc-roulette-bio-more {
+    margin-top: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.vc-roulette-bio-more:hover {
+    text-decoration: underline;
+}
+
 /* ---------- Buttons & footer ---------- */
 
 .vc-roulette-btn {
@@ -267,10 +315,54 @@
 }
 
 .vc-roulette-pool {
+    align-self: center;
     margin-top: -4px;
+    padding: 0;
+    border: none;
+    background: none;
     text-align: center;
     font-size: 12px;
     color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-roulette-pool-why {
+    margin-left: 6px;
+    color: var(--text-link, #00a8fc);
+}
+
+.vc-roulette-pool:hover .vc-roulette-pool-why {
+    text-decoration: underline;
+}
+
+.vc-roulette-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--background-secondary, rgb(128 128 128 / 10%));
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.vc-roulette-stats p {
+    margin: 0;
+}
+
+.vc-roulette-stats-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+}
+
+.vc-roulette-stats-row {
+    display: flex;
+    justify-content: space-between;
+    font-variant-numeric: tabular-nums;
 }
 
 .vc-roulette-recent {
