@@ -39,13 +39,6 @@ const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Show the \"update ready\" state for testing (restart does nothing)",
         default: false
-    },
-    position: {
-        type: OptionType.SLIDER,
-        description: "Position in the title bar in % of the window width (0 = next to the other icons)",
-        markers: [0, 20, 25, 32, 40, 45],
-        default: 32,
-        stickToMarkers: false
     }
 });
 
@@ -288,7 +281,7 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
 }
 
 function UpdateButton() {
-    const { preview, position } = settings.use(["preview", "position"]);
+    const { preview } = settings.use(["preview"]);
     const s = useUpdateState();
     const ref = useRef(null);
     const [show, setShow] = useState(false);
@@ -299,30 +292,23 @@ function UpdateButton() {
     return (
         <Popout
             position="bottom"
-            align="left"
+            align="right"
             animation={Popout.Animation.NONE}
             shouldShow={show}
             onRequestClose={() => setShow(false)}
             targetElementRef={ref}
             renderPopout={() => <ErrorBoundary noop><Panel ready={ready} preview={preview} /></ErrorBoundary>}
         >
-            {(_: any, { isShown }: { isShown: boolean; }) => {
-                const icon = (
-                    <HeaderBarIcon
-                        ref={ref}
-                        className={classes("vc-updatebtn", ready && "vc-updatebtn-ready")}
-                        tooltip={isShown ? null : tooltip}
-                        icon={() => <Svg path={DOWNLOAD_PATH} />}
-                        selected={isShown}
-                        onClick={() => setShow(v => !v)}
-                    />
-                );
-                // The title is centered absolutely over the whole bar, so the free space between the icons
-                // and the title can only be reached with a fixed position
-                return position > 0
-                    ? <div className={cl("slot")} style={{ left: `${position}vw` }}>{icon}</div>
-                    : icon;
-            }}
+            {(_: any, { isShown }: { isShown: boolean; }) => (
+                <HeaderBarIcon
+                    ref={ref}
+                    className={classes("vc-updatebtn", ready && "vc-updatebtn-ready")}
+                    tooltip={isShown ? null : tooltip}
+                    icon={() => <Svg path={DOWNLOAD_PATH} />}
+                    selected={isShown}
+                    onClick={() => setShow(v => !v)}
+                />
+            )}
         </Popout>
     );
 }
@@ -339,11 +325,12 @@ export default definePlugin({
 
     patches: [
         {
-            // Left side of the title bar (next to Back/Forward & Inbox), same spot as the other plugin icons
+            // Right side of the title bar: first item, so it sits left of Discord's own icons (Inbox, Help, ...).
+            // VencordToolbox swaps the Fragment there for its own wrapper, so accept any component
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(leading:.{0,2500}?)\]\}\),title:/,
-                replace: "$1,$self.renderButton()]}),title:"
+                match: /trailing:\(0,\i\.jsxs\)\([^,{]{1,120},\{children:\[/,
+                replace: "$&$self.renderButton(),"
             }
         }
     ],
