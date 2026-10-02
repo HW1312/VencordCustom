@@ -11,14 +11,14 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, ContextMenuApi, Menu, Modal, openModal, showToast, Toasts, useEffect, useRef, useState } from "@webpack/common";
+import { Alerts, ContextMenuApi, Menu, Modal, openModal, showToast, Toasts, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import { activate, ATTR_ANCHOR, collapsedItemsNear, ItemHit, positionUnderDock, sanitizeSvg, stripUnsafe } from "./dom";
 import { settings } from "./index";
 import {
     applyBuiltinProfile, applyCustomProfile, Bar, BAR_LABEL, BARS, BUILTIN_PROFILES, ButtonState, data, DOCK_KEY, forget, getState,
-    isVencordKey, listKeys, logger, moveKey, present, resetAll, runtime, setState, snapshotProfile, update, useToolbarData, vencordId
+    isVencordKey, listKeys, logger, placeKey, present, resetAll, runtime, setState, snapshotProfile, update, useToolbarData, vencordId
 } from "./store";
 
 export const cl = classNameFactory("vc-toolbarmanager-");
@@ -27,7 +27,6 @@ const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'posi
 // ---------------------------------------------------------------- Icons
 
 const DOTS_PATH = "M4 12a2 2 0 1 1 4 0 2 2 0 0 1-4 0Zm6 0a2 2 0 1 1 4 0 2 2 0 0 1-4 0Zm8-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z";
-const GRIP_PATH = "M9 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM18 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM18 19a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z";
 
 export function DotsIcon({ size = 20, className }: { size?: number; className?: string; }) {
     return (
@@ -46,7 +45,10 @@ function SnapshotIcon({ html }: { html: string; }) {
         if (!host) return;
         host.replaceChildren();
         try {
-            const doc = new DOMParser().parseFromString(html, "image/svg+xml");
+            // Snapshots of React-rendered icons carry no xmlns - without it the parser builds plain XML elements
+            // that never paint (0×0 paths)
+            const source = /^<svg[^>]*\sxmlns=/.test(html) ? html : html.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            const doc = new DOMParser().parseFromString(source, "image/svg+xml");
             const svg = doc.documentElement;
             if (svg.nodeName.toLowerCase() !== "svg") return;
             stripUnsafe(svg);
@@ -223,28 +225,12 @@ export function renderTitleBarButton() {
 
 // ---------------------------------------------------------------- Settings: building blocks
 
-const STATES: { value: ButtonState; label: string; }[] = [
-    { value: "visible", label: "Visible" },
-    { value: "menu", label: "In ⋯ menu" },
-    { value: "hidden", label: "Hidden" }
+/** The three zones of the editor - a button's zone is its state */
+const ZONES: { value: ButtonState; label: string; empty: string; }[] = [
+    { value: "visible", label: "Visible", empty: "Drag icons here to show them" },
+    { value: "menu", label: "In ⋯ menu", empty: "Drag icons here to tuck them into the ⋯ menu" },
+    { value: "hidden", label: "Hidden", empty: "Drag icons here to hide them" }
 ];
-
-function StateSwitch({ value, onChange }: { value: ButtonState; onChange(v: ButtonState): void; }) {
-    return (
-        <div className={cl("segmented")}>
-            {STATES.map(s => (
-                <button
-                    type="button"
-                    key={s.value}
-                    className={classes(cl("segment"), s.value === value && cl(`segment-${s.value}`))}
-                    onClick={() => onChange(s.value)}
-                >
-                    {s.label}
-                </button>
-            ))}
-        </div>
-    );
-}
 
 const KIND_LABEL = { vencord: "Vencord", native: "Discord", plugin: "Plugin" } as const;
 
@@ -256,23 +242,165 @@ function kindOf(bar: Bar, key: string) {
 }
 
 function nameOf(bar: Bar, key: string) {
-    if (key === DOCK_KEY[bar]) return "⋯ menu (ToolbarManager)";
+    if (key === DOCK_KEY[bar]) return "⋯ menu";
     return data[bar].seen[key]?.name ?? (isVencordKey(key) ? vencordId(key) : key.slice(2));
 }
 
-// ---------------------------------------------------------------- Settings: list per bar
+function isPresentKey(bar: Bar, key: string) {
+    return present[bar].has(key) || (bar === "chat" && isVencordKey(key) && ChatBarButtonMap.has(vencordId(key)));
+}
 
-function BarList({ bar }: { bar: Bar; }) {
+/** Click / right-click on a tile in the editor */
+function openTileMenu(e: ReactMouseEvent, bar: Bar, key: string) {
+    const state = getState(bar, key);
+    const canForget = !isPresentKey(bar, key);
+
+    openMenuAt(e, e.currentTarget, () => (
+        <Menu.Menu navId="vc-toolbarmanager-tile" onClose={ContextMenuApi.closeContextMenu}>
+            <Menu.MenuGroup label={nameOf(bar, key)}>
+                {ZONES.map(z => (
+                    <Menu.MenuRadioItem
+                        key={z.value}
+                        id={`vc-tbm-zone-${z.value}`}
+                        group="vc-tbm-zone"
+                        label={z.label}
+                        checked={state === z.value}
+                        action={() => setState(bar, key, z.value)}
+                    />
+                ))}
+            </Menu.MenuGroup>
+            {canForget && <Menu.MenuSeparator />}
+            {canForget && (
+                <Menu.MenuItem
+                    id="vc-tbm-forget"
+                    label="Forget"
+                    subtext="Not currently shown - comes back once it is detected again"
+                    color="danger"
+                    action={() => forget(bar, key)}
+                />
+            )}
+        </Menu.Menu>
+    ));
+}
+
+interface Drop { zone: ButtonState; before: string | null; }
+
+/** Insertion point from the pointer position - works across wrapped lines */
+function dropBefore(zoneEl: HTMLElement, x: number, y: number): string | null {
+    for (const tile of zoneEl.querySelectorAll<HTMLElement>("[data-tbm-key]")) {
+        const r = tile.getBoundingClientRect();
+        if (y < r.top) return tile.dataset.tbmKey!;
+        if (y <= r.bottom && x < r.left + r.width / 2) return tile.dataset.tbmKey!;
+    }
+    return null;
+}
+
+function Tile({ bar, keyName, dragging, busy, dropBeforeThis, dropAfterThis, onDragStart, onDragEnd, onKeyMove }: {
+    bar: Bar;
+    keyName: string;
+    dragging: boolean;
+    /** Any drag running → no tooltips */
+    busy: boolean;
+    dropBeforeThis: boolean;
+    dropAfterThis: boolean;
+    onDragStart(): void;
+    onDragEnd(): void;
+    onKeyMove(dir: -1 | 1): void;
+}) {
+    const isDock = keyName === DOCK_KEY[bar];
+    const isPresent = isDock || isPresentKey(bar, keyName);
+    const kind = kindOf(bar, keyName);
+
+    const tooltip = (
+        <div className={cl("tooltip")}>
+            <span className={cl("tooltip-name")}>{nameOf(bar, keyName)}</span>
+            <span className={cl("tooltip-meta")}>
+                {isDock
+                    ? "Added by ToolbarManager - appears once something is in the ⋯ menu"
+                    : `${KIND_LABEL[kind]}${isPresent ? "" : " · not currently shown"}`}
+            </span>
+        </div>
+    );
+
+    return (
+        <Tooltip text={tooltip} hide={busy}>
+            {tooltipProps => (
+                <button
+                    type="button"
+                    {...tooltipProps}
+                    data-tbm-key={keyName}
+                    aria-label={nameOf(bar, keyName)}
+                    className={classes(
+                        cl("tile"),
+                        cl(`tile-${getState(bar, keyName)}`),
+                        !isPresent && cl("tile-absent"),
+                        dragging && cl("tile-dragging"),
+                        dropBeforeThis && cl("tile-drop-before"),
+                        dropAfterThis && cl("tile-drop-after")
+                    )}
+                    draggable
+                    onDragStart={e => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", keyName);
+                        tooltipProps.onMouseLeave();
+                        onDragStart();
+                    }}
+                    onDragEnd={onDragEnd}
+                    onClick={e => {
+                        tooltipProps.onClick();
+                        if (!isDock) openTileMenu(e, bar, keyName);
+                    }}
+                    onContextMenu={e => {
+                        e.preventDefault();
+                        tooltipProps.onContextMenu();
+                        if (!isDock) openTileMenu(e, bar, keyName);
+                    }}
+                    onKeyDown={e => {
+                        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                            e.preventDefault();
+                            onKeyMove(e.key === "ArrowLeft" ? -1 : 1);
+                        }
+                    }}
+                >
+                    <ButtonIcon bar={bar} keyName={keyName} />
+                </button>
+            )}
+        </Tooltip>
+    );
+}
+
+// ---------------------------------------------------------------- Settings: one bar (three zones)
+
+/**
+ * Mirrors the real bar: one row of icon tiles per zone. Dragging a tile reorders it (left/right)
+ * and dragging it into another zone changes its state. Click or right-click opens a small menu.
+ */
+function BarEditor({ bar }: { bar: Bar; }) {
     useToolbarData();
     // Watch Vencord's own "show button" setting (hidden Vencord chat buttons)
     useSettings(["uiElements.chatBarButtons.*"]);
     const [drag, setDrag] = useState<string | null>(null);
-    const [over, setOver] = useState<number | null>(null);
+    const [drop, setDrop] = useState<Drop | null>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
 
     const keys = listKeys(bar);
+    const dock = DOCK_KEY[bar];
+
+    const endDrag = () => { setDrag(null); setDrop(null); };
+
+    // Arrow keys: swap with the neighbour inside the same zone, keep the focus on the tile
+    const keyMove = (key: string, zoneKeys: string[], dir: -1 | 1) => {
+        const i = zoneKeys.indexOf(key);
+        const j = i + dir;
+        if (j < 0 || j >= zoneKeys.length) return;
+        placeKey(bar, key, getState(bar, key), dir === -1 ? zoneKeys[j] : (zoneKeys[j + 1] ?? null));
+        requestAnimationFrame(() => {
+            rootRef.current?.querySelector<HTMLElement>(`[data-tbm-key="${CSS.escape(key)}"]`)?.focus();
+        });
+    };
 
     return (
-        <div className={cl("card")}>
+        <div className={cl("card")} ref={rootRef}>
             <div className={cl("card-title")}>
                 <span>{BAR_LABEL[bar]}</span>
                 <span className={cl("count")}>{keys.length}</span>
@@ -286,69 +414,53 @@ function BarList({ bar }: { bar: Bar; }) {
                 </div>
             )}
 
-            <div className={cl("list")}>
-                {keys.map((key, i) => {
-                    const isDock = key === DOCK_KEY[bar];
-                    const isPresent = present[bar].has(key) || (bar === "chat" && isVencordKey(key) && ChatBarButtonMap.has(vencordId(key)));
-                    const canForget = !isPresent && !isDock;
-                    const kind = kindOf(bar, key);
+            {keys.length > 0 && ZONES.map(zone => {
+                const zoneKeys = keys.filter(k => getState(bar, k) === zone.value);
+                // Our own ⋯ button can only be reordered, never moved to another zone
+                const accepts = drag !== null && (drag !== dock || zone.value === "visible");
+                const active = accepts && drop?.zone === zone.value;
+                const last = zoneKeys[zoneKeys.length - 1];
 
-                    return (
+                return (
+                    <div key={zone.value} className={cl("zone")}>
+                        <span className={cl("zone-label")}>{zone.label}</span>
                         <div
-                            key={key}
-                            className={classes(cl("row"), drag === key && cl("row-dragging"), over === i && drag !== key && cl("row-over"))}
-                            draggable
-                            onDragStart={e => {
-                                e.dataTransfer.effectAllowed = "move";
-                                e.dataTransfer.setData("text/plain", key);
-                                setDrag(key);
-                            }}
+                            className={classes(cl("zone-row"), cl(`zone-row-${zone.value}`), active && cl("zone-row-over"))}
                             onDragOver={e => {
-                                if (!drag) return;
+                                if (!accepts) return;
                                 e.preventDefault();
-                                if (over !== i) setOver(i);
+                                e.dataTransfer.dropEffect = "move";
+                                const before = dropBefore(e.currentTarget, e.clientX, e.clientY);
+                                if (drop?.zone !== zone.value || drop.before !== before) setDrop({ zone: zone.value, before });
+                            }}
+                            onDragLeave={e => {
+                                if (!e.currentTarget.contains(e.relatedTarget as Node | null) && drop?.zone === zone.value) setDrop(null);
                             }}
                             onDrop={e => {
                                 e.preventDefault();
-                                if (drag) moveKey(bar, drag, i);
-                                setDrag(null);
-                                setOver(null);
+                                if (accepts && drag) placeKey(bar, drag, zone.value, dropBefore(e.currentTarget, e.clientX, e.clientY));
+                                endDrag();
                             }}
-                            onDragEnd={() => { setDrag(null); setOver(null); }}
                         >
-                            <svg viewBox="0 0 24 24" width={16} height={16} className={cl("grip")}>
-                                <path fill="currentColor" d={GRIP_PATH} />
-                            </svg>
-                            <ButtonIcon bar={bar} keyName={key} />
-                            <div className={cl("row-text")}>
-                                <span className={cl("row-name")} title={key}>{nameOf(bar, key)}</span>
-                                <span className={cl("row-meta")}>
-                                    <span className={classes(cl("badge"), cl(`badge-${kind}`))}>{KIND_LABEL[kind]}</span>
-                                    {!isPresent && !isDock && <span className={cl("muted")}>not currently shown</span>}
-                                </span>
-                            </div>
-
-                            {isDock
-                                ? <span className={cl("muted")}>appears once something is in the ⋯ menu</span>
-                                : <StateSwitch value={getState(bar, key)} onChange={v => setState(bar, key, v)} />}
-
-                            <div className={cl("row-actions")}>
-                                <button type="button" className={cl("icon-btn")} title="Move up" disabled={i === 0} onClick={() => moveKey(bar, key, i - 1)}>▲</button>
-                                <button type="button" className={cl("icon-btn")} title="Move down" disabled={i === keys.length - 1} onClick={() => moveKey(bar, key, i + 1)}>▼</button>
-                                <button
-                                    type="button"
-                                    className={classes(cl("icon-btn"), cl("icon-btn-danger"))}
-                                    title="Forget (will be re-added the next time it is detected)"
-                                    disabled={!canForget}
-                                    onClick={() => forget(bar, key)}
-                                >
-                                    ✕
-                                </button>
-                            </div>
+                            {zoneKeys.length === 0 && <span className={cl("zone-empty")}>{zone.empty}</span>}
+                            {zoneKeys.map(key => (
+                                <Tile
+                                    key={key}
+                                    bar={bar}
+                                    keyName={key}
+                                    dragging={drag === key}
+                                    busy={drag !== null}
+                                    dropBeforeThis={active && drop!.before === key && drag !== key}
+                                    dropAfterThis={active && drop!.before === null && key === last && drag !== key}
+                                    onDragStart={() => setDrag(key)}
+                                    onDragEnd={endDrag}
+                                    onKeyMove={dir => keyMove(key, zoneKeys, dir)}
+                                />
+                            ))}
                         </div>
-                    );
-                })}
-            </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -393,7 +505,7 @@ function Profiles() {
                     {d.profiles.map(p => (
                         <div key={p.id} className={cl("custom-profile")}>
                             <span className={cl("row-name")}>{p.name}</span>
-                            <button type="button" className={cl("btn")} onClick={() => applyCustomProfile(p)}>Anwenden</button>
+                            <button type="button" className={cl("btn")} onClick={() => applyCustomProfile(p)}>Apply</button>
                             <button
                                 type="button"
                                 className={classes(cl("icon-btn"), cl("icon-btn-danger"))}
@@ -460,13 +572,12 @@ function ManagerPanel() {
     return (
         <div className={cl("settings")}>
             <div className={cl("hint")}>
-                Buttons are detected automatically once they have been shown - open a chat for this.
-                Change the order by dragging or with ▲▼. “In ⋯ menu” hides the button behind a ⋯ button,
-                “Hidden” hides it completely. The text input and send button are never touched.
+                Drag icons to reorder them, or into another row to show, tuck away or hide them. Click an icon for options.
+                Buttons show up here once Discord has displayed them.
             </div>
+            {BARS.map(bar => <BarEditor key={bar} bar={bar} />)}
             <Profiles />
             <ContextMenuOption />
-            {BARS.map(bar => <BarList key={bar} bar={bar} />)}
         </div>
     );
 }

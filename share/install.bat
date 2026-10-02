@@ -6,6 +6,12 @@ echo.
 
 set "TARGET=%APPDATA%\VencordCustom"
 
+if not exist "%~dp0dist\renderer.js" (
+    echo The "dist" folder is missing next to this file.
+    echo Extract the whole zip first, then run install.bat from the extracted folder.
+    goto :fail
+)
+
 call :detect
 if "!COUNT!"=="0" (
     echo No Discord installation found.

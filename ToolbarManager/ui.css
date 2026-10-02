@@ -76,37 +76,7 @@
     background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
 }
 
-/* ---------- List ---------- */
-
-.vc-toolbarmanager-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.vc-toolbarmanager-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    background: var(--background-base-lower, var(--background-secondary));
-    cursor: grab;
-}
-
-.vc-toolbarmanager-row-dragging {
-    opacity: 0.4;
-}
-
-.vc-toolbarmanager-row-over {
-    border-color: var(--brand-500, #5865f2);
-}
-
-.vc-toolbarmanager-grip {
-    flex-shrink: 0;
-    color: var(--text-muted);
-}
+/* ---------- Bar editor: zones & tiles ---------- */
 
 .vc-toolbarmanager-icon {
     flex-shrink: 0;
@@ -130,12 +100,142 @@
     background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
 }
 
-.vc-toolbarmanager-row-text {
-    flex: 1;
-    min-width: 0;
+/* One zone = label on the left, row of tiles on the right */
+.vc-toolbarmanager-zone {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-toolbarmanager-zone-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Looks like the real bar: wraps instead of overflowing */
+.vc-toolbarmanager-zone-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 4px 6px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px dashed transparent;
+    background: var(--background-base-lower, var(--background-secondary));
+    transition: border-color 0.1s, background 0.1s;
+}
+
+.vc-toolbarmanager-zone-row-menu,
+.vc-toolbarmanager-zone-row-hidden {
+    border-color: var(--border-subtle, var(--background-modifier-accent));
+    background: transparent;
+}
+
+.vc-toolbarmanager-zone-row-over {
+    border-color: var(--brand-500, #5865f2);
+    background: var(--background-modifier-hover, rgb(88 101 242 / 8%));
+}
+
+.vc-toolbarmanager-zone-empty {
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.vc-toolbarmanager-tile {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: grab;
+}
+
+.vc-toolbarmanager-tile:hover,
+.vc-toolbarmanager-tile:focus-visible {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+}
+
+.vc-toolbarmanager-tile:hover .vc-toolbarmanager-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-toolbarmanager-tile:active {
+    cursor: grabbing;
+}
+
+/* Hidden: dimmed and struck through */
+.vc-toolbarmanager-tile-hidden .vc-toolbarmanager-icon {
+    opacity: 0.45;
+}
+
+.vc-toolbarmanager-tile-hidden::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 50%;
+    height: 2px;
+    border-radius: 1px;
+    transform: rotate(-45deg);
+    background: var(--status-danger, #f23f43);
+    pointer-events: none;
+}
+
+/* Not currently in Discord's DOM */
+.vc-toolbarmanager-tile-absent {
+    outline: 1px dashed var(--text-muted);
+    outline-offset: -3px;
+}
+
+.vc-toolbarmanager-tile-dragging {
+    opacity: 0.35;
+}
+
+/* Insertion marker - absolutely positioned in the gap, so the layout does not jump while dragging */
+.vc-toolbarmanager-tile-drop-before::before,
+.vc-toolbarmanager-tile-drop-after::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--brand-500, #5865f2);
+    pointer-events: none;
+}
+
+.vc-toolbarmanager-tile-drop-before::before {
+    left: -4px;
+}
+
+.vc-toolbarmanager-tile-drop-after::before {
+    right: -4px;
+}
+
+.vc-toolbarmanager-tooltip {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.vc-toolbarmanager-tooltip-name {
+    font-weight: 600;
+}
+
+.vc-toolbarmanager-tooltip-meta {
+    font-size: 12px;
+    opacity: 0.7;
 }
 
 .vc-toolbarmanager-row-name {
@@ -143,39 +243,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.vc-toolbarmanager-row-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.vc-toolbarmanager-badge {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 1px 5px;
-    border-radius: 4px;
-    color: #fff;
-    background: var(--text-muted);
-}
-
-.vc-toolbarmanager-badge-vencord {
-    background: #8a5cf6;
-}
-
-.vc-toolbarmanager-badge-native {
-    background: var(--brand-500, #5865f2);
-}
-
-.vc-toolbarmanager-badge-plugin {
-    background: #1f9e8f;
-}
-
-.vc-toolbarmanager-row-actions {
-    display: flex;
-    gap: 2px;
 }
 
 .vc-toolbarmanager-icon-btn {
@@ -204,7 +271,7 @@
     color: var(--status-danger, #f23f43);
 }
 
-/* ---------- Umschalter ---------- */
+/* ---------- Segmented control ---------- */
 
 .vc-toolbarmanager-segmented {
     display: flex;
@@ -234,16 +301,6 @@
 
 .vc-toolbarmanager-segment-visible {
     background: var(--brand-500, #5865f2);
-    color: #fff !important;
-}
-
-.vc-toolbarmanager-segment-menu {
-    background: var(--status-warning, #f0b232);
-    color: #000 !important;
-}
-
-.vc-toolbarmanager-segment-hidden {
-    background: var(--status-danger, #f23f43);
     color: #fff !important;
 }
 

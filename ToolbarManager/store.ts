@@ -181,6 +181,30 @@ export function moveKey(bar: Bar, key: string, toIndex: number) {
     update(d => { d[bar].order = keys; });
 }
 
+/**
+ * Drag & drop in the editor: put `key` into the zone `state`, directly before `beforeKey`
+ * (or after the last key of that zone if `beforeKey` is null). Only one shared order exists per bar -
+ * the zones are just filtered views of it, so the order inside the ⋯ menu follows the same list.
+ */
+export function placeKey(bar: Bar, key: string, state: ButtonState, beforeKey: string | null) {
+    if (getState(bar, key) !== state) setState(bar, key, state);
+    // "Before itself" = stays where it is
+    if (beforeKey === key) return;
+
+    const rest = listKeys(bar).filter(k => k !== key);
+    let toIndex: number;
+    if (beforeKey && rest.includes(beforeKey)) {
+        toIndex = rest.indexOf(beforeKey);
+    } else {
+        // After the last key of the target zone; empty zone → keep the current position
+        let last = -1;
+        rest.forEach((k, i) => { if (getState(bar, k) === state) last = i; });
+        if (last === -1) return;
+        toIndex = last + 1;
+    }
+    moveKey(bar, key, toIndex);
+}
+
 export function forget(bar: Bar, key: string) {
     update(d => {
         delete d[bar].seen[key];

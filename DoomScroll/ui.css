@@ -1,0 +1,316 @@
+/* ---------------------------------------------------------------- Squeezed chat (side layout) */
+
+.vc-doomscroll-squeeze {
+    box-sizing: border-box;
+    padding-right: var(--vc-doomscroll-width, 420px) !important;
+}
+
+/* ---------------------------------------------------------------- Overlay */
+
+.vc-doomscroll-overlay {
+    position: fixed;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #000;
+}
+
+.vc-doomscroll-overlay-side {
+    border-left: 1px solid var(--border-subtle, var(--background-modifier-accent, rgb(255 255 255 / 8%)));
+}
+
+.vc-doomscroll-strip {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    background: var(--background-secondary, #2b2d31);
+    border-bottom: 1px solid var(--border-subtle, var(--background-modifier-accent, rgb(255 255 255 / 8%)));
+}
+
+.vc-doomscroll-tabs,
+.vc-doomscroll-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-doomscroll-tabs {
+    overflow: hidden;
+}
+
+.vc-doomscroll-tab,
+.vc-doomscroll-strip-btn {
+    display: flex;
+    align-items: center;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font: inherit;
+    cursor: pointer;
+}
+
+.vc-doomscroll-tab {
+    justify-content: center;
+    width: 36px;
+    height: 30px;
+    flex: none;
+}
+
+.vc-doomscroll-strip-btn {
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+}
+
+.vc-doomscroll-tab:hover,
+.vc-doomscroll-strip-btn:hover {
+    color: var(--interactive-hover, #dbdee1);
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-doomscroll-tab-active,
+.vc-doomscroll-tab-active:hover {
+    color: var(--interactive-active, #fff);
+    background: var(--background-modifier-selected, rgb(255 255 255 / 12%));
+}
+
+.vc-doomscroll-strip-btn-active {
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-doomscroll-placeholder {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    color: rgb(255 255 255 / 45%);
+    font-size: 14px;
+}
+
+/* ---------------------------------------------------------------- Title bar button & menu */
+
+.vc-doomscroll-titlebtn,
+.vc-doomscroll-icon {
+    -webkit-app-region: no-drag;
+}
+
+.vc-doomscroll-titlebtn .vc-doomscroll-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-doomscroll-titlebtn:hover .vc-doomscroll-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+}
+
+.vc-doomscroll-titlebtn[class*="selected"] .vc-doomscroll-icon,
+.vc-doomscroll-titlebtn-active .vc-doomscroll-icon {
+    color: var(--interactive-icon-active, var(--interactive-active));
+}
+
+.vc-doomscroll-menu {
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 8px;
+    background: var(--background-floating, #111214);
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+}
+
+.vc-doomscroll-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+}
+
+.vc-doomscroll-menu-item:hover {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-doomscroll-menu-item-active,
+.vc-doomscroll-menu-item-active:hover {
+    background: var(--background-modifier-selected, rgb(255 255 255 / 12%));
+}
+
+.vc-doomscroll-brand {
+    flex: none;
+    display: block;
+}
+
+/* ---------------------------------------------------------------- Settings */
+
+.vc-doomscroll-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-doomscroll-launch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vc-doomscroll-launch-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
+    border-radius: 8px;
+    background: var(--background-secondary, #2b2d31);
+    color: var(--text-default, var(--text-normal));
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-doomscroll-launch-btn:hover {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-doomscroll-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.vc-doomscroll-number {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid var(--input-border, rgb(255 255 255 / 10%));
+    border-radius: 4px;
+    background: var(--input-background, var(--background-tertiary, #1e1f22));
+    color: var(--text-default, var(--text-normal));
+    font: inherit;
+}
+
+.vc-doomscroll-segmented {
+    display: inline-flex;
+    padding: 2px;
+    gap: 2px;
+    border-radius: 6px;
+    background: var(--background-tertiary, var(--background-secondary-alt, #1e1f22));
+}
+
+.vc-doomscroll-segment {
+    padding: 3px 10px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-doomscroll-segment:hover {
+    color: var(--interactive-hover, #dbdee1);
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-doomscroll-segment-active,
+.vc-doomscroll-segment-active:hover {
+    color: var(--interactive-active, #fff);
+    background: var(--background-modifier-selected, rgb(255 255 255 / 12%));
+}
+
+.vc-doomscroll-small-btn {
+    flex: none;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    background: var(--button-secondary-background, #4e5058);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.vc-doomscroll-small-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* ---------------------------------------------------------------- Volume */
+
+.vc-doomscroll-volume {
+    display: flex;
+    align-items: center;
+}
+
+/* Slides out to the left of the speaker while hovering it */
+.vc-doomscroll-volume .vc-doomscroll-volume-slider {
+    width: 0;
+    opacity: 0;
+    margin: 0;
+    transition: width 0.15s ease, opacity 0.15s ease, margin 0.15s ease;
+}
+
+.vc-doomscroll-volume:hover .vc-doomscroll-volume-slider,
+.vc-doomscroll-volume:focus-within .vc-doomscroll-volume-slider {
+    width: 80px;
+    opacity: 1;
+    margin: 0 6px 0 4px;
+}
+
+.vc-doomscroll-volume-slider {
+    height: 4px;
+    border-radius: 2px;
+    appearance: none;
+    background: linear-gradient(to right, var(--brand-500, #5865f2) var(--vc-doomscroll-fill, 100%), var(--background-modifier-accent, rgb(255 255 255 / 16%)) var(--vc-doomscroll-fill, 100%));
+    cursor: pointer;
+}
+
+.vc-doomscroll-volume-slider::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    appearance: none;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+.vc-doomscroll-volume-slider-wide {
+    width: 180px;
+}
+
+/* ---------------------------------------------------------------- Strip tooltips (Discord look) */
+
+.vc-doomscroll-tip {
+    position: fixed;
+    z-index: 1000;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--background-floating, #111214);
+    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+    color: var(--text-default, var(--text-normal, #dbdee1));
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+}
+
+.vc-doomscroll-tip-right {
+    transform: translateY(-100%);
+}
