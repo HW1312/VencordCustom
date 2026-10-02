@@ -1,0 +1,712 @@
+/* ---------- Host ---------- */
+
+.vc-peek-root {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    pointer-events: none;
+}
+
+/* ---------- Card ---------- */
+
+.vc-peek-card {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    max-height: 420px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+    background: var(--background-surface-higher, var(--background-floating, #232428));
+    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / 35%));
+    color: var(--text-default, var(--text-normal, #dbdee1));
+    font-family: var(--font-primary, inherit);
+    font-size: 13px;
+    line-height: 1.35;
+    pointer-events: auto;
+    user-select: text;
+    animation: vc-peek-in 110ms ease-out;
+    transform-origin: top left;
+}
+
+.vc-peek-card-chat {
+    height: 420px;
+}
+
+.vc-peek-card-voice {
+    width: auto;
+    min-width: 200px;
+    max-width: 280px;
+}
+
+.vc-peek-card-pinned {
+    border-color: var(--brand-500, #5865f2);
+}
+
+@keyframes vc-peek-in {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-peek-card {
+        animation: none;
+    }
+}
+
+/* ---------- Header ---------- */
+
+.vc-peek-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 6px 4px 8px;
+    border-bottom: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+    font-size: 12px;
+}
+
+.vc-peek-head-avatar {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.vc-peek-head-hash {
+    flex: none;
+    color: var(--channel-icon, var(--text-muted));
+}
+
+.vc-peek-head-name {
+    overflow: hidden;
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, #fff));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-peek-head-sub {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-peek-head-name + .vc-peek-pin,
+.vc-peek-head-name + .vc-peek-head-btn {
+    margin-left: auto;
+}
+
+.vc-peek-pin {
+    display: inline-flex;
+    flex: none;
+    color: var(--brand-500, #5865f2);
+}
+
+.vc-peek-head-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--interactive-normal, var(--text-muted));
+    cursor: pointer;
+}
+
+.vc-peek-head-btn:hover {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+    color: var(--interactive-hover, var(--text-default));
+}
+
+.vc-peek-head-btn-active {
+    color: var(--status-danger, #f23f43);
+}
+
+.vc-peek-live {
+    flex: none;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--status-danger, #f23f43);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+}
+
+.vc-peek-btn {
+    flex: none;
+    padding: 3px 10px;
+    border: none;
+    border-radius: 4px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-peek-btn:hover {
+    filter: brightness(1.1);
+}
+
+.vc-peek-btn-active {
+    background: var(--status-warning, #f0b232);
+}
+
+.vc-peek-head > .vc-peek-btn {
+    margin-left: auto;
+}
+
+/* ---------- Chat ---------- */
+
+.vc-peek-scroll {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.vc-peek-list {
+    padding: 4px 0 8px;
+}
+
+.vc-peek-msg {
+    padding: 1px 8px;
+}
+
+.vc-peek-msg-start {
+    margin-top: 8px;
+}
+
+.vc-peek-msg:hover {
+    background: var(--background-message-hover, rgb(0 0 0 / 6%));
+}
+
+.vc-peek-highlight,
+.vc-peek-highlight:hover {
+    background: var(--background-mentioned, rgb(250 168 26 / 10%));
+    box-shadow: inset 2px 0 0 var(--info-warning-foreground, #f0b232);
+}
+
+.vc-peek-msg-row {
+    display: flex;
+    gap: 8px;
+}
+
+.vc-peek-gutter {
+    flex: none;
+    width: 24px;
+}
+
+.vc-peek-avatar {
+    width: 24px;
+    height: 24px;
+    margin-top: 2px;
+    border-radius: 50%;
+}
+
+.vc-peek-msg-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-peek-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.vc-peek-name {
+    overflow: hidden;
+    font-weight: 600;
+    color: var(--header-primary, var(--text-strong, #fff));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-peek-tag {
+    padding: 0 3px;
+    border-radius: 3px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+}
+
+.vc-peek-time {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.vc-peek-content {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.vc-peek-content code {
+    font-size: 12px;
+}
+
+.vc-peek-muted,
+.vc-peek-muted-line {
+    color: var(--text-muted);
+}
+
+.vc-peek-muted-line {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.vc-peek-system {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.vc-peek-reply {
+    display: flex;
+    gap: 4px;
+    overflow: hidden;
+    margin-left: 32px;
+    color: var(--text-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.vc-peek-reply-name {
+    flex: none;
+    font-weight: 600;
+}
+
+.vc-peek-reply-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-peek-image {
+    display: block;
+    max-width: 220px;
+    max-height: 140px;
+    margin-top: 4px;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+.vc-peek-file {
+    display: block;
+    overflow: hidden;
+    margin-top: 2px;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-peek-embed {
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-left: 3px solid var(--background-modifier-accent, rgb(128 128 128 / 40%));
+    border-radius: 4px;
+    background: var(--background-secondary, rgb(0 0 0 / 15%));
+    font-size: 12px;
+}
+
+.vc-peek-embed-author {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.vc-peek-embed-title {
+    font-weight: 600;
+}
+
+.vc-peek-embed-desc {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.vc-peek-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 3px;
+}
+
+.vc-peek-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--background-secondary, rgb(0 0 0 / 15%));
+    font-size: 11px;
+}
+
+.vc-peek-reaction img {
+    width: 14px;
+    height: 14px;
+}
+
+.vc-peek-center {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    padding: 12px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.vc-peek-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgb(128 128 128 / 35%);
+    border-top-color: var(--brand-500, #5865f2);
+    border-radius: 50%;
+    animation: vc-peek-spin 0.7s linear infinite;
+}
+
+@keyframes vc-peek-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ---------- Stream ---------- */
+
+.vc-peek-video {
+    position: relative;
+    flex: none;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #000;
+}
+
+.vc-peek-video > :not(.vc-peek-preview, .vc-peek-overlay) {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+}
+
+.vc-peek-video video,
+.vc-peek-video canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.vc-peek-preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.vc-peek-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 35%);
+    color: #fff;
+    font-size: 12px;
+}
+
+.vc-peek-dots {
+    display: inline-flex;
+    flex: none;
+    gap: 3px;
+    margin-left: auto;
+}
+
+.vc-peek-dot {
+    width: 6px;
+    height: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--interactive-muted, rgb(128 128 128 / 50%));
+    cursor: pointer;
+}
+
+.vc-peek-dot-active {
+    background: var(--interactive-active, #fff);
+}
+
+/* ---------- Voice channel ---------- */
+
+.vc-peek-voice-list {
+    overflow-y: auto;
+    max-height: 300px;
+    padding: 3px 0;
+    scrollbar-width: thin;
+}
+
+.vc-peek-voice-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+
+.vc-peek-voice-row-live {
+    cursor: pointer;
+}
+
+.vc-peek-voice-row-live:hover {
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-peek-voice-avatar {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.vc-peek-voice-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-peek-voice-icon {
+    flex: none;
+    color: var(--interactive-normal, var(--text-muted));
+}
+
+/* ---------- Settings ---------- */
+
+.vc-peek-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-peek-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vc-peek-option-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vc-peek-label {
+    margin-top: 6px;
+    color: var(--header-secondary, var(--text-muted));
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.vc-peek-select,
+.vc-peek-number {
+    padding: 5px 8px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 6px;
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+}
+
+.vc-peek-number {
+    width: 80px;
+}
+
+.vc-peek-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* ---------- Hold key picker (Discord-like segmented control) ---------- */
+
+.vc-peek-segmented {
+    display: inline-flex;
+    padding: 2px;
+    gap: 2px;
+    border-radius: 6px;
+    background: var(--background-tertiary, var(--background-secondary-alt, #1e1f22));
+}
+
+.vc-peek-segment {
+    padding: 3px 10px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-peek-segment:hover {
+    color: var(--interactive-hover, #dbdee1);
+    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+}
+
+.vc-peek-segment-active,
+.vc-peek-segment-active:hover {
+    color: var(--interactive-active, #fff);
+    background: var(--background-modifier-selected, rgb(255 255 255 / 12%));
+}
+
+.vc-peek-small-btn {
+    padding: 3px 10px;
+    border: none;
+    border-radius: 4px;
+    background: var(--button-secondary-background, #4e5058);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.vc-peek-small-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* ---------- Movable & resizable call stream preview ---------- */
+
+.vc-peek-card-call {
+    max-height: none;
+}
+
+.vc-peek-card-call .vc-peek-head {
+    cursor: move;
+}
+
+.vc-peek-card-call .vc-peek-head button {
+    cursor: pointer;
+}
+
+.vc-peek-dragging {
+    animation: none;
+    user-select: none;
+    transition: none;
+}
+
+.vc-peek-resize {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+    z-index: 2;
+    background: linear-gradient(135deg, transparent 50%, rgb(255 255 255 / 35%) 50%, rgb(255 255 255 / 35%) 60%, transparent 60%, transparent 70%, rgb(255 255 255 / 35%) 70%, rgb(255 255 255 / 35%) 80%, transparent 80%);
+    opacity: 0.6;
+}
+
+.vc-peek-resize:hover {
+    opacity: 1;
+}
+
+/* ---------- Embeds & bot components ---------- */
+
+.vc-peek-embed-main {
+    display: flex;
+    gap: 8px;
+}
+
+.vc-peek-embed-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-peek-embed-author {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vc-peek-embed-author-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.vc-peek-embed-title a {
+    color: var(--text-link, #00a8fc);
+    text-decoration: none;
+}
+
+.vc-peek-embed-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 4px;
+}
+
+.vc-peek-embed-field {
+    flex: 1 1 100%;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.vc-peek-embed-field-inline {
+    flex: 1 1 30%;
+}
+
+.vc-peek-embed-field-name {
+    font-weight: 600;
+    color: var(--header-primary, var(--text-normal));
+}
+
+.vc-peek-embed-thumb {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.vc-peek-embed-footer {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ChatPopout's component renderer, scaled down for the compact preview */
+.vc-peek-components {
+    font-size: 12px;
+    zoom: 0.9;
+}
