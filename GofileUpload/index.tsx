@@ -1,6 +1,7 @@
 /*
  * GofileUpload – Vencord Userplugin
- * Files that are too large for Discord are uploaded to gofile.io (Catbox as fallback) instead and the
+ * Images that are too large for Discord are compressed in the renderer first, so they stay normal attachments.
+ * Everything that is still too large is uploaded to gofile.io (Catbox as fallback) instead and the
  * download link is sent in the chat where you tried to send them. Metadata is stripped before uploading (same as OpSec).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -48,6 +49,27 @@ const settings = definePluginSettings({
         type: OptionType.NUMBER,
         description: "Size limit with Nitro (MB)",
         default: 999
+    },
+    autoCompress: {
+        type: OptionType.BOOLEAN,
+        description: "Compress images that are too large instead of uploading them to Gofile (animated images are never compressed)",
+        default: true
+    },
+    compressFormat: {
+        type: OptionType.SELECT,
+        description: "Format for compressed images",
+        options: [
+            { label: "Automatic (JPEG, WebP for images with transparency)", value: "auto", default: true },
+            { label: "Always JPEG", value: "jpeg" },
+            { label: "Always WebP", value: "webp" }
+        ]
+    },
+    compressQuality: {
+        type: OptionType.SLIDER,
+        description: "Highest quality to try when compressing (%) – lower values are only used if needed",
+        markers: [60, 70, 80, 90, 100],
+        default: 92,
+        stickToMarkers: false
     },
     preferCatbox: {
         type: OptionType.BOOLEAN,
@@ -342,11 +364,216 @@ async function uploadFiles(files: File[], channel: Channel) {
     }
 }
 
+// ---------------------------------------------------------------- Auto-compress (images)
+
+const COMPRESSIBLE = /^image\/(jpeg|png|webp|bmp)$/;
+const COMPRESSIBLE_EXT = /\.(jpe?g|jfif|png|webp|bmp)$/i;
+/** Inputs bigger than this aren't decoded at all (memory) – they go to Gofile */
+const COMPRESS_MAX_INPUT = 150 * MB;
+/** Decoded images are first scaled down to at most this many pixels */
+const MAX_PIXELS = 40_000_000;
+/** Never scale the long side below this (unless the image already is smaller) */
+const MIN_LONG_SIDE = 1280;
+/** Stay a bit below the limit */
+const SAFETY = 0.98;
+const MAX_ENCODES = 16;
+
+function isCompressible(file: File) {
+    if (!(file instanceof File) || file.size > COMPRESS_MAX_INPUT) return false;
+    return COMPRESSIBLE.test(file.type) || (!file.type && COMPRESSIBLE_EXT.test(file.name));
+}
+
+interface ImageInfo {
+    kind: "jpeg" | "png" | "webp" | "bmp";
+    animated: boolean;
+    alpha: boolean;
+}
+
+const ascii = (b: Uint8Array, at: number, len: number) => String.fromCharCode(...b.subarray(at, at + len));
+const readBytes = async (file: File, start: number, end: number) => new Uint8Array(await file.slice(start, end).arrayBuffer());
+
+/** Sniffs the real format from the magic bytes and detects animation / transparency where the header tells us. */
+async function inspectImage(file: File): Promise<ImageInfo | null> {
+    const head = await readBytes(file, 0, 64);
+    if (head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF) return { kind: "jpeg", animated: false, alpha: false };
+    if (ascii(head, 0, 2) === "BM") return { kind: "bmp", animated: false, alpha: false };
+
+    if (ascii(head, 0, 4) === "RIFF" && ascii(head, 8, 4) === "WEBP") {
+        const chunk = ascii(head, 12, 4);
+        if (chunk === "VP8X") {
+            const flags = head[20];
+            return { kind: "webp", animated: (flags & 0x02) !== 0, alpha: (flags & 0x10) !== 0 };
+        }
+        // VP8L (lossless) can carry alpha, simple VP8 can't
+        return { kind: "webp", animated: false, alpha: chunk === "VP8L" };
+    }
+
+    if (head[0] === 0x89 && ascii(head, 1, 3) === "PNG") {
+        // IHDR colour type 4 / 6 = has an alpha channel
+        let alpha = head[25] === 4 || head[25] === 6;
+        let animated = false;
+        // Walk the chunks up to the first IDAT: acTL (APNG) and tRNS must come before it
+        let pos = 8;
+        for (let i = 0; i < 200 && pos + 8 <= file.size; i++) {
+            const h = await readBytes(file, pos, pos + 8);
+            const len = new DataView(h.buffer).getUint32(0);
+            const type = ascii(h, 4, 4);
+            if (type === "IDAT" || type === "IEND") break;
+            if (type === "acTL") animated = true;
+            if (type === "tRNS") alpha = true;
+            pos += 12 + len;
+        }
+        return { kind: "png", animated, alpha };
+    }
+
+    return null;
+}
+
+function outputType(info: ImageInfo): { mime: string; ext: string; } {
+    const format = settings.store.compressFormat;
+    const webp = format === "webp" || (format !== "jpeg" && (info.alpha || info.kind === "webp"));
+    return webp ? { mime: "image/webp", ext: ".webp" } : { mime: "image/jpeg", ext: ".jpg" };
+}
+
+function renameExt(name: string, ext: string) {
+    const base = name.replace(/\.[^./\\]*$/, "");
+    return (base || "image") + ext;
+}
+
+function makeCanvas(w: number, h: number) {
+    if (typeof OffscreenCanvas === "function") return new OffscreenCanvas(w, h);
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    return c;
+}
+
+function encodeCanvas(canvas: OffscreenCanvas | HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+    if (canvas instanceof HTMLCanvasElement) return new Promise(res => canvas.toBlob(res, type, quality));
+    return canvas.convertToBlob({ type, quality });
+}
+
+/**
+ * Re-encodes an image through a canvas (this also drops all metadata) until it fits under `limit`:
+ * first lower quality steps, then smaller sizes. Returns null if it can't get small enough.
+ */
+async function compressImage(file: File, limit: number): Promise<File | null> {
+    const info = await inspectImage(file);
+    if (!info || info.animated) return null;
+
+    const { mime, ext } = outputType(info);
+    const opaque = mime === "image/jpeg";
+    const target = limit * SAFETY;
+    const maxQ = Math.min(1, Math.max(0.5, (Number(settings.store.compressQuality) || 92) / 100));
+    const qualities = [...new Set([maxQ, 0.85, 0.75, 0.65].filter(q => q <= maxQ))];
+
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    try {
+        const { width, height } = bitmap;
+        if (!width || !height) return null;
+        const longSide = Math.max(width, height);
+        const minScale = Math.min(1, MIN_LONG_SIDE / longSide);
+        let scale = Math.min(1, Math.sqrt(MAX_PIXELS / (width * height)));
+        let encodes = 0;
+
+        while (encodes < MAX_ENCODES) {
+            const w = Math.max(1, Math.round(width * scale));
+            const h = Math.max(1, Math.round(height * scale));
+            const canvas = makeCanvas(w, h);
+            const ctx = canvas.getContext("2d") as OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
+            if (!ctx) return null;
+            if (opaque) {
+                // JPEG has no alpha – transparent pixels would turn black otherwise
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, w, h);
+            }
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(bitmap, 0, 0, w, h);
+
+            let smallest = Infinity;
+            try {
+                for (const q of qualities) {
+                    if (encodes++ >= MAX_ENCODES) return null;
+                    const blob = await encodeCanvas(canvas, mime, q);
+                    // Chromium silently falls back to PNG for types it can't encode
+                    if (!blob || blob.type !== mime) return null;
+                    if (blob.size <= target) {
+                        return new File([blob], renameExt(file.name, ext), { type: mime, lastModified: file.lastModified });
+                    }
+                    smallest = Math.min(smallest, blob.size);
+                }
+            } finally {
+                // Free the canvas memory right away
+                canvas.width = canvas.height = 0;
+            }
+
+            if (scale <= minScale) return null;
+            // File size scales roughly with the pixel count
+            const factor = Math.min(0.85, Math.max(0.5, Math.sqrt(target / smallest) * 0.95));
+            scale = Math.max(minScale, scale * factor);
+        }
+        return null;
+    } finally {
+        bitmap.close();
+    }
+}
+
+/** Compresses the oversized compressible images in `list` (in place). Never throws. */
+async function compressOversized(list: File[], limit: number) {
+    const done: { name: string; from: number; to: number; }[] = [];
+    for (const [i, f] of list.entries()) {
+        if (!(f instanceof File) || f.size <= limit || !isCompressible(f)) continue;
+        try {
+            const out = await compressImage(f, limit);
+            if (out) {
+                list[i] = out;
+                done.push({ name: f.name, from: f.size, to: out.size });
+            } else {
+                logger.info("Could not compress", f.name, "under the limit – uploading to a file host");
+            }
+        } catch (e) {
+            logger.error("Failed to compress", f.name, e);
+        }
+    }
+
+    if (done.length === 1) {
+        const [d] = done;
+        showToast(`Compressed ${d.name} (${formatSize(d.from)} → ${formatSize(d.to)})`, Toasts.Type.SUCCESS);
+    } else if (done.length > 1) {
+        const from = done.reduce((n, d) => n + d.from, 0);
+        const to = done.reduce((n, d) => n + d.to, 0);
+        showToast(`Compressed ${done.length} images (${formatSize(from)} → ${formatSize(to)})`, Toasts.Type.SUCCESS);
+    }
+}
+
+/**
+ * Takes the files over the limit out of `list` and uploads them to a file host in the background.
+ * Returns the files Discord should still handle itself (keeps filesMetadata in sync).
+ */
+function splitOff(list: File[], limit: number, channel: Channel, options?: { filesMetadata?: unknown[]; }) {
+    const big = list.filter(f => f instanceof File && f.size > limit);
+    if (!big.length) return list;
+
+    const keep: File[] = [];
+    const keepMeta: unknown[] = [];
+    list.forEach((f, i) => {
+        if (big.includes(f)) return;
+        keep.push(f);
+        if (options?.filesMetadata) keepMeta.push(options.filesMetadata[i]);
+    });
+    if (options?.filesMetadata) options.filesMetadata = keepMeta;
+
+    showToast(`${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord – uploading to a file host`, Toasts.Type.MESSAGE);
+    void uploadFiles(big, channel);
+    return keep;
+}
+
 // ---------------------------------------------------------------- Plugin
 
 export default definePlugin({
     name: "GofileUpload",
-    description: "Files that are too large for Discord (19.8 MB without Nitro, 999 MB with Nitro) are uploaded to gofile.io (Catbox as fallback) with metadata stripped, and the link is sent in the chat instead",
+    description: "Files that are too large for Discord (19.8 MB without Nitro, 999 MB with Nitro) are uploaded to gofile.io (Catbox as fallback) with metadata stripped, and the link is sent in the chat instead. Oversized images are compressed first so they stay normal attachments",
     authors: [{ name: "5406", id: 1062070744558870548n }],
     tags: ["Chat", "Utility"],
     settings,
@@ -354,20 +581,22 @@ export default definePlugin({
     patches: [
         {
             // UploadHandler.promptToUpload – every way of adding files (drop, paste, + button) goes through it,
-            // and it shows the "Your files are too powerful" error. We take the oversized files out before that.
+            // and it shows the "Your files are too powerful" error. We compress / take the oversized files out before that.
+            // The function is async, so we can await the compression before Discord sees (and uploads) the files.
             find: "Unexpected mismatch between files and file metadata",
             replacement: {
                 match: /async function \i\((\i),(\i),(\i)\){(?=let\{filesMetadata:)/,
-                replace: "$&{const vcKeep=$self.interceptFiles($1,$2,arguments[3]);if(vcKeep!=null){if(!vcKeep.length)return;$1=vcKeep}}"
+                replace: "$&{let vcKeep=$self.interceptFiles($1,$2,arguments[3]);if(vcKeep instanceof Promise)vcKeep=await vcKeep;if(vcKeep!=null){if(!vcKeep.length)return;$1=vcKeep}}"
             }
         }
     ],
 
     /**
      * Returns null to leave everything to Discord, otherwise the files Discord should still handle itself
-     * (the oversized ones are uploaded to Gofile in the background).
+     * (oversized images are compressed first, the remaining oversized files are uploaded to Gofile in the background).
+     * Returns a Promise only when images need compressing – that Promise never rejects.
      */
-    interceptFiles(files: ArrayLike<File> | null, channel: Channel | null, options?: { filesMetadata?: unknown[]; }) {
+    interceptFiles(files: ArrayLike<File> | null, channel: Channel | null, options?: { filesMetadata?: unknown[]; }): File[] | null | Promise<File[] | null> {
         try {
             if (!running || !files?.length || !channel) return null;
             const limit = limitBytes();
@@ -377,18 +606,25 @@ export default definePlugin({
             const big = list.filter(f => f instanceof File && f.size > limit);
             if (!big.length) return null;
 
-            const keep: File[] = [];
-            const keepMeta: unknown[] = [];
-            list.forEach((f, i) => {
-                if (big.includes(f)) return;
-                keep.push(f);
-                if (options?.filesMetadata) keepMeta.push(options.filesMetadata[i]);
-            });
-            if (options?.filesMetadata) options.filesMetadata = keepMeta;
+            if (settings.store.autoCompress && big.some(isCompressible)) {
+                return (async () => {
+                    try {
+                        const compressed = [...list];
+                        await compressOversized(compressed, limit);
+                        return splitOff(compressed, limit, channel, options);
+                    } catch (e) {
+                        logger.error("Auto-compress failed, falling back to the file host", e);
+                        try {
+                            return splitOff(list, limit, channel, options);
+                        } catch (e2) {
+                            logger.error("interceptFiles failed", e2);
+                            return null;
+                        }
+                    }
+                })();
+            }
 
-            showToast(`${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord – uploading to a file host`, Toasts.Type.MESSAGE);
-            void uploadFiles(big, channel);
-            return keep;
+            return splitOff(list, limit, channel, options);
         } catch (e) {
             logger.error("interceptFiles failed", e);
             return null;

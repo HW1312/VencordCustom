@@ -20,6 +20,16 @@
     50% { transform: translateY(2px); }
 }
 
+.vc-updatebtn-slot {
+    position: fixed;
+    top: 0;
+    height: var(--custom-app-top-bar-height, 32px);
+    display: flex;
+    align-items: center;
+    z-index: 2;
+    -webkit-app-region: no-drag;
+}
+
 /* ---------- Panel ---------- */
 
 .vc-updatebtn-panel {

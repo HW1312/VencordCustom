@@ -261,7 +261,7 @@ const plugin = definePlugin({
             // Order of plugin icons = load order of the plugins (alphabetical by folder).
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(leading:.{0,600}?)\]\}\),title:/,
+                match: /(leading:.{0,2500}?)\]\}\),title:/,
                 replace: "$1,$self.renderTitleBarButton()]}),title:"
             }
         }

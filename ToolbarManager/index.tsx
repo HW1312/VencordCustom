@@ -64,7 +64,7 @@ export default definePlugin({
             // Title bar on the left (next to Back/Forward & Inbox): append our own ⋯ button at the end (like FakeMute)
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(leading:.{0,600}?)\]\}\),title:/,
+                match: /(leading:.{0,2500}?)\]\}\),title:/,
                 replace: "$1,$self.renderTitleBarButton()]}),title:"
             }
         }

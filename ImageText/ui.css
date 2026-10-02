@@ -1,0 +1,61 @@
+/* ---------- Text modal ---------- */
+
+.vc-imagetext-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-imagetext-status {
+    padding: 12px 0;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.vc-imagetext-status-error {
+    color: var(--text-danger, var(--status-danger));
+}
+
+.vc-imagetext-textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 220px;
+    max-height: 60vh;
+    padding: 10px 12px;
+    resize: vertical;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle, transparent);
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-family: var(--font-code, monospace);
+    font-size: 14px;
+    line-height: 1.45;
+    outline: none;
+}
+
+.vc-imagetext-textarea:focus {
+    border-color: var(--text-link, var(--brand-500));
+}
+
+.vc-imagetext-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* ---------- Settings ---------- */
+
+.vc-imagetext-languages {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+}
+
+.vc-imagetext-languages-title {
+    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+    font-weight: 600;
+}
+
+.vc-imagetext-languages-list {
+    color: var(--text-muted);
+}

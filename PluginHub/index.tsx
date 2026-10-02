@@ -132,7 +132,7 @@ export default definePlugin({
             // Order of plugin icons = plugin load order (alphabetical by folder).
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(leading:.{0,600}?)\]\}\),title:/,
+                match: /(leading:.{0,2500}?)\]\}\),title:/,
                 replace: "$1,$self.renderTitleBarButton()]}),title:"
             }
         }

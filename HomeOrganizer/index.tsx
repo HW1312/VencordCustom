@@ -110,7 +110,7 @@ export default definePlugin({
             // Title bar, left side (next to back/forward & inbox): append button at the end - same pattern as FakeMute/Radar
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(leading:.{0,600}?)\]\}\),title:/,
+                match: /(leading:.{0,2500}?)\]\}\),title:/,
                 replace: "$1,$self.renderTitleBarButton()]}),title:"
             }
         }
