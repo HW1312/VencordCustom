@@ -12,7 +12,7 @@
  */
 
 import { execSync } from "child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
@@ -67,6 +67,22 @@ for (const name of previous) rmSync(join(USERPLUGINS, name), { recursive: true, 
 
 for (const name of plugins) cpSync(join(ROOT, name), join(USERPLUGINS, name), { recursive: true });
 writeFileSync(MANAGED_FILE, JSON.stringify(plugins));
+
+// Wann jedes Plugin dazukam (PluginHub sortiert danach und zeigt "NEW"):
+// frühestes Datum aus Ordner-Erstellung und erstem Git-Commit
+const added = {};
+for (const dir of plugins) {
+    const file = ["index.ts", "index.tsx"].map(f => join(ROOT, dir, f)).find(existsSync);
+    const name = readFileSync(file, "utf-8").match(/definePlugin\(\{[\s\S]*?\bname:\s*"([^"]+)"/)?.[1];
+    if (!name) continue;
+    const dates = [statSync(join(ROOT, dir)).birthtimeMs];
+    try {
+        const first = git(`log --diff-filter=A --format=%ct -- "${dir}"`).split("\n").filter(Boolean).at(-1);
+        if (first) dates.push(Number(first) * 1000);
+    } catch { }
+    added[name] = Math.round(Math.min(...dates.filter(d => d > 0)));
+}
+writeFileSync(join(USERPLUGINS, "PluginHub", "added.json"), JSON.stringify(added));
 
 console.log(`Plugins: ${plugins.join(", ") || "(keine)"}`);
 

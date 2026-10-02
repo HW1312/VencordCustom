@@ -1,9 +1,0 @@
-/* RamSaver: Hide profile effects, avatar decorations & nameplates. */
-[class*="profileEffects_"],
-[class*="avatarDecoration_"],
-img[src*="/avatar-decoration-presets/"],
-img[src*="/profile-effects/"],
-video[src*="/nameplates/"],
-img[src*="/nameplates/"] {
-    display: none !important;
-}

@@ -11,12 +11,18 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, Plugin } from "@utils/types";
 import { showToast, Toasts } from "@webpack/common";
 
+import added from "./added.json";
 import { openHubModal, renderTitleBarButton, SettingsPanel } from "./ui";
 
 export const logger = new Logger("PluginHub");
 
 /** Own plugins are recognized by author, so new plugins show up automatically */
 const OWN_AUTHOR = "5406";
+/** How long a plugin counts as new after it was added (as long as it hasn't been tried) */
+const NEW_FOR = 7 * 24 * 60 * 60 * 1000;
+
+/** Plugin name → time it was added, written by build.mjs */
+const addedAt = added as Record<string, number>;
 
 // ---------------------------------------------------------------- Settings
 
@@ -30,6 +36,21 @@ export const settings = definePluginSettings({
         description: "Show icon in the title bar",
         default: true,
         hidden: true
+    },
+    sort: {
+        type: OptionType.SELECT,
+        description: "Sort order",
+        options: [
+            { label: "Newest first", value: "new", default: true },
+            { label: "A–Z", value: "az" }
+        ],
+        hidden: true
+    },
+    /** Plugins that were turned on at least once – they lose their NEW badge */
+    tried: {
+        type: OptionType.CUSTOM,
+        default: [] as string[],
+        hidden: true
     }
 });
 
@@ -38,10 +59,23 @@ export const settings = definePluginSettings({
 export function getOwnPlugins(): Plugin[] {
     return Object.values(plugins)
         .filter(p => p.name !== "PluginHub" && p.authors?.some(a => a.name === OWN_AUTHOR))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort((a, b) =>
+            (settings.store.sort === "new" ? (addedAt[b.name] ?? 0) - (addedAt[a.name] ?? 0) : 0)
+            || a.name.localeCompare(b.name)
+        );
 }
 
 export const isEnabled = (p: Plugin) => isPluginEnabled(p.name);
+
+export function isNew(p: Plugin) {
+    const at = addedAt[p.name];
+    return !!at && Date.now() - at < NEW_FOR && !isEnabled(p) && !settings.store.tried.includes(p.name);
+}
+
+export function markTried(p: Plugin) {
+    if (!settings.store.tried.includes(p.name))
+        settings.store.tried = [...settings.store.tried, p.name];
+}
 
 /** Setting and actual state differ → only takes effect after a restart */
 export const needsRestart = (p: Plugin) => pluginRequiresRestart(p) && isEnabled(p) !== !!p.started;
@@ -50,6 +84,7 @@ export const needsRestart = (p: Plugin) => pluginRequiresRestart(p) && isEnabled
 export function setEnabled(p: Plugin, enable: boolean) {
     const wasEnabled = isEnabled(p);
     if (wasEnabled === enable) return;
+    if (enable) markTried(p);
 
     const pluginSettings = Settings.plugins[p.name];
 

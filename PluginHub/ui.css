@@ -18,7 +18,8 @@
 /* ---------- Popout ---------- */
 
 .vc-pluginhub-popout {
-    width: 380px;
+    width: 680px;
+    max-width: calc(100vw - 40px);
     max-height: calc(100vh - 80px);
     overflow-y: auto;
     box-sizing: border-box;
@@ -136,8 +137,8 @@
 }
 
 .vc-pluginhub-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
     gap: 6px;
 }
 
@@ -169,6 +170,13 @@
     font-size: 14px;
 }
 
+.vc-pluginhub-row-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .vc-pluginhub-row-desc {
     margin-top: 2px;
     font-size: 12px;
@@ -190,6 +198,12 @@
     text-transform: uppercase;
     background: var(--status-warning, #f0b232);
     color: #000;
+    flex-shrink: 0;
+}
+
+.vc-pluginhub-badge-new {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
 }
 
 .vc-pluginhub-cog {
@@ -207,15 +221,51 @@
     background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
 }
 
-.vc-pluginhub-cog:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
 .vc-pluginhub-empty {
+    grid-column: 1 / -1;
     padding: 12px;
     text-align: center;
     font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ---------- Info ---------- */
+
+.vc-pluginhub-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.vc-pluginhub-info-desc {
+    margin: 0;
+    font-size: 15px;
+}
+
+.vc-pluginhub-info-h {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.vc-pluginhub-info-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+}
+
+.vc-pluginhub-info-list li + li {
+    margin-top: 3px;
+}
+
+.vc-pluginhub-info-note {
+    margin: 4px 0 0;
+    font-size: 12px;
     color: var(--text-muted);
 }
 
