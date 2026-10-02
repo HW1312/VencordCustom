@@ -17,7 +17,30 @@
 }
 
 .vc-doomscroll-overlay-side {
+    flex-direction: row;
+}
+
+.vc-doomscroll-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Divider between chat and feed in the side layout */
+.vc-doomscroll-handle {
+    flex: none;
+    cursor: col-resize;
+    background: var(--background-tertiary, #1e1f22);
     border-left: 1px solid var(--border-subtle, var(--background-modifier-accent, rgb(255 255 255 / 8%)));
+    box-sizing: border-box;
+    touch-action: none;
+    transition: background 0.1s ease;
+}
+
+.vc-doomscroll-handle:hover,
+.vc-doomscroll-handle-active {
+    background: var(--brand-500, #5865f2);
 }
 
 .vc-doomscroll-strip {

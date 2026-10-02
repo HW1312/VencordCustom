@@ -20,7 +20,7 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => <SettingsPanel />
     },
-    /** replace = covers the whole chat area, side = docked on the right next to the chat */
+    /** replace = covers header, chat & member list, chat = only the chat, side = docked on the right next to the chat */
     layout: {
         type: OptionType.STRING,
         description: "Layout",

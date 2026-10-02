@@ -12,6 +12,11 @@ import type { Bounds } from "./native";
 import { PlatformId, PLATFORMS } from "./platforms";
 
 export const STRIP_HEIGHT = 40;
+/** Drag handle on the left edge of the feed in the "side" layout */
+export const HANDLE_WIDTH = 6;
+export const MIN_SIDE_WIDTH = 280;
+/** The chat keeps at least this much room next to the feed */
+export const MIN_CHAT_WIDTH = 300;
 const POLL_MS = 120;
 const SQUEEZE_CLASS = "vc-doomscroll-squeeze";
 
@@ -92,14 +97,23 @@ const visibleRect = (el: Element | null | undefined) => {
 
 /**
  * replace: everything right of the channel list (header, chat, member list) - falls back to the chat itself
+ * chat: only the messages + input; channel header and member list stay
  * side: the row holding chat + member list, which we squeeze with padding to make room on the right
+ * Pages without a chat (friends, forums, ...) fall back to the whole page.
  */
 function findArea(): HTMLElement | null {
-    const chatRow = document.querySelector<HTMLElement>('main[class*="chatContent"]')?.parentElement;
+    const chat = document.querySelector<HTMLElement>('main[class*="chatContent"]');
+    const chatRow = chat?.parentElement;
     const page = document.querySelector<HTMLElement>('[class^="page_"], [class*=" page_"]');
 
-    const order = settings.store.layout === "side" ? [chatRow, page] : [page, chatRow];
+    const { layout } = settings.store;
+    const order = layout === "side" ? [chatRow, page] : layout === "chat" ? [chat, page] : [page, chatRow];
     return order.find(el => visibleRect(el)) ?? null;
+}
+
+/** Width of the area the side panel is docked into (for clamping while dragging) */
+export function sideAreaWidth() {
+    return visibleRect(findArea())?.width ?? window.innerWidth;
 }
 
 let squeezed: HTMLElement | null = null;
@@ -145,11 +159,12 @@ function tick() {
     let rect: Bounds | null = null;
     const r = visibleRect(area);
     if (r) {
-        const width = layout === "side" ? Math.min(sideWidth, r.width - 150) : r.width;
+        const width = layout === "side" ? Math.max(Math.min(sideWidth, r.width - MIN_CHAT_WIDTH), Math.min(MIN_SIDE_WIDTH, r.width)) : r.width;
         rect = { x: Math.round(r.right - width), y: Math.round(r.top), width: Math.round(width), height: Math.round(r.height) };
     }
 
-    const view = rect && { x: rect.x, y: rect.y + STRIP_HEIGHT, width: rect.width, height: rect.height - STRIP_HEIGHT };
+    const handle = layout === "side" ? HANDLE_WIDTH : 0;
+    const view = rect && { x: rect.x + handle, y: rect.y + STRIP_HEIGHT, width: rect.width - handle, height: rect.height - STRIP_HEIGHT };
     const covered = !!view && isCovered(view);
 
     if (!sameRect(rect, state.rect) || covered !== state.covered) update({ rect, covered });
@@ -160,6 +175,11 @@ function tick() {
         lastSent = key;
         Native?.setBounds(send);
     }
+}
+
+/** Re-measure right away (e.g. while dragging the divider) instead of waiting for the next poll */
+export function refresh() {
+    if (timer) tick();
 }
 
 function startLoop() {

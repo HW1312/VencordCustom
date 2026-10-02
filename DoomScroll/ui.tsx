@@ -13,7 +13,7 @@ import { findComponentByCodeLazy } from "@webpack";
 import { createRoot, Popout, showToast, Toasts, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
-import { closeFeed, DoomState, getState, openFeed, STRIP_HEIGHT, subscribe } from "./controller";
+import { closeFeed, DoomState, getState, HANDLE_WIDTH, MIN_CHAT_WIDTH, MIN_SIDE_WIDTH, openFeed, refresh, sideAreaWidth, STRIP_HEIGHT, subscribe } from "./controller";
 import { BrandIcon } from "./icons";
 import { Native, settings } from "./index";
 import { PlatformId, PLATFORMS } from "./platforms";
@@ -28,8 +28,16 @@ const BACK_PATH = "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2Z";
 const RELOAD_PATH = "M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z";
 const VOLUME_PATH = "M3 9v6h4l5 5V4L7 9H3Zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.48 4.48 0 0 0 16.5 12ZM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54Z";
 const MUTED_PATH = "M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63Zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12a9 9 0 0 0-7-8.77v2.06A7 7 0 0 1 19 12ZM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3ZM12 4 9.91 6.09 12 8.18V4Z";
-const SIDE_PATH = "M3 5v14h18V5H3Zm2 2h8v10H5V7Zm10 0h4v10h-4V7Z";
 const FULL_PATH = "M3 5v14h18V5H3Zm2 2h14v10H5V7Z";
+const CHAT_ONLY_PATH = "M3 5v14h18V5H3Zm2 2h10v10H5V7Zm12 0h2v10h-2V7Z";
+const SIDE_PATH = "M3 5v14h18V5H3Zm2 2h6v10H5V7Zm8 0h6v10h-6V7Z";
+
+type Layout = "replace" | "chat" | "side";
+const LAYOUTS: { value: Layout; label: string; path: string; }[] = [
+    { value: "replace", label: "Cover chat, header & members", path: FULL_PATH },
+    { value: "chat", label: "Replace only the chat", path: CHAT_ONLY_PATH },
+    { value: "side", label: "Next to the chat", path: SIDE_PATH }
+];
 const EXTERNAL_PATH = "M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7ZM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7Z";
 const CLOSE_PATH = "M18.4 4.2 12 10.6 5.6 4.2 4.2 5.6l6.4 6.4-6.4 6.4 1.4 1.4 6.4-6.4 6.4 6.4 1.4-1.4-6.4-6.4 6.4-6.4-1.4-1.4Z";
 
@@ -156,6 +164,65 @@ function VolumeControl() {
     );
 }
 
+/** Shows the current layout, click switches to the next one */
+function LayoutButton({ layout }: { layout: Layout; }) {
+    const index = Math.max(0, LAYOUTS.findIndex(l => l.value === layout));
+    const current = LAYOUTS[index];
+    const next = LAYOUTS[(index + 1) % LAYOUTS.length];
+    return (
+        <StripButton
+            path={current.path}
+            label={`Layout: ${current.label} - click for "${next.label}"`}
+            onClick={() => settings.store.layout = next.value}
+        />
+    );
+}
+
+/** Left edge of the side panel: drag to make the feed wider or narrower */
+function ResizeHandle() {
+    const [dragging, setDragging] = useState(false);
+
+    const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        // Capture keeps the moves coming while the cursor is over the feed window
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const startX = e.clientX;
+        const startWidth = settings.store.sideWidth;
+        const maxWidth = Math.max(MIN_SIDE_WIDTH, sideAreaWidth() - MIN_CHAT_WIDTH);
+        const target = e.currentTarget;
+        setDragging(true);
+
+        const onMove = (ev: PointerEvent) => {
+            const width = Math.round(Math.max(MIN_SIDE_WIDTH, Math.min(maxWidth, startWidth + startX - ev.clientX)));
+            if (width === settings.store.sideWidth) return;
+            settings.store.sideWidth = width;
+            refresh();
+        };
+        const onUp = () => {
+            target.removeEventListener("pointermove", onMove);
+            target.removeEventListener("pointerup", onUp);
+            target.removeEventListener("pointercancel", onUp);
+            setDragging(false);
+        };
+        target.addEventListener("pointermove", onMove);
+        target.addEventListener("pointerup", onUp);
+        target.addEventListener("pointercancel", onUp);
+    };
+
+    return (
+        <div
+            className={classes(cl("handle"), dragging && cl("handle-active"))}
+            style={{ width: HANDLE_WIDTH }}
+            onPointerDown={onPointerDown}
+            onDoubleClick={() => {
+                settings.store.sideWidth = 420;
+                refresh();
+            }}
+        />
+    );
+}
+
 function Strip({ platform }: { platform: PlatformId | null; }) {
     const { layout } = settings.use(["layout"]);
 
@@ -182,11 +249,7 @@ function Strip({ platform }: { platform: PlatformId | null; }) {
                 <StripButton path={BACK_PATH} label="Back" onClick={() => Native?.goBack()} />
                 <StripButton path={RELOAD_PATH} label="Reload" onClick={() => Native?.reload()} />
                 <VolumeControl />
-                <StripButton
-                    path={layout === "side" ? FULL_PATH : SIDE_PATH}
-                    label={layout === "side" ? "Cover the whole chat" : "Dock next to the chat"}
-                    onClick={() => settings.store.layout = layout === "side" ? "replace" : "side"}
-                />
+                <LayoutButton layout={layout as Layout} />
                 <StripButton path={EXTERNAL_PATH} label="Open in browser" onClick={() => Native?.openExternal()} />
                 <StripButton path={CLOSE_PATH} label="Close" onClick={closeFeed} />
             </div>
@@ -204,10 +267,13 @@ function Overlay() {
             className={classes(cl("overlay"), layout === "side" && cl("overlay-side"))}
             style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
         >
-            <Strip platform={platform} />
-            {/* Only visible while the native view is hidden or still painting */}
-            <div className={cl("placeholder")}>
-                {covered ? "Paused" : "Loading …"}
+            {layout === "side" && <ResizeHandle />}
+            <div className={cl("main")}>
+                <Strip platform={platform} />
+                {/* Only visible while the native view is hidden or still painting */}
+                <div className={cl("placeholder")}>
+                    {covered ? "Paused" : "Loading …"}
+                </div>
             </div>
         </div>
     );
@@ -371,7 +437,7 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
             <div className={cl("option")}>
                 <span>Layout</span>
                 <div className={cl("segmented")}>
-                    {([["replace", "Cover chat"], ["side", "Next to chat"]] as const).map(([value, label]) => (
+                    {([["replace", "Cover all"], ["chat", "Only the chat"], ["side", "Next to chat"]] as const).map(([value, label]) => (
                         <button
                             key={value}
                             className={classes(cl("segment"), layout === value && cl("segment-active"))}
@@ -382,7 +448,7 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
                     ))}
                 </div>
             </div>
-            {layout === "side" && <NumberOption label="Panel width (px)" setting="sideWidth" min={280} max={1200} step={20} />}
+            {layout === "side" && <NumberOption label="Panel width (px) - or drag the feed's left edge" setting="sideWidth" min={MIN_SIDE_WIDTH} max={1600} step={20} onChange={refresh} />}
             <NumberOption label="Feed zoom (%)" setting="zoom" min={50} max={150} step={5} onChange={v => Native?.setZoom(v / 100)} />
 
             <Option label="Show the button in the title bar" setting="showTitleBarButton" />
