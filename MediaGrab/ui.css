@@ -1,0 +1,324 @@
+/* ---------------------------------------------------------------- Window */
+
+.vc-mediagrab-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 8px;
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-mediagrab-label {
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.vc-mediagrab-muted {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-mediagrab-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    outline: none;
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-mediagrab-input:focus {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-mediagrab-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.vc-mediagrab-chip {
+    max-width: 100%;
+    padding: 4px 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 999px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.vc-mediagrab-chip-on {
+    border-color: var(--brand-500, #5865f2);
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-mediagrab-segmented {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 12%));
+}
+
+.vc-mediagrab-segment {
+    flex: 1;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-mediagrab-segment:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-mediagrab-segment-on,
+.vc-mediagrab-segment-on:hover {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-mediagrab-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vc-mediagrab-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    background: none;
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-mediagrab-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vc-mediagrab-toggle-on {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-mediagrab-check {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    border: 2px solid var(--interactive-normal, #b5bac1);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.vc-mediagrab-toggle-on .vc-mediagrab-check {
+    border-color: var(--brand-500, #5865f2);
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-mediagrab-notice {
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--info-help-background, rgb(88 101 242 / 10%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- Progress cards */
+
+.vc-mediagrab-stack {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 320px;
+    pointer-events: none;
+}
+
+.vc-mediagrab-card {
+    pointer-events: auto;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--background-floating, #111214);
+    box-shadow: var(--elevation-high, 0 8px 16px rgb(0 0 0 / 24%));
+    color: var(--text-normal, #dbdee1);
+    font-size: 13px;
+}
+
+.vc-mediagrab-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-mediagrab-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-mediagrab-x {
+    flex: none;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.vc-mediagrab-x:hover {
+    color: var(--interactive-hover, #fff);
+}
+
+.vc-mediagrab-status {
+    margin-top: 4px;
+    color: var(--text-muted, #949ba4);
+    font-size: 12px;
+}
+
+.vc-mediagrab-action {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-link, #00a8fc);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.vc-mediagrab-action:hover {
+    text-decoration: underline;
+}
+
+.vc-mediagrab-bar {
+    position: relative;
+    height: 4px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--background-modifier-accent, rgb(255 255 255 / 10%));
+}
+
+.vc-mediagrab-fill {
+    width: 0;
+    height: 100%;
+    background: var(--brand-500, #5865f2);
+    transition: width 0.2s linear;
+}
+
+.vc-mediagrab-card[data-indeterminate="true"] .vc-mediagrab-fill {
+    width: 30% !important;
+    animation: vc-mediagrab-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes vc-mediagrab-slide {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(340%); }
+}
+
+.vc-mediagrab-card[data-state="error"] .vc-mediagrab-fill {
+    background: var(--status-danger, #da373c);
+}
+
+.vc-mediagrab-card[data-state="done"] .vc-mediagrab-fill {
+    background: var(--status-positive, #23a55a);
+}
+
+/* ---------------------------------------------------------------- Chat bar progress ring */
+
+.vc-mediagrab-bar-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.vc-mediagrab-ring {
+    position: absolute;
+    inset: -5px;
+    width: 34px;
+    height: 34px;
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+
+.vc-mediagrab-ring-spin {
+    animation: vc-mediagrab-spin 1s linear infinite;
+}
+
+@keyframes vc-mediagrab-spin {
+    from { transform: rotate(-90deg); }
+    to { transform: rotate(270deg); }
+}
+
+.vc-mediagrab-ring-track,
+.vc-mediagrab-ring-fill {
+    fill: none;
+    stroke-width: 2;
+}
+
+.vc-mediagrab-ring-track {
+    stroke: var(--background-modifier-accent, rgb(255 255 255 / 10%));
+}
+
+.vc-mediagrab-ring-fill {
+    stroke: var(--brand-500, #5865f2);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s linear;
+}
+
+.vc-mediagrab-badge {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 7px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+}
+
+.vc-mediagrab-notice-error {
+    background: var(--info-danger-background, rgb(218 55 60 / 12%));
+}
