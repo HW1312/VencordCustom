@@ -61,6 +61,9 @@ export function shortUrl(url: string) {
     }
 }
 
+/** TikTok sound pages (tiktok.com/music/…) – there is only audio */
+export const isSoundLink = (url: string) => /^https?:\/\/(www\.|m\.)?tiktok\.com\/music\//i.test(url.trim());
+
 export const isUrl = (s: string) => /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(s.trim());
 
 /** Discord's upload limit – same numbers as GofileUpload when it's on, otherwise Discord's defaults (premiumType 2 = Nitro, 1/3 = Classic / Basic) */
@@ -234,6 +237,7 @@ function describe(state: JobState) {
         case "merging": return "Merging video and audio …";
         case "converting": return "Converting to MP3 …";
         case "finishing": return "Finishing …";
+        case "fetching": return "Opening the TikTok sound …";
         default: return "Fetching video info …";
     }
 }
@@ -242,6 +246,7 @@ function describe(state: JobState) {
 export const needsRestart = () => !Native?.startGrab;
 
 export async function grab(req: GrabRequest) {
+    if (isSoundLink(req.url)) req = { ...req, kind: "audio" };
     let jobId: string | null = null;
     let cancelled = false;
     const label = req.kind === "audio" ? "MP3" : "Video";

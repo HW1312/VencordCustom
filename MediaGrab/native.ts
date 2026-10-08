@@ -8,7 +8,7 @@
 
 import { ChildProcess, execFile, spawn } from "child_process";
 import { randomBytes } from "crypto";
-import { app, IpcMainInvokeEvent, shell } from "electron";
+import { app, BrowserWindow, IpcMainInvokeEvent, session, shell } from "electron";
 import { createWriteStream, existsSync, promises as fs } from "fs";
 import { tmpdir } from "os";
 import { basename, dirname, join } from "path";
@@ -178,6 +178,8 @@ interface Job {
     dir: string;
     keep: boolean;
     cancelled: boolean;
+    /** Stops a download that doesn't run through yt-dlp (TikTok sounds) */
+    abort?(): void;
 }
 
 const jobs = new Map<string, Job>();
@@ -248,6 +250,110 @@ function handleLine(job: Job, line: string) {
     }
 }
 
+// ---------------------------------------------------------------- TikTok sounds (tiktok.com/music/…)
+// yt-dlp's extractor for these is broken, and TikTok's API only answers signed requests. So a hidden window opens
+// the page, TikTok's own code makes the signed request, and we repeat exactly that request (its URL is in the
+// page's performance entries) from inside the page. The answer contains a direct MP3 link that works without login.
+// (Reading the answer via the DevTools protocol crashed Electron's network service.)
+
+const TIKTOK_SOUND = /^https?:\/\/(?:www\.|m\.)?tiktok\.com\/music\/[^?#]*?(\d{8,})/i;
+const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36";
+const SOUND_PARTITION = "mediagrab-tiktok";
+let soundSessionReady = false;
+
+interface TikTokSound { title: string; author: string; playUrl: string; }
+
+function loadTikTokSound(url: string, job: Job) {
+    if (!soundSessionReady) {
+        soundSessionReady = true;
+        // Don't load the page's videos and pictures – only its scripts and API calls are needed
+        session.fromPartition(SOUND_PARTITION).webRequest.onBeforeRequest((d, cb) =>
+            cb({ cancel: d.resourceType === "media" || d.resourceType === "image" }));
+    }
+
+    const win = new BrowserWindow({
+        show: false,
+        skipTaskbar: true,
+        width: 1280,
+        height: 800,
+        webPreferences: { partition: SOUND_PARTITION, backgroundThrottling: false, sandbox: true, contextIsolation: true, nodeIntegration: false }
+    });
+    win.webContents.setAudioMuted(true);
+    win.webContents.setUserAgent(CHROME_UA);
+    win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
+    let stopped = false;
+    job.abort = () => {
+        stopped = true;
+        win.destroy();
+    };
+
+    // Runs inside the page: waits for TikTok's own request, then repeats it and returns the important fields
+    const READ_SOUND = `(async () => {
+        const entry = performance.getEntriesByType("resource").find(e => e.name.includes("/api/music/detail/"));
+        if (!entry) return null;
+        const data = await (await fetch(entry.name, { credentials: "include" })).json();
+        const m = data && data.musicInfo && data.musicInfo.music;
+        return m && m.playUrl ? { title: m.title || "", author: m.authorName || "", playUrl: m.playUrl } : { error: true };
+    })()`;
+
+    return (async () => {
+        try {
+            // loadURL also rejects when the page redirects itself – the request can still happen
+            await win.loadURL(url).catch(() => { });
+            for (let waited = 0; waited < 30_000 && !stopped; waited += 300) {
+                const sound = await win.webContents.executeJavaScript(READ_SOUND).catch(() => null);
+                if (sound?.error) throw new Error("This sound isn't available (removed, or blocked in your country)");
+                if (sound?.playUrl) return { title: String(sound.title || "TikTok sound"), author: String(sound.author || ""), playUrl: String(sound.playUrl) } as TikTokSound;
+                await new Promise(r => setTimeout(r, 300));
+            }
+            throw new Error(stopped ? "Cancelled" : "TikTok didn't send the sound in time – try again");
+        } finally {
+            job.abort = undefined;
+            if (!win.isDestroyed()) win.destroy();
+        }
+    })();
+}
+
+const safeName = (s: string) => s.replace(/[\\/:*?"<>|\x00-\x1f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 90).trim();
+
+async function grabTikTokSound(url: string, id: string, job: Job) {
+    job.state.phase = "fetching";
+    const sound = await loadTikTokSound(url, job);
+    if (job.cancelled) throw new Error("Cancelled");
+    job.state.title = sound.author ? `${sound.title} – ${sound.author}` : sound.title;
+
+    const controller = new AbortController();
+    job.abort = () => controller.abort();
+    const res = await fetch(sound.playUrl, { signal: controller.signal, headers: { "User-Agent": CHROME_UA, Referer: "https://www.tiktok.com/" } });
+    if (!res.ok || !res.body) throw new Error(`Download failed: HTTP ${res.status}`);
+
+    const type = res.headers.get("content-type") ?? "";
+    const isMp3 = /mpeg|mp3/i.test(type) || /mime_type=audio_mpeg/.test(sound.playUrl);
+    const name = `${safeName(job.state.title) || "TikTok sound"} [${id}]`;
+    const raw = join(job.dir, name + (isMp3 ? ".mp3" : ".m4a"));
+
+    const total = Number(res.headers.get("content-length")) || 0;
+    let loaded = 0;
+    job.state.phase = "downloading";
+    const body = Readable.fromWeb(res.body as any);
+    body.on("data", (c: Buffer) => {
+        loaded += c.length;
+        job.state.progress = total ? Math.min(1, loaded / total) : -1;
+    });
+    await pipeline(body, createWriteStream(raw));
+    job.abort = undefined;
+
+    if (isMp3) return raw;
+    // Rarely an AAC sound – convert it like yt-dlp would
+    job.state.phase = "converting";
+    job.state.progress = -1;
+    const mp3 = join(job.dir, name + ".mp3");
+    await run(existsSync(FFMPEG) ? FFMPEG : "ffmpeg", ["-y", "-i", raw, "-vn", "-c:a", "libmp3lame", "-q:a", "0", mp3], 120_000);
+    await fs.rm(raw, { force: true });
+    return mp3;
+}
+
 /** Starts a download and returns its job id. Poll getJob() for progress. */
 export function startGrab(_: IpcMainInvokeEvent, opts: GrabOptions) {
     if (!opts || typeof opts.url !== "string" || !/^https?:\/\/\S+$/i.test(opts.url.trim())) throw new Error("Invalid link");
@@ -266,6 +372,18 @@ export function startGrab(_: IpcMainInvokeEvent, opts: GrabOptions) {
 
     (async () => {
         await fs.mkdir(dir, { recursive: true });
+
+        const sound = TIKTOK_SOUND.exec(opts.url);
+        if (sound) {
+            job.path = await grabTikTokSound(opts.url, sound[1], job);
+            if (job.cancelled) throw new Error("Cancelled");
+            job.state.size = (await fs.stat(job.path)).size;
+            job.state.file = basename(job.path);
+            job.state.progress = 1;
+            job.state.status = "done";
+            return;
+        }
+
         const proc = spawn(YTDLP, buildArgs(opts, dir), {
             windowsHide: true,
             env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
@@ -319,6 +437,7 @@ export function cancelGrab(_: IpcMainInvokeEvent, id: string) {
     if (!job) return;
     job.cancelled = true;
     job.proc?.kill();
+    job.abort?.();
 }
 
 /** The finished file's bytes (to attach it in the chat) */
@@ -339,9 +458,10 @@ export async function finishJob(_: IpcMainInvokeEvent, id: string) {
     const job = validId(id) ? jobs.get(id) : null;
     if (!job) return;
     jobs.delete(id);
-    if (job.proc) {
+    if (job.proc || job.abort) {
         job.cancelled = true;
-        job.proc.kill();
+        job.proc?.kill();
+        job.abort?.();
     }
     if (!job.keep) await fs.rm(job.dir, { recursive: true, force: true }).catch(() => { });
 }

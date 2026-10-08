@@ -13,7 +13,7 @@ import { Channel, RenderModalProps } from "@vencord/discord-types";
 import { Modal, openModal, useEffect, useReducer, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
-import { getRunning, grab, isInstalled, isUrl, needsRestart, shortUrl, subscribeRunning } from "./grab";
+import { getRunning, grab, isInstalled, isSoundLink, isUrl, needsRestart, shortUrl, subscribeRunning } from "./grab";
 import { settings } from "./settings";
 
 const cl = classNameFactory("vc-mediagrab-");
@@ -240,7 +240,7 @@ function LinkChoiceModal({ modalProps, url, onChoice }: { modalProps: RenderModa
         <Modal {...modalProps} size="sm" title="Send as link or as file?" subtitle={shortUrl(url)}>
             <div className={cl("choices")}>
                 <ChoiceButton label="Send link" hint="As usual" autoFocus onClick={() => choose({ kind: "link" })} />
-                <div className={cl("choice-group")}>
+                {!isSoundLink(url) && <div className={cl("choice-group")}>
                     <ChoiceButton
                         label="Video (MP4)"
                         hint="Download and send the video"
@@ -253,7 +253,7 @@ function LinkChoiceModal({ modalProps, url, onChoice }: { modalProps: RenderModa
                         <span className={cl("muted")}>Quality</span>
                         <Segmented<number> value={quality} onChange={setQuality} options={QUALITIES} />
                     </div>
-                </div>
+                </div>}
                 <ChoiceButton label="Audio (MP3)" hint="Download and send the sound" onClick={() => choose({ kind: "audio" })} />
             </div>
             {needsRestart() && (
