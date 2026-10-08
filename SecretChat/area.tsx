@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Settings } from "@api/Settings";
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
@@ -12,12 +13,14 @@ import { findComponentByCodeLazy } from "@webpack";
 import { ContextMenuApi, Menu, ReadStateStore, showToast, Toasts, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { hitTest } from "../ToolbarManager/dom";
+import { openItemMenu } from "../ToolbarManager/ui";
 import { applyEmergency } from "./messages";
 import { canLetIn, isAnswered, isJoining, joinRoom, letIn, roomMessages, userName } from "./rooms";
 import { settings } from "./settings";
 import { useStore } from "./store";
 import { LockIcon } from "./ui";
-import { closeRoomsWindow, openRoomsWindow, toggleRoomsWindow } from "./window";
+import { closeRoomsWindow, openRoomsWindow, toggleRoomsWindow, toIconDataUrl } from "./window";
 
 const cl = classNameFactory("vc-secretchat-");
 
@@ -48,11 +51,39 @@ export function toggleEmergency() {
     showToast(on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", on ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS);
 }
 
-/** Right-click on the lock (title bar / server list) */
-function openLockMenu(e: React.MouseEvent) {
+/**
+ * Right-click on the lock (title bar / server list). Caught on window in the capture phase – before
+ * ToolbarManager's listener on document, which would show its own menu for title bar icons.
+ */
+export function onLockContextMenu(e: MouseEvent) {
+    const target = e.target as Element | null;
+    // The title bar button may not pass our class on – our own icon inside it is always there
+    if (!target?.closest?.(`.${cl("tb")}, .${cl("tb-icon")}, .${cl("tb-wrap")}, .${cl("sl-btn")}`)) return;
     e.preventDefault();
+    e.stopPropagation();
+    openLockMenu(e);
+}
+
+/** Lets you pick a picture for the server list icon, so it looks like any server */
+function pickServerListPicture() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp,image/gif";
+    input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const data = await toIconDataUrl(file, 128);
+        if (data) settings.store.serverListPicture = data;
+        else showToast("That image couldn't be read", Toasts.Type.FAILURE);
+    };
+    input.click();
+}
+
+function openLockMenu(e: MouseEvent) {
     const on = !!settings.store.emergency;
-    ContextMenuApi.openContextMenu(e, () => (
+    // Keep ToolbarManager's options (hide / move) reachable
+    const toolbarHit = Settings.plugins.ToolbarManager?.enabled ? hitTest(e.target) : null;
+    ContextMenuApi.openContextMenu(e as any, () => (
         <Menu.Menu navId="vc-secretchat-lock" onClose={ContextMenuApi.closeContextMenu} aria-label="SecretChat">
             <Menu.MenuItem
                 id="vc-secretchat-emergency"
@@ -62,6 +93,23 @@ function openLockMenu(e: React.MouseEvent) {
                 action={toggleEmergency}
             />
             {!on && <Menu.MenuItem id="vc-secretchat-open" label="Open secret rooms" action={() => openRoomsWindow()} />}
+            {(e.target as Element)?.closest?.(`.${cl("sl-btn")}`) && (
+                <>
+                    <Menu.MenuSeparator />
+                    <Menu.MenuItem id="vc-secretchat-picture" label="Change picture…" subtext="Make the icon look like any server" action={pickServerListPicture} />
+                    {settings.store.serverListPicture && (
+                        <Menu.MenuItem id="vc-secretchat-picture-reset" label="Reset picture" action={() => { settings.store.serverListPicture = ""; }} />
+                    )}
+                </>
+            )}
+            {toolbarHit && <Menu.MenuSeparator />}
+            {toolbarHit && (
+                <Menu.MenuItem
+                    id="vc-secretchat-toolbar"
+                    label="Toolbar options…"
+                    action={() => setTimeout(() => openItemMenu(e, toolbarHit), 0)}
+                />
+            )}
         </Menu.Menu>
     ));
 }
@@ -86,17 +134,24 @@ function useRoomsBadge() {
 }
 
 export function ServerListIcon() {
-    const { showServerListIcon, emergency } = settings.use(["showServerListIcon", "emergency"]);
+    const { showServerListIcon, emergency, serverListName, serverListPicture } = settings.use(["showServerListIcon", "emergency", "serverListName", "serverListPicture"]);
     const count = useRoomsBadge();
     if (!showServerListIcon) return null;
 
     return (
         <div className={cl("sl")}>
             {count !== 0 && <span className={cl("sl-pill")} />}
-            <Tooltip text={emergency ? "SecretChat – emergency stop is on (right-click)" : "Secret rooms"} position="right">
+            <Tooltip text={emergency ? `${serverListName || "Secret rooms"} – emergency stop is on (right-click)` : serverListName || "Secret rooms"} position="right">
                 {p => (
-                    <button {...p} className={classes(cl("sl-btn"), emergency && cl("sl-btn-stop"))} aria-label="Secret rooms" onClick={toggleRoomsWindow} onContextMenu={openLockMenu}>
-                        <LockIcon width={24} height={24} />
+                    <button
+                        {...p}
+                        className={classes(cl("sl-btn"), serverListPicture && cl("sl-btn-picture"), emergency && cl("sl-btn-stop"))}
+                        aria-label={serverListName || "Secret rooms"}
+                        onClick={toggleRoomsWindow}
+                    >
+                        {serverListPicture && !emergency
+                            ? <img src={serverListPicture} alt="" />
+                            : <LockIcon width={24} height={24} />}
                     </button>
                 )}
             </Tooltip>
@@ -115,8 +170,7 @@ function TitleBarButton() {
     if (!showTitleBarButton) return null;
 
     return (
-        // display: contents – the wrapper only catches the right-click
-        <div className={cl("tb-wrap")} onContextMenu={openLockMenu}>
+        <div className={cl("tb-wrap")}>
             <HeaderBarIcon
                 className={classes(cl("tb"), count !== 0 && !emergency && cl("tb-unread"), emergency && cl("tb-stop"))}
                 onClick={toggleRoomsWindow}

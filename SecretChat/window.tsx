@@ -9,7 +9,8 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Toasts, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Toasts, Tooltip, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import type { ReactNode } from "react";
 import type { Root } from "react-dom/client";
 
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
@@ -212,13 +213,18 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
             <div className={cl("side-head")}>
                 <LockIcon width={16} height={16} />
                 <span>Secret rooms</span>
-                <button
-                    className={classes(cl("side-add"), creating && cl("side-add-on"))}
-                    title={creating ? "Cancel" : "New room"}
-                    onClick={() => setCreating(!creating)}
-                >
-                    {creating ? <CloseIcon /> : <PlusIcon />}
-                </button>
+                <Tooltip text={creating ? "Cancel" : "New room"}>
+                    {p => (
+                        <button
+                            {...p}
+                            className={classes(cl("side-add"), creating && cl("side-add-on"))}
+                            aria-label={creating ? "Cancel" : "New room"}
+                            onClick={() => setCreating(!creating)}
+                        >
+                            {creating ? <CloseIcon /> : <PlusIcon />}
+                        </button>
+                    )}
+                </Tooltip>
             </div>
 
             <div className={cl("side-list")}>
@@ -246,6 +252,43 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
 
 const SEND_PATH = "M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91Z";
 
+const CHECK_PATH = "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z";
+
+/**
+ * Small icon button of a room row: Discord tooltip, a hover animation per kind, a press effect – and with
+ * doneLabel a short checkmark after the click.
+ */
+function ActionIcon({ kind, label, doneLabel, danger, active, onClick, children }: {
+    kind: "send" | "edit" | "trash"; label: string; doneLabel?: string; danger?: boolean; active?: boolean; onClick(): void; children: ReactNode;
+}) {
+    const [done, setDone] = useState(false);
+    useEffect(() => {
+        if (!done) return;
+        const t = setTimeout(() => setDone(false), 1400);
+        return () => clearTimeout(t);
+    }, [done]);
+
+    return (
+        <Tooltip text={done && doneLabel ? doneLabel : label}>
+            {p => (
+                <button
+                    {...p}
+                    aria-label={label}
+                    className={classes(cl("act"), cl(`act-${kind}`), danger && cl("act-danger"), active && cl("act-active"), done && cl("act-done"))}
+                    onClick={() => {
+                        onClick();
+                        if (doneLabel) setDone(true);
+                    }}
+                >
+                    {done
+                        ? <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={CHECK_PATH} /></svg>
+                        : children}
+                </button>
+            )}
+        </Tooltip>
+    );
+}
+
 function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpen(): void; }) {
     const unread = useStateFromStores([ReadStateStore], () => unreadOf(room.channelId), [room.channelId]);
     const owned = useStateFromStores([ChannelStore], () => isOwnedGroup(room.channelId), [room.channelId]);
@@ -265,7 +308,6 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
         <div className={cl("side-room-wrap")}>
             <div
                 className={classes(cl("side-room"), active && cl("side-room-on"), unread !== 0 && !active && cl("side-room-unread"))}
-                title={chatLabel(room.channelId)}
                 onClick={() => !editing && onOpen()}
             >
                 <span className={cl("side-room-icon")}><LockIcon width={14} height={14} /></span>
@@ -283,20 +325,28 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
                             if (e.key === "Escape") { e.stopPropagation(); setName(room.name); setEditing(false); }
                         }}
                     />
-                ) : <span className={cl("side-room-name")}>{room.name}</span>}
+                ) : (
+                    <span className={cl("side-room-text")}>
+                        <span className={cl("side-room-name")}>{room.name}</span>
+                        <span className={cl("side-room-sub")}>{chatLabel(room.channelId)}</span>
+                    </span>
+                )}
 
                 <span className={cl("side-room-actions")} onClick={e => e.stopPropagation()}>
-                    <button className={cl("side-icon-btn")} title="Send the invite again (for people who don't see it)" onClick={() => reannounce(room.channelId)}>
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={SEND_PATH} /></svg>
-                    </button>
-                    <button className={cl("side-icon-btn")} title="Rename" onClick={() => { setName(room.name); setEditing(true); }}><PencilIcon width={14} height={14} /></button>
-                    <button
-                        className={classes(cl("side-icon-btn"), cl("side-icon-danger"), confirming && cl("side-icon-confirm"))}
-                        title="Remove or delete"
-                        onClick={() => setConfirming(!confirming)}
+                    <ActionIcon
+                        kind="send"
+                        label="Send the invite again"
+                        doneLabel="Invite sent"
+                        onClick={() => reannounce(room.channelId)}
                     >
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={SEND_PATH} /></svg>
+                    </ActionIcon>
+                    <ActionIcon kind="edit" label="Rename" onClick={() => { setName(room.name); setEditing(true); }}>
+                        <PencilIcon width={14} height={14} />
+                    </ActionIcon>
+                    <ActionIcon kind="trash" label={confirming ? "Close" : "Remove or delete"} danger active={confirming} onClick={() => setConfirming(!confirming)}>
                         <TrashIcon width={14} height={14} />
-                    </button>
+                    </ActionIcon>
                 </span>
 
                 {!active && <Badge count={unread} />}
@@ -330,7 +380,9 @@ function InviteItem({ invite }: { invite: Invite; }) {
                     <b>{userName(invite.from)}</b>
                     <span>{chatLabel(invite.channelId)}</span>
                 </span>
-                <button className={cl("side-icon-btn")} title="Dismiss" onClick={() => dismissInvite(invite.channelId)}><CloseIcon width={14} height={14} /></button>
+                <ActionIcon kind="trash" label="Dismiss" danger onClick={() => dismissInvite(invite.channelId)}>
+                    <CloseIcon width={14} height={14} />
+                </ActionIcon>
             </div>
             {!exists
                 ? <span className={cl("waiting")}>This chat no longer exists</span>
@@ -345,7 +397,7 @@ function InviteItem({ invite }: { invite: Invite; }) {
 const ICON_SIZE = 256;
 
 /** Image file → square PNG data URL (center crop), or null if it can't be read */
-function toIconDataUrl(file: File): Promise<string | null> {
+export function toIconDataUrl(file: File, ICON_SIZE = 256): Promise<string | null> {
     return new Promise(resolve => {
         const url = URL.createObjectURL(file);
         const img = new Image();
@@ -410,19 +462,23 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
     return (
         <div className={classes(cl("panel"), cl("side-panel"))}>
             <div className={cl("name-row")}>
-                <button
-                    className={classes(cl("icon-pick"), icon && cl("icon-pick-set"))}
-                    disabled={picked.length < 2}
-                    title={picked.length < 2
-                        ? "A picture needs a group – pick at least 2 friends"
-                        : icon ? "Change picture (right-click to remove)" : "Add a group picture (optional)"}
-                    onClick={() => fileRef.current?.click()}
-                    onContextMenu={e => { e.preventDefault(); setIcon(null); }}
-                >
-                    {icon && picked.length >= 2
-                        ? <img src={icon} alt="" />
-                        : <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d={IMAGE_PATH} /></svg>}
-                </button>
+                <Tooltip text={picked.length < 2
+                    ? "A picture needs a group – pick at least 2 friends"
+                    : icon ? "Change picture (right-click to remove)" : "Add a group picture (optional)"}>
+                    {p => (
+                        <button
+                            {...p}
+                            className={classes(cl("icon-pick"), icon && cl("icon-pick-set"), picked.length < 2 && cl("icon-pick-off"))}
+                            aria-label="Group picture"
+                            onClick={() => picked.length >= 2 && fileRef.current?.click()}
+                            onContextMenu={e => { e.preventDefault(); setIcon(null); }}
+                        >
+                            {icon && picked.length >= 2
+                                ? <img src={icon} alt="" />
+                                : <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d={IMAGE_PATH} /></svg>}
+                        </button>
+                    )}
+                </Tooltip>
                 <input className={cl("input")} value={name} autoFocus placeholder="Room name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
                 <input
                     ref={fileRef}

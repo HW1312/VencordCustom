@@ -15,7 +15,7 @@ import { User } from "@vencord/discord-types";
 import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, showToast, Toasts, UserStore } from "@webpack/common";
 
 import { loadedMessageHooks } from "../ChatPopout/messages";
-import { renderTitleBarButton, ServerListIcon } from "./area";
+import { onLockContextMenu, renderTitleBarButton, ServerListIcon } from "./area";
 import { EncryptedFile } from "./files";
 import { decryptLoaded, intercept, onBeforeEdit, onBeforeSend, retryHandshakes, retryLocked, startHandshake, unwrapMessageActions, wrapMessageActions } from "./messages";
 import { isRoomMessage, onChannelDelete, retryRooms } from "./rooms";
@@ -108,6 +108,7 @@ export default definePlugin({
         }
         loadedMessageHooks.add(decryptLoaded);
         addServerListElement(ServerListRenderPosition.Above, ServerListIcon);
+        window.addEventListener("contextmenu", onLockContextMenu, true);
         try {
             await loadState();
         } catch (e) {
@@ -123,6 +124,7 @@ export default definePlugin({
         unwrapMessageActions();
         loadedMessageHooks.delete(decryptLoaded);
         removeServerListElement(ServerListRenderPosition.Above, ServerListIcon);
+        window.removeEventListener("contextmenu", onLockContextMenu, true);
         const list = (FluxDispatcher as any)._interceptors as unknown[] | undefined;
         const i = list?.indexOf(intercept) ?? -1;
         if (i !== -1) list!.splice(i, 1);

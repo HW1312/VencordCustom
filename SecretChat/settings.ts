@@ -22,6 +22,17 @@ export const settings = definePluginSettings({
         description: "Show the SecretChat icon with your secret rooms in the server list",
         default: true
     },
+    serverListName: {
+        type: OptionType.STRING,
+        description: "Name shown when hovering the server list icon (e.g. a normal server name, so it doesn't stand out)",
+        default: "Secret rooms"
+    },
+    serverListPicture: {
+        type: OptionType.STRING,
+        description: "Custom server list picture (set with right-click on the icon)",
+        default: "",
+        hidden: true
+    },
     showTitleBarButton: {
         type: OptionType.BOOLEAN,
         description: "Show the SecretChat icon in the title bar at the top (next to Back / Forward)",

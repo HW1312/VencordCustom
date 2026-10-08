@@ -85,7 +85,6 @@ export function NativeMessageList({ channel, hide }: { channel: Channel; hide(m:
         }
     };
 
-    let groupId = "";
     return (
         <div className={cl("native-wrap")} data-native-messages="">
             <div className={cl("native-list")} ref={scrollRef} onScroll={onScroll}>
@@ -96,7 +95,7 @@ export function NativeMessageList({ channel, hide }: { channel: Channel; hide(m:
                     {list.map((m, i) => {
                         const prev = list[i - 1];
                         const newDay = !prev || dayOf(prev) !== dayOf(m);
-                        if (newDay || startsGroup(prev, m)) groupId = m.id;
+                        const isGroupStart = newDay || startsGroup(prev, m);
                         return (
                             <ErrorBoundary noop key={m.id}>
                                 {newDay && <div className={cl("native-day")}><span>{new Date(m.timestamp as any).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span></div>}
@@ -105,7 +104,7 @@ export function NativeMessageList({ channel, hide }: { channel: Channel; hide(m:
                                         id={`vc-secretchat-${m.id}`}
                                         message={m}
                                         channel={channel}
-                                        groupId={groupId}
+                                        isGroupStart={isGroupStart}
                                         compact={compact}
                                     />
                                 </div>

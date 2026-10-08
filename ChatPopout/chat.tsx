@@ -1093,7 +1093,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
     );
 }
 
-const PLUS_PATH = "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 6a1 1 0 1 0-2 0v3H8a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-3V8Z";
+const PLUS_PATH = "M13 5a1 1 0 1 0-2 0v6H5a1 1 0 1 0 0 2h6v6a1 1 0 1 0 2 0v-6h6a1 1 0 1 0 0-2h-6V5Z";
 
 /** A file waiting to be sent: thumbnail for images, else a file icon – with name and size */
 function AttachmentChip({ file, onRemove }: { file: File; onRemove(): void; }) {

@@ -1231,7 +1231,7 @@
     color: var(--status-positive, #23a55a);
 }
 
-.vc-secretchat-icon-pick:disabled {
+.vc-secretchat-icon-pick-off {
     opacity: 0.4;
     cursor: not-allowed;
 }
@@ -1421,4 +1421,140 @@ video.vc-secretchat-file-media {
 
 .vc-secretchat-file-error {
     color: var(--status-danger, #da373c);
+}
+
+/* Room row: name + chat below, action icons with tooltip, hover animation and press feedback */
+
+.vc-secretchat-side-room-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-secretchat-side-room-text .vc-secretchat-side-room-name {
+    flex: none;
+}
+
+.vc-secretchat-side-room-sub {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-side-room:hover .vc-secretchat-side-room-actions {
+    animation: vc-secretchat-actions-in 0.14s ease-out;
+}
+
+@keyframes vc-secretchat-actions-in {
+    from { opacity: 0; transform: translateX(6px); }
+}
+
+.vc-secretchat-act {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.15s, color 0.15s;
+}
+
+.vc-secretchat-act svg {
+    transition: transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.vc-secretchat-act:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 20%));
+    color: var(--interactive-active, #fff);
+    transform: translateY(-1px);
+}
+
+.vc-secretchat-act:active {
+    transform: scale(0.84);
+    transition-duration: 0.05s;
+}
+
+/* Send: the plane takes off a little */
+.vc-secretchat-act-send:hover svg {
+    transform: translate(2px, -1px) rotate(-14deg);
+}
+
+/* Rename: the pencil wiggles */
+.vc-secretchat-act-edit:hover svg {
+    animation: vc-secretchat-wiggle 0.45s ease;
+}
+
+@keyframes vc-secretchat-wiggle {
+    25% { transform: rotate(-14deg); }
+    50% { transform: rotate(10deg); }
+    75% { transform: rotate(-6deg); }
+}
+
+/* Delete: the bin tips over a bit */
+.vc-secretchat-act-trash:hover svg {
+    transform: rotate(-12deg) translateY(-1px);
+}
+
+.vc-secretchat-act-danger:hover,
+.vc-secretchat-act-active {
+    background: rgb(218 55 60 / 16%);
+    color: var(--status-danger, #da373c);
+}
+
+/* After the click: green checkmark that pops in */
+.vc-secretchat-act-done,
+.vc-secretchat-act-done:hover {
+    background: rgb(35 165 90 / 18%);
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-act-done svg {
+    animation: vc-secretchat-pop-in 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes vc-secretchat-pop-in {
+    from { transform: scale(0.3); opacity: 0; }
+}
+
+/* Server list lock: the same press feedback */
+.vc-secretchat-sl-btn:active {
+    transform: translateY(1px) scale(0.95);
+}
+
+.vc-secretchat-sl-btn svg {
+    transition: transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.vc-secretchat-sl-btn:hover svg {
+    transform: scale(1.08);
+}
+
+/* Server list icon with a custom picture: looks like any server */
+
+.vc-secretchat-sl-btn-picture {
+    overflow: hidden;
+    background: var(--background-surface-higher, var(--background-primary));
+}
+
+.vc-secretchat-sl-btn-picture:hover {
+    background: var(--background-surface-higher, var(--background-primary));
+}
+
+.vc-secretchat-sl-btn-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vc-secretchat-sl-btn-picture:hover img {
+    transform: none;
 }

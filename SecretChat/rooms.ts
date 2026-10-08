@@ -255,7 +255,6 @@ export function reannounce(channelId: string) {
     const room = state.rooms[channelId];
     if (!room) return;
     announce(channelId, room.keyId);
-    showToast("Invite sent again", Toasts.Type.SUCCESS);
 }
 
 /** A group DM you created – you can delete it for everyone */
