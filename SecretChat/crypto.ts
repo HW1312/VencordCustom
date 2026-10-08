@@ -138,11 +138,19 @@ export const randomBytes = (n: number) => crypto.getRandomValues(new Uint8Array(
 // ---------------------------------------------------------------- Message envelope
 
 /**
- * Sent text: "🔒 SC1.<base64url(keyId 4 | nonce 12 | ciphertext + tag)>"
+ * Sent text: "ᛥ" + the bytes (keyId 4 | nonce 12 | ciphertext + tag) as runes, one rune per 6 bits
+ * (base64url with runes as the alphabet). Older messages used "🔒 SC1.<base64url>" and are still read.
  * The sender's user id is authenticated (AAD), so nobody can repost your ciphertext under their own name.
  */
-export const ENC_PREFIX = "🔒 SC1.";
-const ENC_RE = /^🔒 SC1\.([A-Za-z0-9_-]{43,})$/;
+export const RUNE_MARKER = "ᛥ";
+const B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+/** U+16A0 … U+16DF – 64 runes, the marker (U+16E5) is not one of them */
+const RUNES = Array.from({ length: 64 }, (_, i) => String.fromCharCode(0x16A0 + i)).join("");
+const RUNE_RE = /^ᛥ([ᚠ-ᛟ]{43,})$/;
+const LEGACY_RE = /^🔒 SC1\.([A-Za-z0-9_-]{43,})$/;
+
+const toRunes = (b64: string) => Array.from(b64, c => RUNES[B64_CHARS.indexOf(c)]).join("");
+const fromRunes = (runes: string) => Array.from(runes, c => B64_CHARS[c.charCodeAt(0) - 0x16A0]).join("");
 
 const aadFor = (authorId: string) => encodeText(`SC1|${authorId}`);
 
@@ -153,7 +161,7 @@ export function encryptMessage(keyId: string, key: Uint8Array, authorId: string,
     out.set(fromHex(keyId), 0);
     out.set(nonce, 4);
     out.set(sealed, 16);
-    return ENC_PREFIX + toB64(out);
+    return RUNE_MARKER + toRunes(toB64(out));
 }
 
 export interface Envelope {
@@ -163,10 +171,11 @@ export interface Envelope {
 }
 
 export function parseMessage(content: string): Envelope | null {
-    const m = ENC_RE.exec(content);
-    if (!m) return null;
+    const rune = RUNE_RE.exec(content);
+    const b64 = rune ? fromRunes(rune[1]) : LEGACY_RE.exec(content)?.[1];
+    if (!b64) return null;
     try {
-        const raw = fromB64(m[1]);
+        const raw = fromB64(b64);
         if (raw.length < 4 + 12 + 16) return null;
         return { keyId: toHex(raw.subarray(0, 4)), nonce: raw.subarray(4, 16), sealed: raw.subarray(16) };
     } catch {

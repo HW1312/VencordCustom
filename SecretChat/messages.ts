@@ -11,7 +11,7 @@ import { Logger } from "@utils/Logger";
 import { User } from "@vencord/discord-types";
 import { showToast, Toasts, UserStore } from "@webpack/common";
 
-import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, toHex } from "./crypto";
+import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
 import { addKey, channelKey, containsInviteCode, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
 const logger = new Logger("SecretChat");
@@ -143,8 +143,10 @@ function processMessage(m: any, live: boolean) {
     if (m.referenced_message) processMessage(m.referenced_message, false);
 
     const { content } = m;
-    // 🔒 and 🔑 both start with this surrogate – a cheap check for every message Discord handles
-    if (typeof content !== "string" || content.charCodeAt(0) !== 0xD83D) return;
+    // Rune marker, or 🔒 / 🔑 (both start with this surrogate) – a cheap check for every message Discord handles
+    if (typeof content !== "string") return;
+    const first = content.charCodeAt(0);
+    if (first !== 0xD83D && first !== RUNE_MARKER.charCodeAt(0)) return;
     const authorId: string | undefined = m.author?.id;
     if (!authorId) return;
 
