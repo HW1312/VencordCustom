@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
 import { keyFromPassword, randomBytes } from "./crypto";
 import { acceptHandshake, decrypted, handshakes, ignoreHandshake, retryLocked, startHandshake } from "./messages";
 import { settings } from "./settings";
-import { addKey, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
+import { addKey, cancelPending, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
 
 const cl = classNameFactory("vc-secretchat-");
 
@@ -47,6 +47,7 @@ const PencilIcon = icon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7
 const TrashIcon = icon("M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z");
 const CheckIcon = icon("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z");
 const PlusIcon = icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z");
+const CloseIcon = icon("M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z");
 const ShieldIcon = icon("M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z");
 
 const userName = (id?: string) => {
@@ -201,11 +202,17 @@ function PrivateTab({ channel, current }: { channel: Channel; current: string | 
         <div className={cl("tab-body")}>
             <KeyList keys={keys} current={current} channelId={channel.id} />
 
-            {candidates.map(id => (
+            {candidates.map(id => waiting.has(id) ? (
+                <div key={id} className={classes(cl("connect"), cl("connect-waiting"))}>
+                    <Avatar userId={id} />
+                    <span className={cl("row-title")}>{userName(id)}</span>
+                    <span className={cl("waiting")}>Waiting …</span>
+                    <IconButton label="Cancel request" danger onClick={() => cancelPending(id)}><CloseIcon /></IconButton>
+                </div>
+            ) : (
                 <button
                     key={id}
                     className={cl("connect")}
-                    disabled={waiting.has(id)}
                     onClick={() => {
                         const user = UserStore.getUser(id);
                         if (user) startHandshake(user, channel.id);
@@ -213,7 +220,7 @@ function PrivateTab({ channel, current }: { channel: Channel; current: string | 
                 >
                     <Avatar userId={id} />
                     <span className={cl("row-title")}>{userName(id)}</span>
-                    <span className={cl("connect-label")}>{waiting.has(id) ? "Waiting …" : <><PlusIcon />Connect</>}</span>
+                    <span className={cl("connect-label")}><PlusIcon />Connect</span>
                 </button>
             ))}
 

@@ -315,6 +315,22 @@
     color: var(--text-muted);
 }
 
+.vc-secretchat-connect-waiting {
+    border-style: solid;
+    cursor: default;
+}
+
+.vc-secretchat-connect-waiting:hover {
+    background: none;
+}
+
+.vc-secretchat-waiting {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .vc-secretchat-empty {
     display: flex;
     flex-direction: column;

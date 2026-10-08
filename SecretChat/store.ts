@@ -139,6 +139,12 @@ export const channelKey = (channelId: string) => {
     return id && keyBytes.has(id) ? getKey(id) : undefined;
 };
 
+/** Drops our open requests to this user (e.g. the request message was deleted) */
+export async function cancelPending(userId: string) {
+    for (const [hsid, p] of Object.entries(state.pending)) if (p.to === userId) delete state.pending[hsid];
+    await save();
+}
+
 export async function setChannelKey(channelId: string, keyId: string | null) {
     if (keyId) {
         state.channels[channelId] = keyId;

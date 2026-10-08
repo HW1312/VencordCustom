@@ -175,8 +175,23 @@ function processMessage(m: any, live: boolean) {
 }
 
 /** Flux interceptor: runs before every store. Never blocks an action (always returns false). */
+/** Our own request message was deleted → stop waiting for an answer */
+function onDeleted(ids: string[]) {
+    let changed = false;
+    for (const id of ids) {
+        const hs = handshakes.get(id);
+        if (hs?.type === "hello" && state.pending[hs.hsid]) {
+            delete state.pending[hs.hsid];
+            changed = true;
+        }
+    }
+    if (changed) setTimeout(save, 0);
+}
+
 export function intercept(action: any) {
     try {
+        if (action.type === "MESSAGE_DELETE") onDeleted([action.id]);
+        else if (action.type === "MESSAGE_DELETE_BULK" && Array.isArray(action.ids)) onDeleted(action.ids);
         if (action.message) processMessage(action.message, action.type === "MESSAGE_CREATE" && !action.optimistic);
         const list = action.messages;
         if (Array.isArray(list)) {
