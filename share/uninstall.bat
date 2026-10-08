@@ -14,7 +14,7 @@ if "!COUNT!"=="0" (
 )
 call :choose "uninstall from"
 
-call :killall
+call :killselected
 
 if not exist "%TARGET%\VencordInstallerCli.exe" (
     mkdir "%TARGET%" >nul 2>&1
@@ -71,8 +71,11 @@ for /l %%i in (1,1,!COUNT!) do if "!PICK!"=="%%i" (
 echo Invalid choice, try again.
 goto :ask
 
-:killall
-taskkill /f /im Discord.exe >nul 2>&1
-taskkill /f /im DiscordPTB.exe >nul 2>&1
-taskkill /f /im DiscordCanary.exe >nul 2>&1
+rem Closes only the chosen Discord branches (SELECTED), the others keep running
+:killselected
+for %%B in (!SELECTED!) do (
+    if /i "%%B"=="stable" taskkill /f /im Discord.exe >nul 2>&1
+    if /i "%%B"=="ptb" taskkill /f /im DiscordPTB.exe >nul 2>&1
+    if /i "%%B"=="canary" taskkill /f /im DiscordCanary.exe >nul 2>&1
+)
 exit /b 0

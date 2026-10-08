@@ -9,7 +9,7 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { createRoot, FluxDispatcher, ReadStateStore, RelationshipStore, showToast, Toasts, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Toasts, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
@@ -300,10 +300,19 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
     const [picked, setPicked] = useState<string[]>([]);
     const [busy, setBusy] = useState(false);
 
-    const friends = useMemo(() =>
-        RelationshipStore.getFriendIDs()
+    // Like Discord's DM list: people you wrote with last first, then everyone else A–Z
+    const friends = useMemo(() => {
+        const recent = new Map<string, number>();
+        PrivateChannelSortStore.getPrivateChannelIds().forEach((channelId, i) => {
+            const ch = ChannelStore.getChannel(channelId);
+            const userId = ch?.isDM() ? ch.getRecipientId() : null;
+            if (userId && !recent.has(userId)) recent.set(userId, i);
+        });
+        const rank = (id: string) => recent.get(id) ?? Infinity;
+        return RelationshipStore.getFriendIDs()
             .map(id => ({ id, name: userName(id) as string }))
-            .sort((a, b) => a.name.localeCompare(b.name)), []);
+            .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name));
+    }, []);
     const q = query.trim().toLowerCase();
     const shown = q ? friends.filter(f => f.name.toLowerCase().includes(q) || UserStore.getUser(f.id)?.username.includes(q)) : friends;
 

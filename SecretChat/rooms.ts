@@ -20,7 +20,7 @@ import { ChannelActionCreators, ChannelStore, GuildStore, SelectedChannelStore, 
 import { decodeText, deriveSharedKey, encodeText, fromB64, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
 import { settings } from "./settings";
-import { addInvite, addKey, addRoom, emit, getKey, getKeyBytes, save, state } from "./store";
+import { addInvite, addKey, addRoom, emit, getKey, getKeyBytes, isDismissed, save, state } from "./store";
 import { openRoomsWindow } from "./window";
 
 const logger = new Logger("SecretChat");
@@ -112,12 +112,17 @@ export function processRoomMessage(m: any, live: boolean) {
             const room = state.rooms[msg.channelId];
             if (room?.keyId === msg.keyId) break;
             if (getKeyBytes(msg.keyId!)) {
-                // We have the key already (another PC, or it was shared as a code) → just list the room
-                if (!state.left.includes(msg.channelId)) {
+                // We have the key already (another PC, or it was shared as a code) → just list the room.
+                // Not if the chat is a room with another key already: an older announce must not switch it back.
+                if (!room && !state.left.includes(msg.channelId)) {
                     setTimeout(() => addRoom(msg.channelId, msg.keyId!, getKey(msg.keyId!)?.name ?? "Secret room"), 0);
                 }
-            } else if (live && msg.authorId !== me && !state.invites[msg.channelId]) {
-                setTimeout(() => onInvited(msg), 0);
+            } else if (
+                msg.authorId !== me && !state.invites[msg.channelId] && !isDismissed(msg.channelId, msg.keyId!)
+                // From the history (e.g. it was sent before you had SecretChat): only if the chat isn't a room yet
+                && (live || !room)
+            ) {
+                setTimeout(() => onInvited(msg, live), 0);
             }
             break;
         }
@@ -286,9 +291,10 @@ function shouldPing(channelId: string) {
     return !(document.hasFocus() && SelectedChannelStore.getChannelId() === channelId);
 }
 
-async function onInvited(msg: RoomMessage) {
+async function onInvited(msg: RoomMessage, ping: boolean) {
+    if (state.invites[msg.channelId]) return;
     await addInvite({ channelId: msg.channelId, keyId: msg.keyId!, from: msg.authorId, created: Date.now() });
-    if (!settings.store.roomPings) return;
+    if (!ping || !settings.store.roomPings) return;
     playPing();
     showNotification({
         title: "🔒 Secret room invite",

@@ -70,11 +70,13 @@ interface State {
     joins: Record<string, PendingJoin>;
     /** channel ids removed from the area – not added again automatically */
     left: string[];
+    /** "channel id:key id" of dismissed invites – not shown again */
+    dismissed: string[];
 }
 
 const STORE_KEY = "SecretChat_state";
 
-const empty = (): State => ({ keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [], rooms: {}, invites: {}, joins: {}, left: [] });
+const empty = (): State => ({ keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [], rooms: {}, invites: {}, joins: {}, left: [], dismissed: [] });
 
 export const state: State = empty();
 const keyBytes = new Map<string, Uint8Array>();
@@ -231,7 +233,11 @@ export async function addInvite(invite: Invite) {
     await save();
 }
 
+export const isDismissed = (channelId: string, keyId: string) => state.dismissed.includes(`${channelId}:${keyId}`);
+
 export async function dismissInvite(channelId: string) {
+    const invite = state.invites[channelId];
+    if (invite && !isDismissed(channelId, invite.keyId)) state.dismissed.push(`${channelId}:${invite.keyId}`);
     delete state.invites[channelId];
     for (const [jid, j] of Object.entries(state.joins)) if (j.channelId === channelId) delete state.joins[jid];
     await save();
