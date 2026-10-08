@@ -1,0 +1,464 @@
+/* ---------------------------------------------------------------- Chat bar + messages */
+
+.vc-secretchat-bar-on {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-deco {
+    display: inline-flex;
+    margin-left: 4px;
+    color: var(--status-positive, #23a55a);
+    vertical-align: -2px;
+}
+
+.vc-secretchat-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    max-width: 520px;
+    margin-top: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-secretchat-card > svg {
+    flex: none;
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-card-text {
+    flex: 1;
+    min-width: 180px;
+}
+
+/* ---------------------------------------------------------------- Window */
+
+.vc-secretchat-window {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+/* Status bar */
+
+.vc-secretchat-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 8px 0 12px;
+    border-radius: 10px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 14%));
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.vc-secretchat-status-on {
+    background: rgb(35 165 90 / 16%);
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-status-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-status-on .vc-secretchat-status-text b {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-status-off {
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 6px;
+    background: rgb(0 0 0 / 18%);
+    color: var(--text-default, var(--text-normal));
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-status-off:hover {
+    background: var(--status-danger, #da373c);
+    color: #fff;
+}
+
+/* Tabs */
+
+.vc-secretchat-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--background-tertiary, rgb(0 0 0 / 18%));
+}
+
+.vc-secretchat-tab {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-tab:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-tab-on,
+.vc-secretchat-tab-on:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-tab-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+}
+
+/* Key rows */
+
+.vc-secretchat-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-secretchat-row,
+.vc-secretchat-connect {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+    color: var(--text-default, var(--text-normal));
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-secretchat-row:hover,
+.vc-secretchat-connect:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+}
+
+.vc-secretchat-row-on,
+.vc-secretchat-row-on:hover {
+    border-color: var(--status-positive, #23a55a);
+    background: rgb(35 165 90 / 10%);
+}
+
+.vc-secretchat-avatar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    color: var(--text-muted);
+    object-fit: cover;
+}
+
+.vc-secretchat-avatar-group {
+    border-radius: 10px;
+    background: rgb(88 101 242 / 22%);
+    color: var(--brand-500, #5865f2);
+}
+
+.vc-secretchat-row-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-secretchat-row-title {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-connect .vc-secretchat-row-title {
+    flex: 1;
+}
+
+.vc-secretchat-safety {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    color: var(--text-muted);
+    font-family: var(--font-code, monospace);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.vc-secretchat-row-actions {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+.vc-secretchat-row:hover .vc-secretchat-row-actions,
+.vc-secretchat-row:focus-within .vc-secretchat-row-actions {
+    opacity: 1;
+}
+
+.vc-secretchat-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    cursor: pointer;
+}
+
+.vc-secretchat-icon-btn:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--interactive-hover, #fff);
+}
+
+.vc-secretchat-icon-btn-danger:hover {
+    background: var(--status-danger, #da373c);
+    color: #fff;
+}
+
+.vc-secretchat-check {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--interactive-muted, rgb(128 128 128 / 50%));
+    border-radius: 50%;
+    color: #fff;
+}
+
+.vc-secretchat-row-on .vc-secretchat-check {
+    border-color: var(--status-positive, #23a55a);
+    background: var(--status-positive, #23a55a);
+}
+
+/* Connect buttons */
+
+.vc-secretchat-connect {
+    width: 100%;
+    border: 1px dashed var(--border-subtle, rgb(128 128 128 / 40%));
+    background: none;
+    font: inherit;
+}
+
+.vc-secretchat-connect:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.vc-secretchat-connect-label {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vc-secretchat-connect:disabled .vc-secretchat-connect-label {
+    background: var(--background-modifier-accent, rgb(128 128 128 / 24%));
+    color: var(--text-muted);
+}
+
+.vc-secretchat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 110px;
+    border: 1px dashed var(--border-subtle, rgb(128 128 128 / 40%));
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+/* Group actions + inline panels */
+
+.vc-secretchat-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.vc-secretchat-chip {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    border: 1px dashed var(--border-subtle, rgb(128 128 128 / 40%));
+    border-radius: 10px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-chip:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-chip-on {
+    border-style: solid;
+    border-color: var(--brand-500, #5865f2);
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+}
+
+.vc-secretchat-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    outline: none;
+    background: var(--input-background, var(--background-tertiary));
+    color: var(--text-default, var(--text-normal));
+    font-size: 14px;
+}
+
+.vc-secretchat-input:focus {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-secretchat-input-inline {
+    height: 26px;
+    padding: 0 8px;
+}
+
+.vc-secretchat-input-mono {
+    font-family: var(--font-code, monospace);
+    font-size: 12px;
+}
+
+.vc-secretchat-input-error,
+.vc-secretchat-input-error:focus {
+    border-color: var(--status-danger, #da373c);
+}
+
+.vc-secretchat-segmented {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    background: var(--background-tertiary, rgb(0 0 0 / 18%));
+}
+
+.vc-secretchat-segment {
+    flex: 1;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-segment:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-segment-on,
+.vc-secretchat-segment-on:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-btn {
+    height: 34px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 6px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 16%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-btn:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 28%));
+}
+
+.vc-secretchat-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.vc-secretchat-btn-primary,
+.vc-secretchat-btn-primary:hover {
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+}
+
+.vc-secretchat-danger-btn {
+    background: var(--status-danger, #da373c) !important;
+}
