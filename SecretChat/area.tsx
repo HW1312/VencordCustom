@@ -83,6 +83,7 @@ function openLockMenu(e: MouseEvent) {
     const on = !!settings.store.emergency;
     // Keep ToolbarManager's options (hide / move) reachable
     const toolbarHit = Settings.plugins.ToolbarManager?.enabled ? hitTest(e.target) : null;
+    const onServerList = !!(e.target as Element | null)?.closest?.(`.${cl("sl-btn")}`);
     ContextMenuApi.openContextMenu(e as any, () => (
         <Menu.Menu navId="vc-secretchat-lock" onClose={ContextMenuApi.closeContextMenu} aria-label="SecretChat">
             <Menu.MenuItem
@@ -93,14 +94,14 @@ function openLockMenu(e: MouseEvent) {
                 action={toggleEmergency}
             />
             {!on && <Menu.MenuItem id="vc-secretchat-open" label="Open secret rooms" action={() => openRoomsWindow()} />}
-            {(e.target as Element)?.closest?.(`.${cl("sl-btn")}`) && (
-                <>
-                    <Menu.MenuSeparator />
+            {/* Discord's menu only accepts menu items and groups as children – no fragments, or it crashes */}
+            {onServerList && (
+                <Menu.MenuGroup>
                     <Menu.MenuItem id="vc-secretchat-picture" label="Change picture…" subtext="Make the icon look like any server" action={pickServerListPicture} />
-                    {settings.store.serverListPicture && (
-                        <Menu.MenuItem id="vc-secretchat-picture-reset" label="Reset picture" action={() => { settings.store.serverListPicture = ""; }} />
-                    )}
-                </>
+                    {settings.store.serverListPicture
+                        ? <Menu.MenuItem id="vc-secretchat-picture-reset" label="Reset picture" action={() => { settings.store.serverListPicture = ""; }} />
+                        : null}
+                </Menu.MenuGroup>
             )}
             {toolbarHit && <Menu.MenuSeparator />}
             {toolbarHit && (
