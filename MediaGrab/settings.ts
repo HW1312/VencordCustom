@@ -12,6 +12,11 @@ export const settings = definePluginSettings({
         description: "Show the MediaGrab button in the chat bar",
         default: true
     },
+    askOnLinkSend: {
+        type: OptionType.BOOLEAN,
+        description: "When a message is only a video link (TikTok, YouTube, Instagram …), ask whether to send the link or download it and send the video / MP3 instead",
+        default: true
+    },
     menuQuality: {
         type: OptionType.SELECT,
         description: "Video quality for the right-click menu",

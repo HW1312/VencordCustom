@@ -3,15 +3,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Settings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
-import { Channel } from "@vencord/discord-types";
-import { DraftType, UploadHandler } from "@webpack/common";
+import { Channel, CloudUpload as TCloudUpload, Message } from "@vencord/discord-types";
+import { CloudUploadPlatform } from "@vencord/discord-types/enums";
+import { findLazy } from "@webpack";
+import { Constants, DraftType, RestAPI, SnowflakeUtils, UploadHandler, UserStore } from "@webpack/common";
 
 import type { JobState, SetupState } from "./native";
 import { settings } from "./settings";
 
 const Native = VencordNative.pluginHelpers.MediaGrab as PluginNative<typeof import("./native")>;
+const CloudUpload: typeof TCloudUpload = findLazy(m => m.prototype?.trackUploadFinished);
 const logger = new Logger("MediaGrab");
 
 const MB = 1024 * 1024;
@@ -25,6 +29,10 @@ export interface GrabRequest {
     toChat: boolean;
     toDisk: boolean;
     channel?: Channel | null;
+    /** Send the file as a message right away instead of only attaching it to the message box */
+    sendNow?: boolean;
+    /** Reply target when sendNow is used */
+    reply?: Message["messageReference"];
 }
 
 const MIME: Record<string, string> = {
@@ -54,6 +62,39 @@ export function shortUrl(url: string) {
 }
 
 export const isUrl = (s: string) => /^https?:\/\/[^\s/$.?#][^\s]*$/i.test(s.trim());
+
+/** Discord's upload limit – same numbers as GofileUpload when it's on, otherwise Discord's defaults (premiumType 2 = Nitro, 1/3 = Classic / Basic) */
+function uploadLimit() {
+    const premium = UserStore.getCurrentUser()?.premiumType ?? 0;
+    const gofile = Settings.plugins.GofileUpload;
+    const [free, basic, nitro] = gofile?.enabled
+        ? [gofile.limitFree ?? 19.8, gofile.limitBasic ?? 49.8, gofile.limitNitro ?? 999]
+        : [10, 50, 500];
+    return (premium === 2 ? nitro : premium === 1 || premium === 3 ? basic : free) * MB;
+}
+
+/** Uploads the file and sends it as its own message (like Voice Messages does) */
+function sendFile(file: File, channelId: string, reply?: Message["messageReference"]) {
+    return new Promise<void>((resolve, reject) => {
+        const upload = new CloudUpload({ file, isThumbnail: false, platform: CloudUploadPlatform.WEB }, channelId);
+        upload.on("complete", () => {
+            RestAPI.post({
+                url: Constants.Endpoints.MESSAGES(channelId),
+                body: {
+                    channel_id: channelId,
+                    content: "",
+                    nonce: SnowflakeUtils.fromTimestamp(Date.now()),
+                    sticker_ids: [],
+                    type: 0,
+                    attachments: [{ id: "0", filename: upload.filename, uploaded_filename: upload.uploadedFilename }],
+                    message_reference: reply ?? null
+                }
+            }).then(() => resolve(), reject);
+        });
+        upload.on("error", () => reject(new Error("Upload to Discord failed")));
+        upload.upload();
+    });
+}
 
 export function isInstalled() {
     return Native?.isInstalled?.() ?? Promise.resolve(false);
@@ -268,19 +309,27 @@ export async function grab(req: GrabRequest) {
         const id = jobId;
 
         // ---- Into the chat (GofileUpload takes over if the file is too large)
+        let sent = false;
         if (req.toChat && req.channel) {
             card.update("Adding to the chat …", -1);
             const bytes = await Native.readResult(id);
             const ext = fileName.split(".").pop()!.toLowerCase();
             const file = new File([bytes as BlobPart], fileName, { type: MIME[ext] ?? "application/octet-stream" });
-            UploadHandler.promptToUpload([file], req.channel, DraftType.ChannelMessage);
+            // Too large to send directly → the normal way, so GofileUpload can turn it into a link
+            if (req.sendNow && file.size <= uploadLimit()) {
+                card.update("Sending …", -1);
+                await sendFile(file, req.channel.id, req.reply);
+                sent = true;
+            } else {
+                UploadHandler.promptToUpload([file], req.channel, DraftType.ChannelMessage);
+            }
         }
 
         if (req.toDisk) {
             card.finish("done", `Saved to Downloads · ${size}`, { label: "Show in folder", run: () => Native.showResult(id) }, () => Native.finishJob(id));
         } else {
             Native.finishJob(id);
-            card.finish("done", `Added to the chat · ${size}`);
+            card.finish("done", `${sent ? "Sent" : "Added to the chat"} · ${size}`);
         }
     } catch (e) {
         const msg = cancelled ? "Cancelled" : cleanIpcError(e);

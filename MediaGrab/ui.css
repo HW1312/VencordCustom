@@ -151,6 +151,37 @@
     font-size: 13px;
 }
 
+.vc-mediagrab-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vc-mediagrab-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    outline: none;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+    color: var(--text-default, var(--text-normal));
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-mediagrab-choice:hover,
+.vc-mediagrab-choice:focus-visible {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-mediagrab-choice-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
 /* ---------------------------------------------------------------- Progress cards */
 
 .vc-mediagrab-stack {

@@ -8,13 +8,14 @@
 
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { MessageSendListener } from "@api/MessageEvents";
 import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
-import { ChannelStore, Menu } from "@webpack/common";
+import { ChannelStore, ComponentDispatch, FluxDispatcher, Menu } from "@webpack/common";
 
 import { grab, GrabRequest } from "./grab";
 import { settings } from "./settings";
-import { ChatBarIcon, chatBarTooltip, GrabIcon, openGrabModal, useRunning } from "./ui";
+import { askLinkChoice, ChatBarIcon, chatBarTooltip, GrabIcon, openGrabModal, useRunning } from "./ui";
 
 const URL_RE = /https?:\/\/[^\s<>()]+[^\s<>().,!?;:'"\]]/gi;
 
@@ -52,6 +53,59 @@ const messageContext: NavContextMenuPatchCallback = (children, { message, channe
     );
 };
 
+/** Sites where a link usually is one video – other links (articles, profiles …) are sent without asking */
+const MEDIA_LINKS: [host: RegExp, path: RegExp][] = [
+    [/(^|\.)tiktok\.com$/, /./],
+    [/(^|\.)youtube\.com$/, /^\/(watch|shorts\/|live\/)/],
+    [/^youtu\.be$/, /^\/./],
+    [/(^|\.)instagram\.com$/, /^\/(p|reels?|tv)\//],
+    [/(^|\.)(x|twitter|fxtwitter|vxtwitter|fixupx)\.com$/, /\/status\/\d+/],
+    [/(^|\.)reddit\.com$/, /\/(comments|s)\//],
+    [/(^|\.)redd\.it$/, /^\/./],
+    [/^clips\.twitch\.tv$/, /^\/./],
+    [/(^|\.)twitch\.tv$/, /(^\/videos\/|\/clip\/)/],
+    [/(^|\.)soundcloud\.com$/, /^\/[^/]+\/[^/]+/],
+    [/(^|\.)vimeo\.com$/, /^\/\d+/],
+    [/(^|\.)facebook\.com$/, /(\/videos?\/|\/reel\/|^\/watch)/],
+    [/^fb\.watch$/, /^\/./],
+    [/(^|\.)streamable\.com$/, /^\/./],
+    [/(^|\.)threads\.(net|com)$/, /\/post\//],
+    [/^bsky\.app$/, /\/post\//]
+];
+
+/** True if the text is nothing but one link to a video (a link in <…> means "no preview" – that stays a link) */
+function isMediaLink(text: string) {
+    if (!/^https?:\/\/\S+$/i.test(text)) return false;
+    try {
+        const u = new URL(text);
+        const host = u.hostname.replace(/^(www|m|vm|vt)\./, "");
+        return MEDIA_LINKS.some(([h, p]) => h.test(host) && p.test(u.pathname));
+    } catch {
+        return false;
+    }
+}
+
+const onBeforeSend: MessageSendListener = async (channelId, msg, options, props) => {
+    if (!settings.store.askOnLinkSend || props.hasAttachments || props.hasStickers) return;
+    const url = msg.content.trim();
+    if (!isMediaLink(url)) return;
+
+    const choice = await askLinkChoice(url);
+    if (choice === "link") return;
+    // Closed → don't send, the link stays in the message box
+    if (!choice) return { cancel: true };
+
+    const channel = props.channel ?? ChannelStore.getChannel(channelId);
+    grab({ url, kind: choice, maxHeight: settings.store.menuQuality, toChat: true, toDisk: false, channel, sendNow: true, reply: options.messageReference });
+
+    // Discord keeps the text after a cancelled send – empty the box and drop the reply bar
+    setTimeout(() => {
+        ComponentDispatch.dispatchToLastSubscribed("CLEAR_TEXT");
+        if (options.messageReference) FluxDispatcher.dispatch({ type: "DELETE_PENDING_REPLY", channelId });
+    }, 0);
+    return { cancel: true };
+};
+
 const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
     const { showChatBarButton } = settings.use(["showChatBarButton"]);
     const { count, progress } = useRunning();
@@ -74,6 +128,8 @@ export default definePlugin({
     contextMenus: {
         "message": messageContext
     },
+
+    onBeforeMessageSend: onBeforeSend,
 
     chatBarButton: {
         icon: GrabIcon,

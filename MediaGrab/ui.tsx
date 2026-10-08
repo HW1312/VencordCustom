@@ -212,3 +212,50 @@ export function openGrabModal(channel?: Channel | null, links: string[] = []) {
         </ErrorBoundary>
     ));
 }
+
+// ---------------------------------------------------------------- Asked when a message is only a video link
+
+export type LinkChoice = "link" | "video" | "audio";
+
+const CHOICES: { value: LinkChoice; label: string; hint: string; }[] = [
+    { value: "link", label: "Send link", hint: "As usual" },
+    { value: "video", label: "Video (MP4)", hint: "Download and send the video" },
+    { value: "audio", label: "Audio (MP3)", hint: "Download and send the sound" }
+];
+
+/** Resolves with the choice, or null if the window was closed (then nothing is sent and the link stays in the box) */
+export function askLinkChoice(url: string) {
+    return new Promise<LinkChoice | null>(resolve => {
+        let result: LinkChoice | null = null;
+        openModal(props => (
+            <ErrorBoundary>
+                <Modal {...props} size="sm" title="Send as link or as file?" subtitle={shortUrl(url)}>
+                    <div className={cl("choices")}>
+                        {CHOICES.map((c, i) => (
+                            <button
+                                key={c.value}
+                                className={cl("choice")}
+                                autoFocus={i === 0}
+                                onClick={() => {
+                                    result = c.value;
+                                    props.onClose();
+                                }}
+                            >
+                                <span className={cl("choice-label")}>{c.label}</span>
+                                <span className={cl("muted")}>{c.hint}</span>
+                            </button>
+                        ))}
+                    </div>
+                    {needsRestart() && (
+                        <div className={classes(cl("notice"), cl("notice-error"))} style={{ marginTop: 12 }}>
+                            Quit Discord completely once (tray icon → Quit) and start it again – until then only “Send link” works.
+                        </div>
+                    )}
+                    <div className={cl("muted")} style={{ margin: "12px 0 8px" }}>
+                        Esc keeps the link in the message box. You can turn this question off in the MediaGrab settings.
+                    </div>
+                </Modal>
+            </ErrorBoundary>
+        ), { onCloseCallback: () => resolve(result) });
+    });
+}
