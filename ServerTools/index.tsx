@@ -12,6 +12,7 @@ import { Menu } from "@webpack/common";
 import { openBackupModal } from "./BackupModal";
 import { openGiveawayModal } from "./GiveawayModal";
 import { openHealthModal } from "./HealthModal";
+import { openNameCopyModal } from "./NameCopyModal";
 import { cancelAll, queueConfig } from "./queue";
 import { SettingsPanel } from "./ui";
 
@@ -57,6 +58,16 @@ const guildContextPatch: NavContextMenuPatchCallback = (children, { guild }: { g
     );
 };
 
+const channelContextPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: { name?: string; type?: number; }; }) => {
+    if (!channel?.name) return;
+    const group = findGroupChildrenByChildId("copy-channel-link", children)
+        ?? findGroupChildrenByChildId("devmode-copy-id", children)
+        ?? children;
+    group.push(
+        <Menu.MenuItem id="vc-servertools-copy-name" label="Copy name…" action={() => openNameCopyModal(channel)} />
+    );
+};
+
 const messageContextPatch: NavContextMenuPatchCallback = (children, { message }: { message?: any; }) => {
     if (!message?.reactions?.length) return;
     const group = findGroupChildrenByChildId("copy-link", children) ?? children;
@@ -69,13 +80,15 @@ const messageContextPatch: NavContextMenuPatchCallback = (children, { message }:
 
 export default definePlugin({
     name: "ServerTools",
-    description: "Server tools: backup & restore, Channel Health with heatmap, and fair, verifiable giveaways",
+    description: "Server tools: backup & restore, Channel Health with heatmap, fair, verifiable giveaways and copying channel names",
     authors: [{ name: "5406", id: 1062070744558870548n }],
     tags: ["Servers", "Utility"],
     settings,
 
     contextMenus: {
         "guild-context": guildContextPatch,
+        "channel-context": channelContextPatch,
+        "thread-context": channelContextPatch,
         "message": messageContextPatch
     },
 

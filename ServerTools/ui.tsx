@@ -42,7 +42,7 @@ function Panel() {
                 <span className={cl("logo")}><Icon name="tools" size={22} /></span>
                 <div>
                     <div className={cl("head-title")}>ServerTools</div>
-                    <div className={cl("hint")}>Tools for server owners & admins - also available by right-clicking a server icon or a message.</div>
+                    <div className={cl("hint")}>Tools for server owners & admins - also available by right-clicking a server icon, a channel or a message.</div>
                 </div>
             </div>
 
