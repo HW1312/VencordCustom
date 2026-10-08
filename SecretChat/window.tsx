@@ -15,7 +15,7 @@ import type { Root } from "react-dom/client";
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
 import { Badge, unreadOf } from "./area";
 import { isSendGuarded } from "./messages";
-import { chatLabel, createRoom, isJoining, joinRoom, userName, windowView } from "./rooms";
+import { chatLabel, createRoom, deleteRoomForEveryone, isJoining, isOwnedGroup, joinRoom, pruneStale, reannounce, userName, windowView } from "./rooms";
 import { dismissInvite, Invite, removeRoom, renameRoom, Room, useStore } from "./store";
 import { Avatar, CloseIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon } from "./ui";
 
@@ -159,6 +159,7 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     const rooms = Object.values(s.rooms).sort(byName);
     const invites = Object.values(s.invites);
+    useEffect(() => void pruneStale(), []);
     const [creating, setCreating] = useState(!rooms.length && !invites.length);
 
     const open = (channelId: string) => {
@@ -222,54 +223,76 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
     );
 }
 
+const SEND_PATH = "M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91Z";
+
 function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpen(): void; }) {
     const unread = useStateFromStores([ReadStateStore], () => unreadOf(room.channelId), [room.channelId]);
+    const owned = useStateFromStores([ChannelStore], () => isOwnedGroup(room.channelId), [room.channelId]);
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(room.name);
+    // No Discord dialogs in this layer – the trash opens a small choice under the row
     const [confirming, setConfirming] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
-    // No Discord dialogs in this window – a second click confirms
-    useEffect(() => {
-        if (!confirming) return;
-        const t = setTimeout(() => setConfirming(false), 3000);
-        return () => clearTimeout(t);
-    }, [confirming]);
+    const deleteGroup = async () => {
+        setDeleting(true);
+        await deleteRoomForEveryone(room.channelId);
+        setDeleting(false);
+    };
 
     return (
-        <div
-            className={classes(cl("side-room"), active && cl("side-room-on"), unread !== 0 && !active && cl("side-room-unread"))}
-            title={chatLabel(room.channelId)}
-            onClick={() => !editing && onOpen()}
-        >
-            <span className={cl("side-room-icon")}><LockIcon width={14} height={14} /></span>
-            {editing ? (
-                <input
-                    className={classes(cl("input"), cl("input-inline"))}
-                    value={name}
-                    autoFocus
-                    maxLength={64}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => setName(e.currentTarget.value)}
-                    onBlur={() => { renameRoom(room.channelId, name); setEditing(false); }}
-                    onKeyDown={e => {
-                        if (e.key === "Enter") e.currentTarget.blur();
-                        if (e.key === "Escape") { e.stopPropagation(); setName(room.name); setEditing(false); }
-                    }}
-                />
-            ) : <span className={cl("side-room-name")}>{room.name}</span>}
+        <div className={cl("side-room-wrap")}>
+            <div
+                className={classes(cl("side-room"), active && cl("side-room-on"), unread !== 0 && !active && cl("side-room-unread"))}
+                title={chatLabel(room.channelId)}
+                onClick={() => !editing && onOpen()}
+            >
+                <span className={cl("side-room-icon")}><LockIcon width={14} height={14} /></span>
+                {editing ? (
+                    <input
+                        className={classes(cl("input"), cl("input-inline"))}
+                        value={name}
+                        autoFocus
+                        maxLength={64}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => setName(e.currentTarget.value)}
+                        onBlur={() => { renameRoom(room.channelId, name); setEditing(false); }}
+                        onKeyDown={e => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") { e.stopPropagation(); setName(room.name); setEditing(false); }
+                        }}
+                    />
+                ) : <span className={cl("side-room-name")}>{room.name}</span>}
 
-            <span className={cl("side-room-actions")} onClick={e => e.stopPropagation()}>
-                <button className={cl("side-icon-btn")} title="Rename" onClick={() => { setName(room.name); setEditing(true); }}><PencilIcon width={14} height={14} /></button>
-                <button
-                    className={classes(cl("side-icon-btn"), cl("side-icon-danger"), confirming && cl("side-icon-confirm"))}
-                    title={confirming ? "Click again to remove it from the list (the chat and key stay)" : "Remove from list"}
-                    onClick={() => confirming ? removeRoom(room.channelId) : setConfirming(true)}
-                >
-                    {confirming ? "Sure?" : <TrashIcon width={14} height={14} />}
-                </button>
-            </span>
+                <span className={cl("side-room-actions")} onClick={e => e.stopPropagation()}>
+                    <button className={cl("side-icon-btn")} title="Send the invite again (for people who don't see it)" onClick={() => reannounce(room.channelId)}>
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={SEND_PATH} /></svg>
+                    </button>
+                    <button className={cl("side-icon-btn")} title="Rename" onClick={() => { setName(room.name); setEditing(true); }}><PencilIcon width={14} height={14} /></button>
+                    <button
+                        className={classes(cl("side-icon-btn"), cl("side-icon-danger"), confirming && cl("side-icon-confirm"))}
+                        title="Remove or delete"
+                        onClick={() => setConfirming(!confirming)}
+                    >
+                        <TrashIcon width={14} height={14} />
+                    </button>
+                </span>
 
-            {!active && <Badge count={unread} />}
+                {!active && <Badge count={unread} />}
+            </div>
+
+            {confirming && (
+                <div className={cl("side-confirm")}>
+                    {owned && (
+                        <button className={classes(cl("btn"), cl("btn-danger"))} disabled={deleting} onClick={deleteGroup}>
+                            {deleting ? "Deleting …" : "Delete group for everyone"}
+                        </button>
+                    )}
+                    <button className={cl("btn")} disabled={deleting} onClick={() => removeRoom(room.channelId)}>Only remove from list</button>
+                    <button className={classes(cl("btn"), cl("btn-ghost"))} disabled={deleting} onClick={() => setConfirming(false)}>Cancel</button>
+                    {owned && <span className={cl("hint")}>Deleting removes everyone, deletes the group with all messages and forgets the key.</span>}
+                </div>
+            )}
         </div>
     );
 }
@@ -277,6 +300,7 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
 function InviteItem({ invite }: { invite: Invite; }) {
     useStore();
     const joining = isJoining(invite.channelId);
+    const exists = useStateFromStores([ChannelStore], () => !!ChannelStore.getChannel(invite.channelId), [invite.channelId]);
     return (
         <div className={cl("side-invite")}>
             <div className={cl("side-invite-top")}>
@@ -287,8 +311,10 @@ function InviteItem({ invite }: { invite: Invite; }) {
                 </span>
                 <button className={cl("side-icon-btn")} title="Dismiss" onClick={() => dismissInvite(invite.channelId)}><CloseIcon width={14} height={14} /></button>
             </div>
-            {joining
-                ? <span className={cl("waiting")}>Waiting for a member …</span>
+            {!exists
+                ? <span className={cl("waiting")}>This chat no longer exists</span>
+                : joining
+                    ? <span className={cl("waiting")}>Waiting for a member …</span>
                 : <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => joinRoom(invite.channelId, invite.keyId)}>Join</button>}
         </div>
     );

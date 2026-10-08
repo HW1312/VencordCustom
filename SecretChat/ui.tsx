@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
 import { RoomCard } from "./area";
 import { keyFromPassword, randomBytes } from "./crypto";
 import { acceptHandshake, decrypted, handshakes, ignoreHandshake, retryLocked, startHandshake } from "./messages";
-import { chatLabel, makeRoom, roomMessages } from "./rooms";
+import { chatLabel, makeRoom, pruneStale, roomMessages } from "./rooms";
 import { settings } from "./settings";
 import { addKey, cancelPending, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
 
@@ -421,6 +421,7 @@ function ChatModal({ modalProps, channel }: { modalProps: RenderModalProps; chan
 }
 
 export function openChatModal(channel: Channel) {
+    void pruneStale();
     openModal(props => (
         <ErrorBoundary>
             <ChatModal modalProps={props} channel={channel} />

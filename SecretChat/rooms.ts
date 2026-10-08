@@ -15,12 +15,12 @@ import { showNotification } from "@api/Notifications";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { findByPropsLazy } from "@webpack";
-import { ChannelActionCreators, ChannelStore, GuildStore, SelectedChannelStore, SelfPresenceStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, showToast, Toasts, UserStore } from "@webpack/common";
 
 import { decodeText, deriveSharedKey, encodeText, fromB64, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
 import { settings } from "./settings";
-import { addInvite, addKey, addRoom, emit, getKey, getKeyBytes, isDismissed, save, state } from "./store";
+import { addInvite, addKey, addRoom, deleteKey, dropRoom, emit, getKey, getKeyBytes, isDismissed, save, state } from "./store";
 import { openRoomsWindow } from "./window";
 
 const logger = new Logger("SecretChat");
@@ -181,7 +181,7 @@ export async function letIn(msg: RoomMessage, manual: boolean) {
         const nonce = randomBytes(12);
         const sealed = seal(shared, nonce, concat(key, encodeText(name)), keyAad(joinId, msg.authorId));
         answered.add(joinId);
-        sendMessage(msg.channelId, { content: `🔑 SC1K.${joinId}.${msg.authorId}.${publicKey}.${toB64(concat(nonce, sealed))}` });
+        sendMessage(msg.channelId, { content: `🔑 SC1K.${joinId}.${msg.authorId}.${publicKey}.${toB64(concat(nonce, sealed))}` }, false);
         if (manual) showToast(`Let ${userName(msg.authorId)} in`, Toasts.Type.SUCCESS);
     } catch (e) {
         logger.error("Letting someone into the room failed", e);
@@ -225,12 +225,18 @@ async function completeJoin(msg: RoomMessage) {
 }
 
 export async function joinRoom(channelId: string, keyId: string) {
+    if (!ChannelStore.getChannel(channelId)) {
+        // The group was deleted (or you were removed) while the invite waited
+        await dropRoom(channelId, false);
+        showToast("This chat doesn't exist anymore", Toasts.Type.FAILURE);
+        return;
+    }
     if (Object.values(state.joins).some(j => j.channelId === channelId && j.keyId === keyId)) return;
     const joinId = toHex(randomBytes(8));
     const { publicKey, privateJwk } = await newHandshakeKeyPair();
     state.joins[joinId] = { channelId, keyId, privateJwk, created: Date.now() };
     await save();
-    sendMessage(channelId, { content: `🔑 SC1J.${keyId}.${joinId}.${publicKey}` });
+    sendMessage(channelId, { content: `🔑 SC1J.${keyId}.${joinId}.${publicKey}` }, false);
     showToast(isPrivateChat(channelId)
         ? "Asked to join – a member who is online lets you in automatically"
         : "Asked to join – a member has to let you in", Toasts.Type.MESSAGE);
@@ -241,7 +247,70 @@ export const isJoining = (channelId: string) => Object.values(state.joins).some(
 // ---------------------------------------------------------------- Creating rooms
 
 function announce(channelId: string, keyId: string) {
-    sendMessage(channelId, { content: `🔑 SC1R.${keyId}` });
+    sendMessage(channelId, { content: `🔑 SC1R.${keyId}` }, false);
+}
+
+/** Posts the room announce again – for people who missed it (it never arrived, or they got SecretChat later) */
+export function reannounce(channelId: string) {
+    const room = state.rooms[channelId];
+    if (!room) return;
+    announce(channelId, room.keyId);
+    showToast("Invite sent again", Toasts.Type.SUCCESS);
+}
+
+/** A group DM you created – you can delete it for everyone */
+export function isOwnedGroup(channelId: string) {
+    const ch = ChannelStore.getChannel(channelId);
+    return !!ch?.isGroupDM() && ch.ownerId === myId();
+}
+
+/** Removes everyone from the group, leaves it (an empty group is deleted by Discord) and forgets room and key */
+export async function deleteRoomForEveryone(channelId: string) {
+    const ch = ChannelStore.getChannel(channelId);
+    const me = myId();
+    if (!ch || !me || !isOwnedGroup(channelId)) return;
+    try {
+        for (const userId of ch.recipients ?? []) {
+            if (userId === me) continue;
+            await RestAPI.del({ url: `/channels/${channelId}/recipients/${userId}` });
+            await new Promise(r => setTimeout(r, 300));
+        }
+        await RestAPI.del({ url: `/channels/${channelId}` });
+        await dropRoom(channelId, true);
+        showToast("Group deleted", Toasts.Type.SUCCESS);
+    } catch (e) {
+        logger.error("Deleting the group failed", e);
+        showToast("Could not delete the group completely – try again", Toasts.Type.FAILURE);
+    }
+}
+
+/**
+ * Cleans up what belongs to chats that don't exist anymore (deleted or left while Discord was closed): their
+ * invites, their rooms and the room keys nothing uses anymore. Keys you made yourself (new key, code, password)
+ * stay. Runs when a SecretChat window opens – by then Discord has loaded its chats.
+ */
+export async function pruneStale() {
+    // Chats not loaded yet → everything would look deleted
+    if (!PrivateChannelSortStore.getPrivateChannelIds().length) return;
+    const exists = (channelId: string) => !!ChannelStore.getChannel(channelId);
+
+    for (const channelId of Object.keys(state.invites)) if (!exists(channelId)) await dropRoom(channelId, false);
+    for (const channelId of Object.keys(state.rooms)) if (!exists(channelId)) await dropRoom(channelId, true);
+
+    const used = (keyId: string) =>
+        Object.entries(state.channels).some(([ch, k]) => k === keyId && exists(ch))
+        || Object.values(state.rooms).some(r => r.keyId === keyId)
+        || Object.values(state.invites).some(i => i.keyId === keyId);
+    for (const k of [...state.keys]) {
+        if (k.source === "room" && !used(k.id)) await deleteKey(k.id);
+    }
+}
+
+/** CHANNEL_DELETE: a group or channel of a room is gone (or you were removed) → forget it. Closing a DM is not that. */
+export function onChannelDelete(e: any) {
+    const ch = e?.channel;
+    if (!ch?.id || ch.type === 1) return;
+    if (state.rooms[ch.id] || state.invites[ch.id]) dropRoom(ch.id, true);
 }
 
 /** Makes an existing chat a room – with the group key that is on there, or a new one */

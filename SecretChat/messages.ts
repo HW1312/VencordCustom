@@ -70,7 +70,7 @@ export async function startHandshake(user: User, channelId: string) {
     const { publicKey, privateJwk } = await newHandshakeKeyPair();
     state.pending[hsid] = { to: user.id, channelId, privateJwk, created: Date.now() };
     await save();
-    sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` });
+    sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` }, false);
     showToast(`Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, Toasts.Type.MESSAGE);
 }
 
@@ -92,7 +92,7 @@ export async function acceptHandshake(hs: Handshake) {
         const key = await deriveSharedKey(privateJwk, hs.publicKey, me, hs.authorId);
         const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake" });
         state.handled.push(hs.hsid);
-        sendMessage(hs.channelId, { content: `🔑 SC1A.${hs.hsid}.${publicKey}` });
+        sendMessage(hs.channelId, { content: `🔑 SC1A.${hs.hsid}.${publicKey}` }, false);
         await finish(record, isNew, hs.channelId, hs.authorId);
     } catch (e) {
         logger.error("Accepting the handshake failed", e);

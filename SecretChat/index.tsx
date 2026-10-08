@@ -17,7 +17,7 @@ import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, showToast, To
 import { loadedMessageHooks } from "../ChatPopout/messages";
 import { renderTitleBarButton, ServerListIcon } from "./area";
 import { decryptLoaded, intercept, onBeforeEdit, onBeforeSend, retryHandshakes, retryLocked, startHandshake, unwrapMessageActions, wrapMessageActions } from "./messages";
-import { isRoomMessage, retryRooms } from "./rooms";
+import { isRoomMessage, onChannelDelete, retryRooms } from "./rooms";
 import { settings } from "./settings";
 import { loadState } from "./store";
 import { ChatButton, LockDecoration, LockIcon, MessageCard } from "./ui";
@@ -76,6 +76,10 @@ export default definePlugin({
 
     contextMenus: {
         "user-context": userContext
+    },
+
+    flux: {
+        CHANNEL_DELETE: onChannelDelete
     },
 
     onBeforeMessageSend: onBeforeSend,

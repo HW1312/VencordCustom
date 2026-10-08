@@ -221,6 +221,22 @@ export async function removeRoom(channelId: string) {
     await save();
 }
 
+/** The chat is gone (deleted, or you were removed): forget the room – and its key if nothing else uses it */
+export async function dropRoom(channelId: string, dropKey: boolean) {
+    const room = state.rooms[channelId];
+    delete state.rooms[channelId];
+    delete state.channels[channelId];
+    delete state.lastUsed[channelId];
+    delete state.invites[channelId];
+    for (const [jid, j] of Object.entries(state.joins)) if (j.channelId === channelId) delete state.joins[jid];
+    const keyId = room?.keyId;
+    if (dropKey && keyId && !Object.values(state.channels).includes(keyId) && !Object.values(state.rooms).some(r => r.keyId === keyId)) {
+        state.keys = state.keys.filter(k => k.id !== keyId);
+        keyBytes.delete(keyId);
+    }
+    await save();
+}
+
 export async function renameRoom(channelId: string, name: string) {
     const r = state.rooms[channelId];
     if (!r || !name.trim()) return;
