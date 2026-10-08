@@ -215,13 +215,58 @@ export function openGrabModal(channel?: Channel | null, links: string[] = []) {
 
 // ---------------------------------------------------------------- Asked when a message is only a video link
 
-export type LinkChoice = "link" | "video" | "audio";
+export type LinkChoice = { kind: "link"; } | { kind: "video"; quality: number; } | { kind: "audio"; };
 
-const CHOICES: { value: LinkChoice; label: string; hint: string; }[] = [
-    { value: "link", label: "Send link", hint: "As usual" },
-    { value: "video", label: "Video (MP4)", hint: "Download and send the video" },
-    { value: "audio", label: "Audio (MP3)", hint: "Download and send the sound" }
-];
+const QUALITIES = [{ value: 0, label: "Best" }, { value: 1080, label: "1080p" }, { value: 720, label: "720p" }, { value: 480, label: "480p" }];
+
+function ChoiceButton({ label, hint, autoFocus, onClick }: { label: string; hint: string; autoFocus?: boolean; onClick(): void; }) {
+    return (
+        <button className={cl("choice")} autoFocus={autoFocus} onClick={onClick}>
+            <span className={cl("choice-label")}>{label}</span>
+            <span className={cl("muted")}>{hint}</span>
+        </button>
+    );
+}
+
+function LinkChoiceModal({ modalProps, url, onChoice }: { modalProps: RenderModalProps; url: string; onChoice(c: LinkChoice): void; }) {
+    const s = settings.store;
+    const [quality, setQuality] = useState<number>(s.lastQuality);
+    const choose = (c: LinkChoice) => {
+        onChoice(c);
+        modalProps.onClose();
+    };
+
+    return (
+        <Modal {...modalProps} size="sm" title="Send as link or as file?" subtitle={shortUrl(url)}>
+            <div className={cl("choices")}>
+                <ChoiceButton label="Send link" hint="As usual" autoFocus onClick={() => choose({ kind: "link" })} />
+                <div className={cl("choice-group")}>
+                    <ChoiceButton
+                        label="Video (MP4)"
+                        hint="Download and send the video"
+                        onClick={() => {
+                            s.lastQuality = quality;
+                            choose({ kind: "video", quality });
+                        }}
+                    />
+                    <div className={cl("choice-quality")}>
+                        <span className={cl("muted")}>Quality</span>
+                        <Segmented<number> value={quality} onChange={setQuality} options={QUALITIES} />
+                    </div>
+                </div>
+                <ChoiceButton label="Audio (MP3)" hint="Download and send the sound" onClick={() => choose({ kind: "audio" })} />
+            </div>
+            {needsRestart() && (
+                <div className={classes(cl("notice"), cl("notice-error"))} style={{ marginTop: 12 }}>
+                    Quit Discord completely once (tray icon → Quit) and start it again – until then only “Send link” works.
+                </div>
+            )}
+            <div className={cl("muted")} style={{ margin: "12px 0 8px" }}>
+                Esc keeps the link in the message box. You can turn this question off in the MediaGrab settings.
+            </div>
+        </Modal>
+    );
+}
 
 /** Resolves with the choice, or null if the window was closed (then nothing is sent and the link stays in the box) */
 export function askLinkChoice(url: string) {
@@ -229,32 +274,7 @@ export function askLinkChoice(url: string) {
         let result: LinkChoice | null = null;
         openModal(props => (
             <ErrorBoundary>
-                <Modal {...props} size="sm" title="Send as link or as file?" subtitle={shortUrl(url)}>
-                    <div className={cl("choices")}>
-                        {CHOICES.map((c, i) => (
-                            <button
-                                key={c.value}
-                                className={cl("choice")}
-                                autoFocus={i === 0}
-                                onClick={() => {
-                                    result = c.value;
-                                    props.onClose();
-                                }}
-                            >
-                                <span className={cl("choice-label")}>{c.label}</span>
-                                <span className={cl("muted")}>{c.hint}</span>
-                            </button>
-                        ))}
-                    </div>
-                    {needsRestart() && (
-                        <div className={classes(cl("notice"), cl("notice-error"))} style={{ marginTop: 12 }}>
-                            Quit Discord completely once (tray icon → Quit) and start it again – until then only “Send link” works.
-                        </div>
-                    )}
-                    <div className={cl("muted")} style={{ margin: "12px 0 8px" }}>
-                        Esc keeps the link in the message box. You can turn this question off in the MediaGrab settings.
-                    </div>
-                </Modal>
+                <LinkChoiceModal modalProps={props} url={url} onChoice={c => result = c} />
             </ErrorBoundary>
         ), { onCloseCallback: () => resolve(result) });
     });

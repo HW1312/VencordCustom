@@ -91,12 +91,13 @@ const onBeforeSend: MessageSendListener = async (channelId, msg, options, props)
     if (!isMediaLink(url)) return;
 
     const choice = await askLinkChoice(url);
-    if (choice === "link") return;
+    if (choice?.kind === "link") return;
     // Closed → don't send, the link stays in the message box
     if (!choice) return { cancel: true };
 
     const channel = props.channel ?? ChannelStore.getChannel(channelId);
-    grab({ url, kind: choice, maxHeight: settings.store.menuQuality, toChat: true, toDisk: false, channel, sendNow: true, reply: options.messageReference });
+    const maxHeight = choice.kind === "video" ? choice.quality : 0;
+    grab({ url, kind: choice.kind, maxHeight, toChat: true, toDisk: false, channel, sendNow: true, reply: options.messageReference });
 
     // Discord keeps the text after a cancelled send – empty the box and drop the reply bar
     setTimeout(() => {

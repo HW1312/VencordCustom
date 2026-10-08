@@ -177,6 +177,37 @@
     border-color: var(--brand-500, #5865f2);
 }
 
+/* Video card with the quality row inside the same frame */
+.vc-mediagrab-choice-group {
+    overflow: hidden;
+    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-radius: 8px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
+}
+
+.vc-mediagrab-choice-group:hover,
+.vc-mediagrab-choice-group:focus-within {
+    border-color: var(--brand-500, #5865f2);
+}
+
+.vc-mediagrab-choice-group .vc-mediagrab-choice {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background: none;
+}
+
+.vc-mediagrab-choice-quality {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px 10px;
+}
+
+.vc-mediagrab-choice-quality .vc-mediagrab-segmented {
+    flex: 1;
+}
+
 .vc-mediagrab-choice-label {
     font-size: 15px;
     font-weight: 600;
