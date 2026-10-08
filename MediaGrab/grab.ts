@@ -71,7 +71,7 @@ function uploadLimit() {
     const premium = UserStore.getCurrentUser()?.premiumType ?? 0;
     const gofile = Settings.plugins.GofileUpload;
     const [free, basic, nitro] = gofile?.enabled
-        ? [gofile.limitFree ?? 19.8, gofile.limitBasic ?? 49.8, gofile.limitNitro ?? 999]
+        ? [gofile.limitFree ?? 9.8, gofile.limitBasic ?? 49.8, gofile.limitNitro ?? 499]
         : [10, 50, 500];
     return (premium === 2 ? nitro : premium === 1 || premium === 3 ? basic : free) * MB;
 }
@@ -323,8 +323,14 @@ export async function grab(req: GrabRequest) {
             // Too large to send directly → the normal way, so GofileUpload can turn it into a link
             if (req.sendNow && file.size <= uploadLimit()) {
                 card.update("Sending …", -1);
-                await sendFile(file, req.channel.id, req.reply);
-                sent = true;
+                try {
+                    await sendFile(file, req.channel.id, req.reply);
+                    sent = true;
+                } catch (e) {
+                    // Usually Discord rejecting the size (e.g. the limit is set too high) → let GofileUpload handle it
+                    logger.warn("Direct send failed, handing the file to the normal upload", e);
+                    UploadHandler.promptToUpload([file], req.channel, DraftType.ChannelMessage);
+                }
             } else {
                 UploadHandler.promptToUpload([file], req.channel, DraftType.ChannelMessage);
             }

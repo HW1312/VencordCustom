@@ -37,8 +37,8 @@ const active = new Set<string>();
 const settings = definePluginSettings({
     limitFree: {
         type: OptionType.NUMBER,
-        description: "Size limit without Nitro (MB) – larger files go to Gofile",
-        default: 19.8
+        description: "Size limit without Nitro (MB) – larger files go to Gofile (Discord allows 10 MB)",
+        default: 9.8
     },
     limitBasic: {
         type: OptionType.NUMBER,
@@ -48,7 +48,7 @@ const settings = definePluginSettings({
     limitNitro: {
         type: OptionType.NUMBER,
         description: "Size limit with Nitro (MB)",
-        default: 999
+        default: 499
     },
     autoCompress: {
         type: OptionType.BOOLEAN,
@@ -94,6 +94,12 @@ const settings = definePluginSettings({
             { label: "Insert it into the chat box (you press Enter)", value: "insert" },
             { label: "Only copy it to the clipboard", value: "copy" }
         ]
+    },
+    limitsVersion: {
+        type: OptionType.NUMBER,
+        description: "",
+        default: 0,
+        hidden: true
     }
 });
 
@@ -633,6 +639,13 @@ export default definePlugin({
 
     start() {
         running = true;
+        // Discord lowered its limits (free 25 → 10 MB, Nitro → 500 MB) – fix values saved from the old defaults once
+        const s = settings.store;
+        if (s.limitsVersion < 1) {
+            if (s.limitFree > 10) s.limitFree = 9.8;
+            if (s.limitNitro > 500) s.limitNitro = 499;
+            s.limitsVersion = 1;
+        }
     },
 
     stop() {

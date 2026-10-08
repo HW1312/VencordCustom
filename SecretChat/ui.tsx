@@ -15,8 +15,10 @@ import { Channel, Message, RenderModalProps } from "@vencord/discord-types";
 import { Alerts, Modal, openModal, showToast, Toasts, Tooltip, UserStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { RoomCard } from "./area";
 import { keyFromPassword, randomBytes } from "./crypto";
 import { acceptHandshake, decrypted, handshakes, ignoreHandshake, retryLocked, startHandshake } from "./messages";
+import { chatLabel, makeRoom, roomMessages } from "./rooms";
 import { settings } from "./settings";
 import { addKey, cancelPending, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
 
@@ -40,14 +42,14 @@ const icon = (d: string): IconComponent => ({ width = 16, height = 16, className
     <svg width={width} height={height} viewBox="0 0 24 24" className={className} fill="currentColor"><path d={d} /></svg>
 );
 
-const PersonIcon = icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z");
-const GroupIcon = icon("M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05A4.22 4.22 0 0 1 17 16.5V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z");
+export const PersonIcon = icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z");
+export const GroupIcon = icon("M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05A4.22 4.22 0 0 1 17 16.5V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z");
 const CopyIcon = icon("M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z");
-const PencilIcon = icon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z");
-const TrashIcon = icon("M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z");
+export const PencilIcon = icon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z");
+export const TrashIcon = icon("M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z");
 const CheckIcon = icon("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z");
-const PlusIcon = icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z");
-const CloseIcon = icon("M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z");
+export const PlusIcon = icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z");
+export const CloseIcon = icon("M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z");
 const ShieldIcon = icon("M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z");
 
 const userName = (id?: string) => {
@@ -86,7 +88,7 @@ export const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
 
 // ---------------------------------------------------------------- Small parts
 
-function Avatar({ userId }: { userId?: string; }) {
+export function Avatar({ userId }: { userId?: string; }) {
     const user = userId ? UserStore.getUser(userId) : null;
     const url = (user as any)?.getAvatarURL?.(undefined, 64);
     return url
@@ -94,7 +96,7 @@ function Avatar({ userId }: { userId?: string; }) {
         : <span className={cl("avatar")}><PersonIcon width={20} height={20} /></span>;
 }
 
-function IconButton({ label, danger, onClick, children }: { label: string; danger?: boolean; onClick(): void; children: ReactNode; }) {
+export function IconButton({ label, danger, onClick, children }: { label: string; danger?: boolean; onClick(): void; children: ReactNode; }) {
     return (
         <Tooltip text={label}>
             {p => (
@@ -326,6 +328,57 @@ function GroupTab({ channel, current }: { channel: Channel; current: string | nu
     );
 }
 
+/** Bottom of the chat window: make this chat a secret room (listed in the server list area, own pings) */
+function RoomSection({ channel }: { channel: Channel; }) {
+    const s = useStore();
+    const active = channelKey(channel.id);
+    const room = s.rooms[channel.id];
+    const [open, setOpen] = useState(false);
+    const [name, setName] = useState(() => active?.kind === "group" ? active.name : chatLabel(channel.id).slice(0, 64));
+    const [busy, setBusy] = useState(false);
+
+    if (room) {
+        return (
+            <div className={cl("room-note")}>
+                <LockIcon width={14} height={14} />Secret room “{room.name}” · pings only through SecretChat
+            </div>
+        );
+    }
+
+    const create = async () => {
+        if (!name.trim() || busy) return;
+        setBusy(true);
+        try {
+            // A 1:1 key must stay between the two of you – a room gets a group key that can be handed out
+            await makeRoom(channel.id, name, active?.kind === "group" ? active.id : undefined);
+            setOpen(false);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return open ? (
+        <div className={cl("panel")}>
+            <input
+                className={cl("input")}
+                value={name}
+                autoFocus
+                placeholder="Room name (only you all see it)"
+                maxLength={64}
+                onChange={e => setName(e.currentTarget.value)}
+                onKeyDown={e => { if (e.key === "Enter") create(); }}
+            />
+            <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!name.trim() || busy} onClick={create}>
+                {busy ? "Creating …" : "Make secret room"}
+            </button>
+        </div>
+    ) : (
+        <button className={cl("chip")} onClick={() => setOpen(true)}>
+            <LockIcon width={16} height={16} />Make this chat a secret room
+        </button>
+    );
+}
+
 function ChatModal({ modalProps, channel }: { modalProps: RenderModalProps; channel: Channel; }) {
     useStore();
     const active = channelKey(channel.id);
@@ -360,6 +413,8 @@ function ChatModal({ modalProps, channel }: { modalProps: RenderModalProps; chan
                 {tab === "private"
                     ? <PrivateTab channel={channel} current={active?.id ?? null} />
                     : <GroupTab channel={channel} current={active?.id ?? null} />}
+
+                <RoomSection channel={channel} />
             </div>
         </Modal>
     );
@@ -401,6 +456,7 @@ export function LockDecoration({ message }: { message: Message; }) {
 /** Below handshake messages (accept / waiting) and below decrypted key codes (add key) */
 export function MessageCard({ message }: { message: Message; }) {
     const s = useStore();
+    if (roomMessages.has(message.id)) return <RoomCard message={message} />;
     const hs = handshakes.get(message.id);
     const me = UserStore.getCurrentUser()?.id;
 

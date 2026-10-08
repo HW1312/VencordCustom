@@ -1,0 +1,350 @@
+/*
+ * SecretChat – The rooms window: a layer over Discord (not a separate window) with the rooms, invites and
+ * "New room" on the left and the open room on the right (ChatPopout's chat, embedded). It is its own React
+ * root instead of a Discord modal, because ChatPopout's menus / viewer are position: fixed and a modal's
+ * transform would shift them.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import { classNameFactory } from "@api/Styles";
+import ErrorBoundary from "@components/ErrorBoundary";
+import { classes } from "@utils/misc";
+import { createRoot, FluxDispatcher, ReadStateStore, RelationshipStore, showToast, Toasts, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import type { Root } from "react-dom/client";
+
+import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
+import { Badge, unreadOf } from "./area";
+import { isSendGuarded } from "./messages";
+import { chatLabel, createRoom, isJoining, joinRoom, userName, windowView } from "./rooms";
+import { dismissInvite, Invite, removeRoom, renameRoom, Room, useStore } from "./store";
+import { Avatar, CloseIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon } from "./ui";
+
+const cl = classNameFactory("vc-secretchat-");
+
+/** ChatPopout wants a window key (only used for popout window state, which this layer doesn't have) */
+const WINDOW_KEY = "DISCORD_VC_SECRETCHAT";
+/** Discord allows 10 people in a group DM – you plus 9 */
+const MAX_MEMBERS = 9;
+
+// ---------------------------------------------------------------- Which room the window shows
+
+let selected = "";
+const selectListeners = new Set<() => void>();
+
+function select(channelId: string) {
+    selected = channelId;
+    selectListeners.forEach(l => l());
+}
+
+function useSelected() {
+    const [, rerender] = useReducer((x: number) => x + 1, 0);
+    useEffect(() => {
+        selectListeners.add(rerender);
+        return () => void selectListeners.delete(rerender);
+    }, []);
+    return selected;
+}
+
+let host: HTMLDivElement | null = null;
+let root: Root | null = null;
+
+/** Opens the rooms window over Discord (or switches the room if it's open already) */
+export function openRoomsWindow(channelId?: string) {
+    if (channelId) select(channelId);
+    if (root) return;
+
+    try {
+        host = document.createElement("div");
+        host.className = cl("layer-root");
+        document.body.appendChild(host);
+        root = createRoot(host);
+        root.render(
+            <ErrorBoundary noop>
+                <RoomsLayer />
+            </ErrorBoundary>
+        );
+    } catch (e) {
+        closeRoomsWindow();
+        showToast("Couldn't open the SecretChat window", Toasts.Type.FAILURE);
+    }
+}
+
+export function closeRoomsWindow() {
+    root?.unmount();
+    host?.remove();
+    root = null;
+    host = null;
+}
+
+export function toggleRoomsWindow() {
+    if (root) closeRoomsWindow();
+    else openRoomsWindow();
+}
+
+function RoomsLayer() {
+    // Esc closes – unless something inside wants it (menu, viewer, reply / edit mode, a field with text)
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "Escape" || e.defaultPrevented) return;
+            const t = e.target as HTMLElement | null;
+            if (t?.closest?.(".vc-chatpopout-menu, .vc-chatpopout-viewer, .vc-chatpopout-profile")) return;
+            if ((t instanceof HTMLTextAreaElement || t instanceof HTMLInputElement) && t.value) return;
+            e.stopPropagation();
+            closeRoomsWindow();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, []);
+
+    return (
+        <div className={cl("layer")} onMouseDown={e => { if (e.target === e.currentTarget) closeRoomsWindow(); }}>
+            <div className={cl("layer-card")}>
+                <RoomsWindow />
+            </div>
+        </div>
+    );
+}
+
+/** Marks the room as read – the window is our own, so Discord doesn't do it */
+function ack(channelId: string) {
+    FluxDispatcher.dispatch({
+        type: "BULK_ACK",
+        context: "APP",
+        channels: [{ channelId, messageId: ReadStateStore.lastMessageId(channelId), readStateType: 0 }]
+    } as any);
+}
+
+// ---------------------------------------------------------------- Window
+
+function RoomsWindow() {
+    const s = useStore();
+    const current = useSelected();
+    // Nothing chosen yet → the first room
+    const channelId = current && s.rooms[current] ? current : Object.values(s.rooms).sort(byName)[0]?.channelId ?? "";
+
+    // Without the sendMessage wrap the chat input would send plain text – show no chat then
+    if (!isSendGuarded()) {
+        return (
+            <div className={cl("win-empty")}>
+                <LockIcon width={40} height={40} />
+                <div>SecretChat couldn't secure sending here – write in Discord itself (lock in the chat bar)</div>
+            </div>
+        );
+    }
+
+    return (
+        <ChatWindow
+            channelId={channelId}
+            windowKey={WINDOW_KEY}
+            sidebar={RoomSidebar}
+            title="Secret rooms"
+            className={cl("chatwin")}
+            onClose={closeRoomsWindow}
+            emptyView={
+                <div className={cl("win-empty")}>
+                    <LockIcon width={40} height={40} />
+                    <div>Pick a room on the left or create a new one</div>
+                </div>
+            }
+        />
+    );
+}
+
+const byName = (a: Room, b: Room) => a.name.localeCompare(b.name);
+
+// ---------------------------------------------------------------- Sidebar
+
+function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
+    const s = useStore();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const rooms = Object.values(s.rooms).sort(byName);
+    const invites = Object.values(s.invites);
+    const [creating, setCreating] = useState(!rooms.length && !invites.length);
+
+    const open = (channelId: string) => {
+        select(channelId);
+        onSelect(channelId);
+    };
+
+    // Read while the window is focused; tell the pings which room is in front
+    const unread = useStateFromStores([ReadStateStore], () => current ? ReadStateStore.hasUnread(current) : false, [current]);
+    useEffect(() => {
+        const doc = rootRef.current?.ownerDocument ?? null;
+        windowView.doc = doc;
+        windowView.channelId = s.rooms[current] ? current : null;
+        const readNow = () => {
+            if (current && s.rooms[current] && doc?.hasFocus() && ReadStateStore.hasUnread(current)) ack(current);
+        };
+        readNow();
+        const win = doc?.defaultView;
+        win?.addEventListener("focus", readNow);
+        return () => win?.removeEventListener("focus", readNow);
+    }, [current, unread]);
+    useEffect(() => () => {
+        windowView.doc = null;
+        windowView.channelId = null;
+    }, []);
+
+    return (
+        <div ref={rootRef} className={cl("side")}>
+            <div className={cl("side-head")}>
+                <LockIcon width={16} height={16} />
+                <span>Secret rooms</span>
+                <button
+                    className={classes(cl("side-add"), creating && cl("side-add-on"))}
+                    title={creating ? "Cancel" : "New room"}
+                    onClick={() => setCreating(!creating)}
+                >
+                    {creating ? <CloseIcon /> : <PlusIcon />}
+                </button>
+            </div>
+
+            <div className={cl("side-list")}>
+                {creating && <NewRoomPanel onDone={() => setCreating(false)} />}
+
+                {!!invites.length && (
+                    <>
+                        <div className={cl("side-section")}>Invites</div>
+                        {invites.map(i => <InviteItem key={i.channelId} invite={i} />)}
+                    </>
+                )}
+
+                {!!rooms.length && <div className={cl("side-section")}>Rooms</div>}
+                {rooms.map(r => <RoomItem key={r.channelId} room={r} active={r.channelId === current} onOpen={() => open(r.channelId)} />)}
+
+                {!rooms.length && !invites.length && !creating && (
+                    <button className={cl("side-empty")} onClick={() => setCreating(true)}>
+                        <PlusIcon />Create your first room
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpen(): void; }) {
+    const unread = useStateFromStores([ReadStateStore], () => unreadOf(room.channelId), [room.channelId]);
+    const [editing, setEditing] = useState(false);
+    const [name, setName] = useState(room.name);
+    const [confirming, setConfirming] = useState(false);
+
+    // No Discord dialogs in this window – a second click confirms
+    useEffect(() => {
+        if (!confirming) return;
+        const t = setTimeout(() => setConfirming(false), 3000);
+        return () => clearTimeout(t);
+    }, [confirming]);
+
+    return (
+        <div
+            className={classes(cl("side-room"), active && cl("side-room-on"), unread !== 0 && !active && cl("side-room-unread"))}
+            title={chatLabel(room.channelId)}
+            onClick={() => !editing && onOpen()}
+        >
+            <span className={cl("side-room-icon")}><LockIcon width={14} height={14} /></span>
+            {editing ? (
+                <input
+                    className={classes(cl("input"), cl("input-inline"))}
+                    value={name}
+                    autoFocus
+                    maxLength={64}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => setName(e.currentTarget.value)}
+                    onBlur={() => { renameRoom(room.channelId, name); setEditing(false); }}
+                    onKeyDown={e => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                        if (e.key === "Escape") { e.stopPropagation(); setName(room.name); setEditing(false); }
+                    }}
+                />
+            ) : <span className={cl("side-room-name")}>{room.name}</span>}
+
+            <span className={cl("side-room-actions")} onClick={e => e.stopPropagation()}>
+                <button className={cl("side-icon-btn")} title="Rename" onClick={() => { setName(room.name); setEditing(true); }}><PencilIcon width={14} height={14} /></button>
+                <button
+                    className={classes(cl("side-icon-btn"), cl("side-icon-danger"), confirming && cl("side-icon-confirm"))}
+                    title={confirming ? "Click again to remove it from the list (the chat and key stay)" : "Remove from list"}
+                    onClick={() => confirming ? removeRoom(room.channelId) : setConfirming(true)}
+                >
+                    {confirming ? "Sure?" : <TrashIcon width={14} height={14} />}
+                </button>
+            </span>
+
+            {!active && <Badge count={unread} />}
+        </div>
+    );
+}
+
+function InviteItem({ invite }: { invite: Invite; }) {
+    useStore();
+    const joining = isJoining(invite.channelId);
+    return (
+        <div className={cl("side-invite")}>
+            <div className={cl("side-invite-top")}>
+                <Avatar userId={invite.from} />
+                <span className={cl("side-invite-text")}>
+                    <b>{userName(invite.from)}</b>
+                    <span>{chatLabel(invite.channelId)}</span>
+                </span>
+                <button className={cl("side-icon-btn")} title="Dismiss" onClick={() => dismissInvite(invite.channelId)}><CloseIcon width={14} height={14} /></button>
+            </div>
+            {joining
+                ? <span className={cl("waiting")}>Waiting for a member …</span>
+                : <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => joinRoom(invite.channelId, invite.keyId)}>Join</button>}
+        </div>
+    );
+}
+
+function NewRoomPanel({ onDone }: { onDone(): void; }) {
+    const [name, setName] = useState("");
+    const [query, setQuery] = useState("");
+    const [picked, setPicked] = useState<string[]>([]);
+    const [busy, setBusy] = useState(false);
+
+    const friends = useMemo(() =>
+        RelationshipStore.getFriendIDs()
+            .map(id => ({ id, name: userName(id) as string }))
+            .sort((a, b) => a.name.localeCompare(b.name)), []);
+    const q = query.trim().toLowerCase();
+    const shown = q ? friends.filter(f => f.name.toLowerCase().includes(q) || UserStore.getUser(f.id)?.username.includes(q)) : friends;
+
+    const toggle = (id: string) => setPicked(p =>
+        p.includes(id) ? p.filter(x => x !== id) : p.length >= MAX_MEMBERS ? p : [...p, id]);
+
+    const canCreate = !!name.trim() && picked.length > 0 && !busy;
+    const create = async () => {
+        if (!canCreate) return;
+        setBusy(true);
+        try {
+            const channelId = await createRoom(name, picked);
+            select(channelId);
+            onDone();
+        } catch (e) {
+            showToast("Could not create the group – Discord may want a captcha, create it by hand and use the lock there", Toasts.Type.FAILURE);
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className={classes(cl("panel"), cl("side-panel"))}>
+            <input className={cl("input")} value={name} autoFocus placeholder="Room name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
+            <input className={cl("input")} value={query} placeholder="Search friends" onChange={e => setQuery(e.currentTarget.value)} />
+            <div className={cl("pick-list")}>
+                {shown.map(f => {
+                    const on = picked.includes(f.id);
+                    return (
+                        <button key={f.id} className={classes(cl("pick"), on && cl("pick-on"))} onClick={() => toggle(f.id)}>
+                            <Avatar userId={f.id} />
+                            <span className={cl("row-title")}>{f.name}</span>
+                            <span className={cl("box")}>{on && "✓"}</span>
+                        </button>
+                    );
+                })}
+                {!shown.length && <div className={cl("empty")}>No friends found</div>}
+            </div>
+            <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!canCreate} onClick={create}>
+                {busy ? "Creating …" : picked.length ? `Create (${picked.length})` : "Pick friends"}
+            </button>
+            <span className={cl("hint")}>Existing chat or server channel: open it in Discord and use the lock in the chat bar.</span>
+        </div>
+    );
+}

@@ -14,6 +14,7 @@ import {
     PrivateChannelSortStore, ReadStateStore, RestAPI, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
     useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
+import type { ComponentType, ReactNode } from "react";
 
 import { getCommands, matchCommands, OptionType, PopoutCommand } from "./commands";
 import { collectComponentMedia, IS_COMPONENTS_V2, MessageComponents } from "./components";
@@ -1178,8 +1179,10 @@ function nativeWindow(): any {
     return (window as any).DiscordNative?.window;
 }
 
-function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSidebar }: {
+function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSidebar, onClose }: {
     info: ReturnType<typeof useChannelInfo>; windowKey: string; channelId: string; guildId: string | null; sidebar: boolean; onToggleSidebar(): void;
+    /** Embedded in the main window: no window buttons, closing is up to the host */
+    onClose?(): void;
 }) {
     const pinned = useStateFromStores([PopoutWindowStore], () => PopoutWindowStore.getIsAlwaysOnTop(windowKey));
     const native = nativeWindow();
@@ -1204,11 +1207,11 @@ function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSideba
                 {info.subtitle && <div className={cl("title-sub")}>{info.subtitle}</div>}
             </div>
             <div className={cl("title-actions")}>
-                <IconButton path={PIN_PATH} label={pinned ? "Unpin from top" : "Always on top"} active={pinned} onClick={() => PopoutActions.setAlwaysOnTop(windowKey, !pinned)} />
-                <IconButton path={MAIN_PATH} label="Open in main window" disabled={!info.channel} onClick={() => openInMain(channelId, guildId)} />
-                {native?.minimize && <IconButton path={MIN_PATH} label="Minimize" onClick={() => native.minimize(windowKey)} />}
-                {native?.maximize && <IconButton path={MAX_PATH} label="Maximize" onClick={() => native.maximize(windowKey)} />}
-                <IconButton path={CLOSE_PATH} label="Close" danger onClick={() => PopoutActions.close(windowKey)} />
+                {!onClose && <IconButton path={PIN_PATH} label={pinned ? "Unpin from top" : "Always on top"} active={pinned} onClick={() => PopoutActions.setAlwaysOnTop(windowKey, !pinned)} />}
+                <IconButton path={MAIN_PATH} label="Open in main window" disabled={!info.channel} onClick={() => { openInMain(channelId, guildId); onClose?.(); }} />
+                {!onClose && native?.minimize && <IconButton path={MIN_PATH} label="Minimize" onClick={() => native.minimize(windowKey)} />}
+                {!onClose && native?.maximize && <IconButton path={MAX_PATH} label="Maximize" onClick={() => native.maximize(windowKey)} />}
+                <IconButton path={CLOSE_PATH} label="Close" danger onClick={() => onClose ? onClose() : PopoutActions.close(windowKey)} />
             </div>
         </header>
     );
@@ -1401,16 +1404,39 @@ async function dmChannelId(userId: string): Promise<string | null> {
 
 // ---------------------------------------------------------------- Window
 
-function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId: string; windowKey: string; }) {
+export interface ChatSidebarProps {
+    current: string;
+    onSelect(id: string): void;
+}
+
+export interface ChatWindowProps {
+    channelId: string;
+    windowKey: string;
+    /** Replaces the DM / channel list (SecretChat shows its rooms there) */
+    sidebar?: ComponentType<ChatSidebarProps>;
+    /** Shown instead of the chat while no channel is open */
+    emptyView?: ReactNode;
+    /** Window title while no channel is open */
+    title?: string;
+    /** Extra class on the window root, for a different look */
+    className?: string;
+    /** Rendered inside the main window (e.g. SecretChat's rooms window) instead of a popout – called by the close button */
+    onClose?(): void;
+}
+
+function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: CustomSidebar, emptyView, title, className, onClose }: ChatWindowProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     // The window can switch channels via the sidebar; the window key stays that of the first channel
     const [channelId, setChannelId] = useState(initialChannelId);
-    const info = useChannelInfo(channelId);
+    // The opener can switch the channel too (e.g. SecretChat opening a room in its already open window)
+    useEffect(() => setChannelId(initialChannelId), [initialChannelId]);
+    const channelInfo = useChannelInfo(channelId);
+    const info = !channelInfo.channel && title ? { ...channelInfo, name: title, subtitle: "", prefix: "" } : channelInfo;
     const { sidebar: sidebarSetting } = settings.use(["sidebar"]);
-    const [sidebar, setSidebar] = useState(sidebarSetting);
+    const [sidebar, setSidebar] = useState(CustomSidebar ? true : sidebarSetting);
 
     const toggleSidebar = () => {
-        settings.store.sidebar = !sidebar;
+        if (!CustomSidebar) settings.store.sidebar = !sidebar;
         setSidebar(!sidebar);
     };
 
@@ -1512,19 +1538,21 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
     };
 
     return (
-        <div ref={rootRef} className={cl("window")} onContextMenuCapture={onContextMenu} onClickCapture={onClick}>
-            <TitleBar info={info} windowKey={windowKey} channelId={channelId} guildId={guildId} sidebar={sidebar} onToggleSidebar={toggleSidebar} />
+        <div ref={rootRef} className={classes(cl("window"), className)} onContextMenuCapture={onContextMenu} onClickCapture={onClick}>
+            <TitleBar info={info} windowKey={windowKey} channelId={channelId} guildId={guildId} sidebar={sidebar} onToggleSidebar={toggleSidebar} onClose={onClose} />
             <div className={cl("main")}>
                 {sidebar && (
                     <ErrorBoundary noop>
-                        <Sidebar channel={channel ?? ChannelStore.getChannel(initialChannelId)} current={channelId} onSelect={selectChannel} />
+                        {CustomSidebar
+                            ? <nav className={cl("sidebar")}><CustomSidebar current={channelId} onSelect={selectChannel} /></nav>
+                            : <Sidebar channel={channel ?? ChannelStore.getChannel(initialChannelId)} current={channelId} onSelect={selectChannel} />}
                     </ErrorBoundary>
                 )}
                 <div className={cl("chat")}>
                     {channel
                         // One keyed view per channel, so switching fully replaces list, call bar and input
                         ? <ChannelView key={channelId} channel={channel} name={`${info.prefix}${info.name}`} showVoice={showVoice} ctx={ctx} />
-                        : <div className={cl("center")}>
+                        : emptyView ?? <div className={cl("center")}>
                             <div className={cl("muted")}>This chat is no longer available.</div>
                             <button className={cl("button")} onClick={() => PopoutActions.close(windowKey)}>Close window</button>
                         </div>}
@@ -1564,7 +1592,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey }: { channelId
     );
 }
 
-export function ChatWindow(props: { channelId: string; windowKey: string; }) {
+export function ChatWindow(props: ChatWindowProps) {
     return (
         <ErrorBoundary message="Couldn't display the window.">
             <ChatWindowInner {...props} />

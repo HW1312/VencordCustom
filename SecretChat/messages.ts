@@ -9,9 +9,11 @@ import { updateMessage } from "@api/MessageUpdater";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { User } from "@vencord/discord-types";
+import { findByProps } from "@webpack";
 import { showToast, Toasts, UserStore } from "@webpack/common";
 
 import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
+import { onRoomMessage, processRoomMessage } from "./rooms";
 import { addKey, channelKey, containsInviteCode, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
 const logger = new Logger("SecretChat");
@@ -163,6 +165,8 @@ function processMessage(m: any, live: boolean) {
         return;
     }
 
+    if (processRoomMessage(m, live)) return;
+
     const parsed = parseHandshake(content);
     if (!parsed) return;
     const hs: Handshake = { ...parsed, authorId, channelId: m.channel_id };
@@ -174,6 +178,11 @@ function processMessage(m: any, live: boolean) {
     } else if (live && hs.type === "hello" && hs.to === myId() && !state.handled.includes(hs.hsid)) {
         showToast(`${userName(authorId)} wants an encrypted chat with you – accept it under their message`, Toasts.Type.MESSAGE);
     }
+}
+
+/** Messages ChatPopout loads itself from the API (they don't go through the dispatcher) */
+export function decryptLoaded(m: any) {
+    processMessage(m, false);
 }
 
 /** Flux interceptor: runs before every store. Never blocks an action (always returns false). */
@@ -194,7 +203,11 @@ export function intercept(action: any) {
     try {
         if (action.type === "MESSAGE_DELETE") onDeleted([action.id]);
         else if (action.type === "MESSAGE_DELETE_BULK" && Array.isArray(action.ids)) onDeleted(action.ids);
-        if (action.message) processMessage(action.message, action.type === "MESSAGE_CREATE" && !action.optimistic);
+        if (action.message) {
+            const live = action.type === "MESSAGE_CREATE" && !action.optimistic;
+            processMessage(action.message, live);
+            if (live) onRoomMessage(action.message);
+        }
         const list = action.messages;
         if (Array.isArray(list)) {
             for (const m of list) {
@@ -226,48 +239,110 @@ export function retryLocked() {
 
 // ---------------------------------------------------------------- Outgoing
 
-export const onBeforeSend: MessageSendListener = (channelId, msg) => {
+/** Already encrypted, or a SecretChat protocol message – sent as it is */
+const isPrepared = (content: string) => content.startsWith("🔑 SC1") || parseMessage(content) != null;
+
+/** Content to send in this chat: the same, encrypted, or null = don't send it at all */
+function outgoing(channelId: string, content: string): string | null {
     // The keyring loads a moment after start – never let an "on" chat slip out unencrypted
     if (!isLoaded()) {
         showToast("SecretChat is still loading its keys – try again in a second", Toasts.Type.FAILURE);
-        return { cancel: true };
+        return null;
     }
     const record = channelKey(channelId);
     if (!record) {
-        if (containsInviteCode(msg.content)) {
+        if (containsInviteCode(content)) {
             showToast("That's a secret key code – only send it in an encrypted chat (turn SecretChat on here first)", Toasts.Type.FAILURE);
-            return { cancel: true };
+            return null;
         }
-        return;
+        return content;
     }
-    if (!msg.content.trim() || msg.content.startsWith("🔑 SC1")) return;
+    if (!content.trim() || isPrepared(content)) return content;
 
     const me = myId();
     const key = getKeyBytes(record.id);
-    if (!me || !key) return { cancel: true };
+    if (!me || !key) return null;
 
-    const encrypted = encryptMessage(record.id, key, me, msg.content);
+    const encrypted = encryptMessage(record.id, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
         showToast("Too long for one encrypted message (about 1,400 characters max) – split it up", Toasts.Type.FAILURE);
-        return { cancel: true };
+        return null;
     }
-    msg.content = encrypted;
-};
+    return encrypted;
+}
 
-/** Edits of an encrypted message are encrypted again with the same key */
-export const onBeforeEdit: MessageEditListener = (_channelId, messageId, msg) => {
+/** Edits of an encrypted message are encrypted again with the same key. null = don't save the edit */
+function outgoingEdit(messageId: string, content: string): string | null {
     const keyId = decrypted.get(messageId);
-    if (!keyId) return;
+    if (!keyId || isPrepared(content)) return content;
     const key = getKeyBytes(keyId);
     const me = myId();
     if (!key || !me) {
         showToast(`The key "${getKey(keyId)?.name ?? keyId}" was deleted – this message can't be edited anymore`, Toasts.Type.FAILURE);
-        return { cancel: true };
+        return null;
     }
-    const encrypted = encryptMessage(keyId, key, me, msg.content);
+    const encrypted = encryptMessage(keyId, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
         showToast("Too long for one encrypted message (about 1,400 characters max)", Toasts.Type.FAILURE);
-        return { cancel: true };
+        return null;
     }
-    msg.content = encrypted;
+    return encrypted;
+}
+
+/** Discord's chat input */
+export const onBeforeSend: MessageSendListener = (channelId, msg) => {
+    const content = outgoing(channelId, msg.content);
+    if (content == null) return { cancel: true };
+    msg.content = content;
 };
+
+export const onBeforeEdit: MessageEditListener = (_channelId, messageId, msg) => {
+    const content = outgoingEdit(messageId, msg.content);
+    if (content == null) return { cancel: true };
+    msg.content = content;
+};
+
+// Vencord's send / edit events only cover Discord's own chat input. Everything else (ChatPopout and the
+// rooms window, other plugins) calls Discord's sendMessage / editMessage directly – so those are wrapped too.
+// Content that is already encrypted passes unchanged, so nothing is encrypted twice.
+
+let actions: any = null;
+let originalSend: ((...args: any[]) => any) | null = null;
+let originalEdit: ((...args: any[]) => any) | null = null;
+
+const notSent = () => Promise.reject(new Error("SecretChat: not sent"));
+
+export function wrapMessageActions() {
+    if (actions) return;
+    actions = findByProps("sendMessage", "editMessage");
+    originalSend = actions.sendMessage;
+    originalEdit = actions.editMessage;
+
+    actions.sendMessage = function (this: any, channelId: string, message: any, ...rest: any[]) {
+        if (typeof message?.content === "string") {
+            const content = outgoing(channelId, message.content);
+            if (content == null) return notSent();
+            if (content !== message.content) message = { ...message, content };
+        }
+        return originalSend!.call(this, channelId, message, ...rest);
+    };
+
+    actions.editMessage = function (this: any, channelId: string, messageId: string, message: any, ...rest: any[]) {
+        if (typeof message?.content === "string") {
+            const content = outgoingEdit(messageId, message.content);
+            if (content == null) return notSent();
+            if (content !== message.content) message = { ...message, content };
+        }
+        return originalEdit!.call(this, channelId, messageId, message, ...rest);
+    };
+}
+
+/** Sending outside Discord's chat input is only safe while the wrap is in place */
+export const isSendGuarded = () => actions != null;
+
+export function unwrapMessageActions() {
+    if (!actions) return;
+    actions.sendMessage = originalSend;
+    actions.editMessage = originalEdit;
+    actions = originalSend = originalEdit = null;
+}

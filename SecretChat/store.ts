@@ -15,7 +15,7 @@ export interface KeyRecord {
     /** private: made by a handshake, only you and partnerId have it. group: anyone with the code / password */
     kind: "private" | "group";
     partnerId?: string;
-    source?: "handshake" | "random" | "password" | "code";
+    source?: "handshake" | "random" | "password" | "code" | "room";
     key: string;
     safety: string;
     created: number;
@@ -24,6 +24,30 @@ export interface KeyRecord {
 export interface PendingHandshake {
     to: string;
     channelId: string;
+    privateJwk: JsonWebKey;
+    created: number;
+}
+
+/** A chat (group DM, DM or server channel) that is always encrypted and listed in the SecretChat area */
+export interface Room {
+    channelId: string;
+    keyId: string;
+    name: string;
+    created: number;
+}
+
+/** Someone made a chat you are in a secret room, and you don't have its key yet */
+export interface Invite {
+    channelId: string;
+    keyId: string;
+    from: string;
+    created: number;
+}
+
+/** Our join request in a room, until a member answers with the key */
+export interface PendingJoin {
+    channelId: string;
+    keyId: string;
     privateJwk: JsonWebKey;
     created: number;
 }
@@ -38,11 +62,21 @@ interface State {
     pending: Record<string, PendingHandshake>;
     /** handshake ids that were accepted / ignored / completed */
     handled: string[];
+    /** channel id → room */
+    rooms: Record<string, Room>;
+    /** channel id → invite */
+    invites: Record<string, Invite>;
+    /** join id → our half of the key exchange */
+    joins: Record<string, PendingJoin>;
+    /** channel ids removed from the area – not added again automatically */
+    left: string[];
 }
 
 const STORE_KEY = "SecretChat_state";
 
-export const state: State = { keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [] };
+const empty = (): State => ({ keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [], rooms: {}, invites: {}, joins: {}, left: [] });
+
+export const state: State = empty();
 const keyBytes = new Map<string, Uint8Array>();
 let loaded = false;
 
@@ -59,7 +93,7 @@ export function save() {
 
 export async function loadState() {
     const saved = await DataStore.get<Partial<State>>(STORE_KEY);
-    Object.assign(state, { keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [] }, saved ?? {});
+    Object.assign(state, empty(), saved ?? {});
     keyBytes.clear();
     for (const k of state.keys) keyBytes.set(k.id, fromB64(k.key));
     loaded = true;
@@ -122,6 +156,7 @@ export async function deleteKey(id: string) {
     keyBytes.delete(id);
     for (const [ch, k] of Object.entries(state.channels)) if (k === id) delete state.channels[ch];
     for (const [ch, k] of Object.entries(state.lastUsed)) if (k === id) delete state.lastUsed[ch];
+    for (const [ch, r] of Object.entries(state.rooms)) if (r.keyId === id) delete state.rooms[ch];
     await save();
 }
 
@@ -163,6 +198,43 @@ export async function toggleChannel(channelId: string) {
         : state.keys.length === 1 ? state.keys[0].id : null;
     if (id) await setChannelKey(channelId, id);
     return id;
+}
+
+// ---------------------------------------------------------------- Rooms
+
+export async function addRoom(channelId: string, keyId: string, name: string) {
+    state.rooms[channelId] = { channelId, keyId, name: name.trim().slice(0, 64) || "Secret room", created: Date.now() };
+    state.channels[channelId] = keyId;
+    state.lastUsed[channelId] = keyId;
+    delete state.invites[channelId];
+    state.left = state.left.filter(id => id !== channelId);
+    for (const [jid, j] of Object.entries(state.joins)) if (j.channelId === channelId) delete state.joins[jid];
+    await save();
+}
+
+/** Only removes it from the area – the chat stays encrypted until it's turned off with the lock */
+export async function removeRoom(channelId: string) {
+    delete state.rooms[channelId];
+    if (!state.left.includes(channelId)) state.left.push(channelId);
+    await save();
+}
+
+export async function renameRoom(channelId: string, name: string) {
+    const r = state.rooms[channelId];
+    if (!r || !name.trim()) return;
+    r.name = name.trim().slice(0, 64);
+    await save();
+}
+
+export async function addInvite(invite: Invite) {
+    state.invites[invite.channelId] = invite;
+    await save();
+}
+
+export async function dismissInvite(channelId: string) {
+    delete state.invites[channelId];
+    for (const [jid, j] of Object.entries(state.joins)) if (j.channelId === channelId) delete state.joins[jid];
+    await save();
 }
 
 // ---------------------------------------------------------------- Invite codes for group keys

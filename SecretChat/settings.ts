@@ -16,5 +16,20 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Show a small lock next to the name on decrypted messages",
         default: true
+    },
+    showServerListIcon: {
+        type: OptionType.BOOLEAN,
+        description: "Show the SecretChat icon with your secret rooms in the server list",
+        default: true
+    },
+    showTitleBarButton: {
+        type: OptionType.BOOLEAN,
+        description: "Show the SecretChat icon in the title bar at the top (next to Back / Forward)",
+        default: true
+    },
+    roomPings: {
+        type: OptionType.BOOLEAN,
+        description: "Ping (sound + notification) for new messages in secret rooms – Discord's own notifications are always off there",
+        default: true
     }
 });

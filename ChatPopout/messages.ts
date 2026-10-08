@@ -89,13 +89,27 @@ function throttled<T>(fn: () => Promise<T>): Promise<T> {
     return run;
 }
 
+/**
+ * Run on every message loaded from the API (live ones already went through Discord's dispatcher).
+ * Other plugins can rewrite them in place here – SecretChat decrypts them.
+ */
+export const loadedMessageHooks = new Set<(message: any) => void>();
+
 async function fetchMessages(channelId: string, before?: string): Promise<RawMessage[]> {
     const { body } = await throttled(() => RestAPI.get({
         url: Constants.Endpoints.MESSAGES(channelId),
         query: before ? { limit: PAGE_SIZE, before } : { limit: PAGE_SIZE },
         retries: 1
     }));
-    return Array.isArray(body) ? (body as RawMessage[]).slice().reverse() : [];
+    if (!Array.isArray(body)) return [];
+    for (const hook of loadedMessageHooks) {
+        for (const m of body) {
+            try {
+                hook(m);
+            } catch { /* a broken hook must not break the window */ }
+        }
+    }
+    return (body as RawMessage[]).slice().reverse();
 }
 
 function describeError(e: any) {
@@ -204,15 +218,25 @@ export function useChannelMessages(channelId: string): ChannelMessages {
     useEffect(() => subscribe(channelId, e => {
         switch (e.type) {
             case "create": {
-                // Discord doesn't always flag its local copy as optimistic – it is recognizable by the
-                // "SENDING" state or by its id being the nonce (the server assigns a real id)
-                const optimistic = e.optimistic || e.message.state === "SENDING" || (!!e.message.nonce && e.message.id === e.message.nonce);
+                // Only Discord's local copy is pending – it is recognizable by the "SENDING" state or by its id
+                // being the nonce. Not by e.optimistic: Discord also sends the server's answer (real id) with
+                // optimistic: true right after the upload, and that one is already sent.
+                const local = e.message.state === "SENDING" || (!!e.message.nonce && e.message.id === e.message.nonce);
+                const optimistic = local || (e.optimistic && !e.message.nonce && e.message.state !== "SENT");
                 const msg = normalize(e.message, optimistic);
                 setMessages(prev => {
-                    if (prev.some(m => m.id === msg.id)) return prev;
+                    const same = prev.findIndex(m => m.id === msg.id);
+                    if (same >= 0) {
+                        if (optimistic || !prev[same]._pending) return prev;
+                        const next = prev.slice();
+                        next[same] = msg;
+                        return next;
+                    }
                     // Replace the locally shown copy of an own message with the server's confirmation
-                    if (msg.nonce && !optimistic) {
-                        const i = prev.findIndex(m => m.id === msg.nonce || (m._pending && m.nonce === msg.nonce));
+                    if (!optimistic) {
+                        // By nonce – or, if Discord's local copy has none, the oldest pending copy with the same author and text
+                        let i = msg.nonce ? prev.findIndex(m => m.id === msg.nonce || (m._pending && m.nonce === msg.nonce)) : -1;
+                        if (i < 0) i = prev.findIndex(m => m._pending && m.author?.id === msg.author?.id && m.content === msg.content);
                         if (i >= 0) {
                             const next = prev.slice();
                             next[i] = msg;

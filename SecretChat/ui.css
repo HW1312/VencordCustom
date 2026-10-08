@@ -478,3 +478,692 @@
 .vc-secretchat-danger-btn {
     background: var(--status-danger, #da373c) !important;
 }
+
+/* Secret rooms – server list icon */
+
+.vc-secretchat-sl {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.vc-secretchat-sl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--background-surface-higher, var(--background-primary));
+    color: var(--status-positive, #23a55a);
+    cursor: pointer;
+    transition: border-radius 0.15s, background 0.15s, color 0.15s;
+}
+
+.vc-secretchat-sl-btn:hover {
+    border-radius: 16px;
+    background: var(--status-positive, #23a55a);
+    color: #fff;
+}
+
+.vc-secretchat-sl-pill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 4px;
+    height: 8px;
+    margin-top: -4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--header-primary, #fff);
+}
+
+.vc-secretchat-badge {
+    flex: none;
+    box-sizing: border-box;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--status-danger, #da373c);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+.vc-secretchat-sl-badge {
+    position: absolute;
+    right: 10px;
+    bottom: -3px;
+    box-shadow: 0 0 0 3px var(--background-tertiary, #1e1f22);
+    pointer-events: none;
+}
+
+.vc-secretchat-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--header-primary, #fff);
+}
+
+/* Secret rooms – window */
+
+.vc-secretchat-section {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.vc-secretchat-row-sub {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-row-unread .vc-secretchat-row-title {
+    color: var(--header-primary, var(--text-default));
+}
+
+.vc-secretchat-row-unread .vc-secretchat-row-sub {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-row-invite {
+    border-color: var(--brand-500, #5865f2);
+    cursor: default;
+}
+
+.vc-secretchat-row-invite:hover {
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+}
+
+.vc-secretchat-pick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.vc-secretchat-pick {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-default, var(--text-normal));
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-secretchat-pick .vc-secretchat-avatar {
+    width: 28px;
+    height: 28px;
+}
+
+.vc-secretchat-pick .vc-secretchat-row-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.vc-secretchat-pick:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+}
+
+.vc-secretchat-pick-on,
+.vc-secretchat-pick-on:hover {
+    background: rgb(88 101 242 / 16%);
+}
+
+.vc-secretchat-box {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--interactive-normal, rgb(128 128 128 / 60%));
+    border-radius: 5px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.vc-secretchat-pick-on .vc-secretchat-box {
+    border-color: var(--brand-500, #5865f2);
+    background: var(--brand-500, #5865f2);
+}
+
+.vc-secretchat-pick-list .vc-secretchat-empty {
+    min-height: 60px;
+}
+
+.vc-secretchat-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-secretchat-room-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--status-positive, #23a55a);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Secret rooms – window (left side of the ChatPopout window) */
+
+.vc-secretchat-side {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.vc-secretchat-side-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 10px 8px 14px;
+    color: var(--header-primary, #f2f3f5);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.vc-secretchat-side-head > svg {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-side-head > span {
+    flex: 1;
+}
+
+.vc-secretchat-side-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    cursor: pointer;
+}
+
+.vc-secretchat-side-add:hover,
+.vc-secretchat-side-add-on {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+    color: var(--interactive-active, #fff);
+}
+
+.vc-secretchat-side-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    padding: 0 8px 8px;
+    overflow-y: auto;
+}
+
+.vc-secretchat-side-section {
+    margin: 10px 6px 4px;
+    color: var(--channels-default, var(--text-muted));
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.vc-secretchat-side-room {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--channels-default, var(--text-muted, #949ba4));
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.vc-secretchat-side-room:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+    color: var(--interactive-hover, #dbdee1);
+}
+
+.vc-secretchat-side-room-on,
+.vc-secretchat-side-room-on:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--interactive-active, #fff);
+}
+
+.vc-secretchat-side-room-unread {
+    color: var(--interactive-active, #fff);
+    font-weight: 600;
+}
+
+.vc-secretchat-side-room-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background: rgb(35 165 90 / 18%);
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-side-room-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-side-room .vc-secretchat-input-inline {
+    flex: 1;
+    min-width: 0;
+}
+
+.vc-secretchat-side-room-actions {
+    display: none;
+    flex: none;
+    gap: 2px;
+}
+
+.vc-secretchat-side-room:hover .vc-secretchat-side-room-actions {
+    display: flex;
+}
+
+.vc-secretchat-side-room:hover .vc-secretchat-badge,
+.vc-secretchat-side-room:hover .vc-secretchat-dot {
+    display: none;
+}
+
+.vc-secretchat-side-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 4px;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    color: var(--interactive-normal, #b5bac1);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-side-icon-btn:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 20%));
+    color: var(--interactive-active, #fff);
+}
+
+.vc-secretchat-side-icon-danger:hover,
+.vc-secretchat-side-icon-confirm {
+    background: rgb(218 55 60 / 18%);
+    color: var(--status-danger, #da373c);
+}
+
+.vc-secretchat-side-invite {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--brand-500, #5865f2);
+    border-radius: 8px;
+    background: rgb(88 101 242 / 8%);
+}
+
+.vc-secretchat-side-invite-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-secretchat-side-invite .vc-secretchat-avatar {
+    width: 28px;
+    height: 28px;
+}
+
+.vc-secretchat-side-invite-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    color: var(--text-default, var(--text-normal));
+    font-size: 13px;
+}
+
+.vc-secretchat-side-invite-text > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-side-invite-text > span {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-secretchat-side-panel {
+    margin-bottom: 6px;
+    padding: 8px;
+}
+
+.vc-secretchat-side-panel .vc-secretchat-input {
+    height: 32px;
+    font-size: 13px;
+}
+
+.vc-secretchat-side-panel .vc-secretchat-pick-list {
+    max-height: 220px;
+}
+
+.vc-secretchat-side-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    margin-top: 8px;
+    border: 1px dashed var(--border-subtle, rgb(128 128 128 / 40%));
+    border-radius: 8px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vc-secretchat-side-empty:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-secretchat-win-empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+.vc-secretchat-win-empty > svg {
+    color: var(--status-positive, #23a55a);
+    opacity: 0.6;
+}
+
+/* Secret rooms – window look: the SecretChat window style (cards, green accents) instead of ChatPopout's */
+
+.vc-secretchat-chatwin {
+    --sc-bg: var(--modal-background, var(--background-base-low, var(--background-secondary, #2b2d31)));
+    --sc-card: var(--background-secondary, rgb(128 128 128 / 8%));
+    --sc-chat: var(--background-base-lower, var(--background-primary, #313338));
+    --sc-green: var(--status-positive, #23a55a);
+    --sc-border: var(--border-subtle, rgb(128 128 128 / 22%));
+
+    background: var(--sc-bg);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-titlebar {
+    min-height: 56px;
+    padding: 0 8px 0 16px;
+    border-bottom: none;
+    background: transparent;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-title-name {
+    color: var(--header-primary, #f2f3f5);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-title-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-icon-btn {
+    border-radius: 8px;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-icon-btn-active {
+    background: rgb(35 165 90 / 16%);
+    color: var(--sc-green);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-main {
+    gap: 12px;
+    padding: 0 12px 12px;
+}
+
+/* Rooms list – no panel of its own, rows are cards like in the SecretChat window */
+
+.vc-secretchat-chatwin .vc-chatpopout-sidebar {
+    width: 240px;
+    border-right: none;
+    background: transparent;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-head {
+    padding: 4px 2px 10px 4px;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-list {
+    gap: 6px;
+    padding: 0 0 4px;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-section {
+    margin: 6px 4px 0;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-room {
+    gap: 10px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--sc-card);
+    color: var(--text-default, var(--text-normal));
+    font-weight: 600;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-room:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-room-on,
+.vc-secretchat-chatwin .vc-secretchat-side-room-on:hover {
+    border-color: var(--sc-green);
+    background: rgb(35 165 90 / 10%);
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-room-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-invite,
+.vc-secretchat-chatwin .vc-secretchat-side-panel {
+    border-radius: 10px;
+}
+
+.vc-secretchat-chatwin .vc-secretchat-side-empty {
+    height: 44px;
+    border-radius: 10px;
+}
+
+/* Chat – one card */
+
+.vc-secretchat-chatwin .vc-chatpopout-chat {
+    overflow: hidden;
+    border: 1px solid var(--sc-border);
+    border-radius: 12px;
+    background: var(--sc-chat);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-message:hover {
+    background: rgb(128 128 128 / 6%);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-avatar,
+.vc-secretchat-chatwin .vc-chatpopout-reply-avatar {
+    border-radius: 10px;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-day {
+    color: var(--sc-green);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-typing {
+    background: linear-gradient(transparent, var(--sc-chat) 45%);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-new-pill {
+    background: var(--sc-green);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-input-wrap {
+    border: 1px solid var(--sc-border);
+    border-radius: 10px;
+    background: var(--input-background, var(--background-tertiary, var(--sc-card)));
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-input-wrap:focus-within {
+    border-color: var(--sc-green);
+    box-shadow: none;
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-mode-bar {
+    border-color: var(--sc-border);
+    border-radius: 10px 10px 0 0;
+    background: var(--sc-card);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-send,
+.vc-secretchat-chatwin .vc-chatpopout-button {
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: var(--sc-green);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-send:hover:not(:disabled),
+.vc-secretchat-chatwin .vc-chatpopout-button:hover:not(:disabled) {
+    background: var(--green-430, #1f8b4c);
+}
+
+.vc-secretchat-chatwin .vc-chatpopout-win-empty,
+.vc-secretchat-chatwin .vc-secretchat-win-empty {
+    background: var(--sc-chat);
+}
+
+/* Secret rooms – window as a layer over Discord */
+
+.vc-secretchat-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 60%);
+    animation: vc-secretchat-fade 0.12s ease-out;
+}
+
+.vc-secretchat-layer-card {
+    position: relative;
+    width: min(1100px, 94vw);
+    height: min(780px, 90vh);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle, rgb(128 128 128 / 22%));
+    border-radius: 16px;
+    box-shadow: var(--shadow-high, 0 12px 40px rgb(0 0 0 / 45%));
+    animation: vc-secretchat-pop 0.15s ease-out;
+}
+
+@keyframes vc-secretchat-fade {
+    from { opacity: 0; }
+}
+
+@keyframes vc-secretchat-pop {
+    from { opacity: 0; transform: scale(0.97); }
+}
+
+/* ChatPopout's window fills a whole popout – here it fills the card */
+.vc-secretchat-layer-card .vc-secretchat-chatwin {
+    position: absolute;
+    inset: 0;
+}
+
+/* The title bar drags the popout window – in the main window it would drag all of Discord */
+.vc-secretchat-chatwin .vc-chatpopout-titlebar,
+.vc-secretchat-chatwin .vc-chatpopout-titlebar * {
+    -webkit-app-region: no-drag;
+}
+
+.vc-secretchat-layer-card > .vc-secretchat-win-empty {
+    height: 100%;
+    background: var(--modal-background, var(--background-base-low, #2b2d31));
+}
+
+/* Title bar button */
+
+.vc-secretchat-tb {
+    position: relative;
+    -webkit-app-region: no-drag;
+}
+
+.vc-secretchat-tb .vc-secretchat-tb-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+}
+
+.vc-secretchat-tb:hover .vc-secretchat-tb-icon {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-tb-unread .vc-secretchat-tb-icon {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-tb-unread::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--status-danger, #da373c);
+    box-shadow: 0 0 0 2px var(--background-base-lowest, var(--background-tertiary, #1e1f22));
+    pointer-events: none;
+}
