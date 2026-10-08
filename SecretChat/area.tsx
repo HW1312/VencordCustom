@@ -9,14 +9,15 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { Message } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { ReadStateStore, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, Menu, ReadStateStore, showToast, Toasts, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { applyEmergency } from "./messages";
 import { canLetIn, isAnswered, isJoining, joinRoom, letIn, roomMessages, userName } from "./rooms";
 import { settings } from "./settings";
 import { useStore } from "./store";
 import { LockIcon } from "./ui";
-import { toggleRoomsWindow } from "./window";
+import { closeRoomsWindow, openRoomsWindow, toggleRoomsWindow } from "./window";
 
 const cl = classNameFactory("vc-secretchat-");
 
@@ -34,6 +35,35 @@ export function Badge({ count }: { count: number; }) {
     return count < 0
         ? <span className={cl("dot")} />
         : <span className={cl("badge")}>{count > 99 ? "99+" : count}</span>;
+}
+
+// ---------------------------------------------------------------- Emergency stop
+
+/** On: every message is shown encrypted again, the rooms window closes and pings show no text – until it's off */
+export function toggleEmergency() {
+    const on = !settings.store.emergency;
+    settings.store.emergency = on;
+    applyEmergency(on);
+    if (on) closeRoomsWindow();
+    showToast(on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", on ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS);
+}
+
+/** Right-click on the lock (title bar / server list) */
+function openLockMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    const on = !!settings.store.emergency;
+    ContextMenuApi.openContextMenu(e, () => (
+        <Menu.Menu navId="vc-secretchat-lock" onClose={ContextMenuApi.closeContextMenu} aria-label="SecretChat">
+            <Menu.MenuItem
+                id="vc-secretchat-emergency"
+                label={on ? "Turn off emergency stop" : "Emergency stop"}
+                subtext={on ? "Make messages readable again" : "Show every message encrypted again"}
+                color={on ? undefined : "danger"}
+                action={toggleEmergency}
+            />
+            {!on && <Menu.MenuItem id="vc-secretchat-open" label="Open secret rooms" action={() => openRoomsWindow()} />}
+        </Menu.Menu>
+    ));
 }
 
 // ---------------------------------------------------------------- Server list icon
@@ -56,16 +86,16 @@ function useRoomsBadge() {
 }
 
 export function ServerListIcon() {
-    const { showServerListIcon } = settings.use(["showServerListIcon"]);
+    const { showServerListIcon, emergency } = settings.use(["showServerListIcon", "emergency"]);
     const count = useRoomsBadge();
     if (!showServerListIcon) return null;
 
     return (
         <div className={cl("sl")}>
             {count !== 0 && <span className={cl("sl-pill")} />}
-            <Tooltip text="Secret rooms" position="right">
+            <Tooltip text={emergency ? "SecretChat – emergency stop is on (right-click)" : "Secret rooms"} position="right">
                 {p => (
-                    <button {...p} className={cl("sl-btn")} aria-label="Secret rooms" onClick={toggleRoomsWindow}>
+                    <button {...p} className={classes(cl("sl-btn"), emergency && cl("sl-btn-stop"))} aria-label="Secret rooms" onClick={toggleRoomsWindow} onContextMenu={openLockMenu}>
                         <LockIcon width={24} height={24} />
                     </button>
                 )}
@@ -80,17 +110,20 @@ export function ServerListIcon() {
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
 function TitleBarButton() {
-    const { showTitleBarButton } = settings.use(["showTitleBarButton"]);
+    const { showTitleBarButton, emergency } = settings.use(["showTitleBarButton", "emergency"]);
     const count = useRoomsBadge();
     if (!showTitleBarButton) return null;
 
     return (
-        <HeaderBarIcon
-            className={classes(cl("tb"), count !== 0 && cl("tb-unread"))}
-            onClick={toggleRoomsWindow}
-            tooltip={count > 0 ? `Secret rooms · ${count} new` : "Secret rooms"}
-            icon={() => <LockIcon width={20} height={20} className={cl("tb-icon")} />}
-        />
+        // display: contents – the wrapper only catches the right-click
+        <div className={cl("tb-wrap")} onContextMenu={openLockMenu}>
+            <HeaderBarIcon
+                className={classes(cl("tb"), count !== 0 && !emergency && cl("tb-unread"), emergency && cl("tb-stop"))}
+                onClick={toggleRoomsWindow}
+                tooltip={emergency ? "SecretChat – emergency stop is on (right-click)" : count > 0 ? `Secret rooms · ${count} new` : "Secret rooms"}
+                icon={() => <LockIcon width={20} height={20} className={cl("tb-icon")} />}
+            />
+        </div>
     );
 }
 

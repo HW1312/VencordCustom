@@ -1092,7 +1092,7 @@
 .vc-secretchat-layer {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1201,4 +1201,224 @@
 .vc-secretchat-btn-ghost {
     background: none;
     color: var(--text-muted);
+}
+
+/* Secret rooms – optional group picture next to the name */
+
+.vc-secretchat-name-row {
+    display: flex;
+    gap: 8px;
+}
+
+.vc-secretchat-icon-pick {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px dashed var(--border-subtle, rgb(128 128 128 / 40%));
+    border-radius: 10px;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.vc-secretchat-icon-pick:hover:not(:disabled) {
+    border-color: var(--status-positive, #23a55a);
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-icon-pick:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-secretchat-icon-pick-set {
+    border-style: solid;
+}
+
+.vc-secretchat-icon-pick img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Secret rooms – Discord's own messages in the rooms window */
+
+.vc-secretchat-native-wrap {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.vc-secretchat-native-list {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overflow-anchor: none;
+}
+
+.vc-secretchat-native-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100%;
+    padding: 8px 0 16px;
+}
+
+.vc-secretchat-native-item {
+    position: relative;
+}
+
+.vc-secretchat-native-start {
+    padding: 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.vc-secretchat-native-day {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 16px 8px;
+    color: var(--status-positive, #23a55a);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-secretchat-native-day::before,
+.vc-secretchat-native-day::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle, rgb(128 128 128 / 22%));
+}
+
+/* Emergency stop: the lock turns red */
+
+.vc-secretchat-tb-wrap {
+    display: contents;
+}
+
+.vc-secretchat-sl-btn-stop,
+.vc-secretchat-sl-btn-stop:hover {
+    background: var(--status-danger, #da373c);
+    color: #fff;
+}
+
+.vc-secretchat-tb-stop .vc-secretchat-tb-icon,
+.vc-secretchat-tb-stop:hover .vc-secretchat-tb-icon {
+    color: var(--status-danger, #da373c);
+}
+
+/* Encrypted files below a message */
+
+.vc-secretchat-file {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 4px;
+}
+
+.vc-secretchat-file-media {
+    display: block;
+    max-width: 100%;
+    border-radius: 8px;
+    object-fit: contain;
+    background: rgb(0 0 0 / 20%);
+    cursor: pointer;
+}
+
+video.vc-secretchat-file-media {
+    cursor: default;
+}
+
+.vc-secretchat-file-audio {
+    display: block;
+    width: 360px;
+    max-width: 100%;
+}
+
+.vc-secretchat-file-wait {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+    min-height: 48px;
+    border-radius: 8px;
+    background: var(--background-secondary, rgb(128 128 128 / 10%));
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.vc-secretchat-file .vc-secretchat-file-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgb(0 0 0 / 65%);
+    color: #fff;
+}
+
+.vc-secretchat-file-badge {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgb(35 165 90 / 14%);
+    color: var(--status-positive, #23a55a);
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.vc-secretchat-file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    max-width: min(440px, 100%);
+    margin-top: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle, rgb(128 128 128 / 22%));
+    border-radius: 8px;
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+}
+
+.vc-secretchat-file-icon {
+    flex: none;
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-secretchat-file-meta {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-secretchat-file-name {
+    overflow: hidden;
+    color: var(--text-link, #00a8fc);
+    font-size: 15px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-file-size {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.vc-secretchat-file-error {
+    color: var(--status-danger, #da373c);
 }

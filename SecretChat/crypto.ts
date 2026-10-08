@@ -244,3 +244,22 @@ export async function deriveSharedKey(privateJwk: JsonWebKey, theirPublic: strin
     const ids = [userA, userB].sort().join("|");
     return (await sha512("SecretChat private key v1", secret, ids)).subarray(0, 32);
 }
+
+// ---------------------------------------------------------------- Files (async, WebCrypto AES-GCM – fast for MBs)
+
+/** Files get their own key, derived from the chat key */
+async function fileKey(chatKey: Uint8Array) {
+    const raw = (await sha512("SecretChat file key v1", chatKey)).subarray(0, 32);
+    return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+
+export async function encryptFile(chatKey: Uint8Array, data: ArrayBuffer) {
+    const iv = randomBytes(12);
+    const sealed = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await fileKey(chatKey), data);
+    return { iv: toB64(iv), data: new Uint8Array(sealed) };
+}
+
+/** Throws if the key is wrong or the file was changed */
+export async function decryptFile(chatKey: Uint8Array, iv: string, data: ArrayBuffer) {
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(iv) }, await fileKey(chatKey), data);
+}

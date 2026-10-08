@@ -10,7 +10,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
-    ChannelStore, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, MessageActions, NavigationRouter, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
+    ChannelStore, FluxDispatcher, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, MessageActions, NavigationRouter, PendingReplyStore, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
     PrivateChannelSortStore, ReadStateStore, RestAPI, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
     useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
@@ -28,6 +28,7 @@ import {
     isAnimated, isSpoiler, LINK_PATH, MAIN_PATH, Markdown, MAX_PATH, MIN_PATH, PIN_PATH, PLAY_PATH, POPOUT_PATH, REPLY_PATH, SIDEBAR_PATH, sized, SPEAKER_PATH, Spoiler, tip,
     TRASH_PATH, usePopoutDocument, USER_PATH, userAvatar, ZOOM_PATH
 } from "./shared";
+import { sendFiles } from "./upload";
 import { VoiceBar, voiceMenuSections } from "./voice";
 import { openStreamWindow, startWatching, StreamDock, StreamTarget, streamTargetFor, useDockWidth } from "./watch";
 
@@ -160,6 +161,17 @@ interface WindowCtx {
     composer: { current: ComposerApi | null; };
     openProfile(el: Element, userId: string): void;
     watchStream(userId: string): void;
+    /** Messages the host doesn't want in the list (SecretChat hides its key exchange and system messages) */
+    hideMessage?(m: RawMessage): boolean;
+    /**
+     * Draws the message list instead of ours – SecretChat uses Discord's own message components (it runs in the
+     * main window, where they work). Its element gets data-native-messages, so our menus / profile stay out of it.
+     */
+    renderMessages?(channel: any): ReactNode;
+    /** Shown above the input while files are attached */
+    attachmentNote?: string;
+    /** Sends attached files instead of our upload (SecretChat encrypts them) */
+    sendFiles?(channel: any, files: File[], messageReference?: unknown): Promise<void>;
 }
 
 // ---------------------------------------------------------------- Media of a message
@@ -455,7 +467,8 @@ function canGroup(prev: RawMessage | undefined, m: RawMessage) {
 // ---------------------------------------------------------------- Message list
 
 function MessageList({ channelId, guildId, ctx }: { channelId: string; guildId: string | null; ctx: WindowCtx; }) {
-    const { messages, loading, loadingOlder, hasMore, error, newCount, loadOlder, reload } = useChannelMessages(channelId);
+    const { messages: loaded, loading, loadingOlder, hasMore, error, newCount, loadOlder, reload } = useChannelMessages(channelId);
+    const messages = useMemo(() => ctx.hideMessage ? loaded.filter(m => !ctx.hideMessage!(m)) : loaded, [loaded]);
     const meId = UserStore.getCurrentUser()?.id;
     ctx.messages.current = messages;
 
@@ -774,6 +787,12 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
     const canSend = useCanSend(channel);
     const { showTyping } = settings.use(["showTyping"]);
     const [mode, setMode] = useState<ComposeMode | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
+    const fileRef = useRef<HTMLInputElement>(null);
+    const addFiles = (list: ArrayLike<File> | null | undefined) => {
+        const add = Array.from(list ?? []);
+        if (add.length) setFiles(prev => [...prev, ...add].slice(0, 10));
+    };
 
     // Slash commands
     const [commands, setCommands] = useState<PopoutCommand[] | null>(null);
@@ -832,6 +851,16 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
         focus();
     };
 
+    // With Discord's own messages (renderMessages), their "Reply" puts a pending reply into Discord's store –
+    // take it over here, Discord's own chat input isn't there
+    const pendingReply = useStateFromStores([PendingReplyStore], () => ctx.renderMessages ? PendingReplyStore.getPendingReply(channelId) : undefined, [channelId]);
+    useEffect(() => {
+        if (!pendingReply?.message) return;
+        ctx.composer.current?.reply(pendingReply.message as any);
+        if (pendingReply.shouldMention === false) setMode(m => m?.type === "reply" ? { ...m, mention: false } : m);
+        FluxDispatcher.dispatch({ type: "DELETE_PENDING_REPLY", channelId } as any);
+    }, [pendingReply]);
+
     // Actions for the context menu
     const textRef = useRef(text);
     textRef.current = text;
@@ -883,7 +912,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
             return;
         }
 
-        if (!content || !canSend) return;
+        if ((!content && !files.length) || !canSend) return;
         if (content.length > 2000) {
             showToast("Message is too long (max. 2000 characters)", Toasts.Type.FAILURE);
             return;
@@ -909,6 +938,17 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
         lastSent.set(channelId, Date.now());
         update("");
         setMode(null);
+        const attached = files;
+        setFiles([]);
+        if (attached.length) {
+            const reference = content ? undefined : (options as any).messageReference;
+            const sent = ctx.sendFiles ? ctx.sendFiles(channel, attached, reference) : sendFiles(channel, attached, reference, ctx.doc().defaultView);
+            sent.catch((e: any) => {
+                logger.error("Couldn't upload files", e);
+                showToast("Couldn't upload the file", Toasts.Type.FAILURE);
+            });
+        }
+        if (!content) return;
         try {
             Promise.resolve(sendMessage(channelId, { content }, false, options as any)).catch((e: any) => {
                 logger.error("Couldn't send message", e);
@@ -1001,7 +1041,31 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
                                 </button>
                             </div>
                         )}
-                        <div className={classes(cl("input-wrap"), !canSend && cl("input-disabled"))}>
+                        {!!files.length && (
+                            <div className={cl("attach-bar")}>
+                                {ctx.attachmentNote && <div className={cl("attach-note")}>{ctx.attachmentNote}</div>}
+                                <div className={cl("attach-list")}>
+                                    {files.map((f, i) => <AttachmentChip key={i} file={f} onRemove={() => setFiles(prev => prev.filter((_, j) => j !== i))} />)}
+                                </div>
+                            </div>
+                        )}
+                        <div
+                            className={classes(cl("input-wrap"), !canSend && cl("input-disabled"))}
+                            onDragOver={e => { if (canSend && mode?.type !== "edit" && e.dataTransfer.types.includes("Files")) e.preventDefault(); }}
+                            onDrop={e => {
+                                if (!canSend || mode?.type === "edit" || !e.dataTransfer.files.length) return;
+                                e.preventDefault();
+                                addFiles(e.dataTransfer.files);
+                            }}
+                        >
+                            {canSend && mode?.type !== "edit" && (
+                                <>
+                                    <button className={classes(cl("icon-btn"), cl("attach-btn"))} aria-label="Attach files" {...tip("Attach files", "top", "start")} onClick={() => fileRef.current?.click()}>
+                                        <Icon path={PLUS_PATH} size={18} />
+                                    </button>
+                                    <input ref={fileRef} type="file" multiple hidden onChange={e => { addFiles(e.currentTarget.files); e.currentTarget.value = ""; }} />
+                                </>
+                            )}
                             <textarea
                                 ref={ref}
                                 className={cl("input")}
@@ -1011,15 +1075,42 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
                                 placeholder={canSend ? `Message ${name} – "/" for commands` : "You don't have permission to send messages here."}
                                 onChange={e => update(e.currentTarget.value)}
                                 onKeyDown={onKeyDown}
+                                onPaste={e => {
+                                    if (mode?.type === "edit" || !e.clipboardData.files.length) return;
+                                    e.preventDefault();
+                                    addFiles(e.clipboardData.files);
+                                }}
                             />
                             {canSend && (
-                                <button className={cl("send")} onClick={send} disabled={!text.trim()}>
+                                <button className={cl("send")} onClick={send} disabled={!text.trim() && !files.length}>
                                     {mode?.type === "edit" ? "Save" : "Send"}
                                 </button>
                             )}
                         </div>
                     </div>
                 )}
+        </div>
+    );
+}
+
+const PLUS_PATH = "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 6a1 1 0 1 0-2 0v3H8a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-3V8Z";
+
+/** A file waiting to be sent: thumbnail for images, else a file icon – with name and size */
+function AttachmentChip({ file, onRemove }: { file: File; onRemove(): void; }) {
+    const [url, setUrl] = useState<string | null>(null);
+    useEffect(() => {
+        if (!file.type.startsWith("image/")) return;
+        const u = URL.createObjectURL(file);
+        setUrl(u);
+        return () => URL.revokeObjectURL(u);
+    }, [file]);
+
+    return (
+        <div className={cl("attach-chip")}>
+            {url ? <img src={url} alt="" /> : <Icon path={FILE_PATH} size={28} />}
+            <span className={cl("attach-name")}>{file.name}</span>
+            <span className={cl("attach-size")}>{formatSize(file.size)}</span>
+            <button className={cl("attach-remove")} aria-label="Remove" onClick={onRemove}><Icon path={CLOSE_PATH} size={12} /></button>
         </div>
     );
 }
@@ -1223,7 +1314,7 @@ function ChannelView({ channel, name, showVoice, ctx }: { channel: any; name: st
         <>
             {showVoice && <ErrorBoundary noop><VoiceBar channelId={channel.id} guildId={guildId} /></ErrorBoundary>}
             <ErrorBoundary message="Couldn't display messages.">
-                <MessageList channelId={channel.id} guildId={guildId} ctx={ctx} />
+                {ctx.renderMessages ? ctx.renderMessages(channel) : <MessageList channelId={channel.id} guildId={guildId} ctx={ctx} />}
             </ErrorBoundary>
             <Composer channel={channel} name={name} ctx={ctx} />
         </>
@@ -1422,9 +1513,17 @@ export interface ChatWindowProps {
     className?: string;
     /** Rendered inside the main window (e.g. SecretChat's rooms window) instead of a popout – called by the close button */
     onClose?(): void;
+    /** Messages to leave out of the list */
+    hideMessage?(m: RawMessage): boolean;
+    /** See WindowCtx.renderMessages */
+    renderMessages?(channel: any): ReactNode;
+    /** See WindowCtx.attachmentNote */
+    attachmentNote?: string;
+    /** See WindowCtx.sendFiles */
+    sendFiles?(channel: any, files: File[], messageReference?: unknown): Promise<void>;
 }
 
-function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: CustomSidebar, emptyView, title, className, onClose }: ChatWindowProps) {
+function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: CustomSidebar, emptyView, title, className, onClose, hideMessage, renderMessages, attachmentNote, sendFiles: hostSendFiles }: ChatWindowProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     // The window can switch channels via the sidebar; the window key stays that of the first channel
     const [channelId, setChannelId] = useState(initialChannelId);
@@ -1462,6 +1561,10 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: Cust
     guildRef.current = guildId;
 
     const ctx = useMemo<WindowCtx>(() => ({
+        hideMessage,
+        renderMessages,
+        attachmentNote,
+        sendFiles: hostSendFiles,
         doc: () => rootRef.current?.ownerDocument ?? document,
         openMedia(items, original, meta) {
             const index = items.findIndex(i => i.original === original);
@@ -1497,7 +1600,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: Cust
     // Left click on avatar, name, @mention or someone in the call bar → profile card
     const onClick = (e: React.MouseEvent) => {
         const target = e.target as Element;
-        if (target.closest(`.${cl("profile")}, .${cl("menu")}`)) return;
+        if (target.closest(`.${cl("profile")}, .${cl("menu")}, [data-native-messages]`)) return;
         // LIVE badge → watch the stream
         const live = target.closest("[data-stream-user]")?.getAttribute("data-stream-user");
         if (live) {
@@ -1523,7 +1626,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: Cust
 
     // Capture phase: Discord components inside messages (mentions etc.) would otherwise open their menu in the main window
     const onContextMenu = (e: React.MouseEvent) => {
-        if ((e.target as Element).closest(`.${cl("stream-dock")}`)) return;
+        if ((e.target as Element).closest(`.${cl("stream-dock")}, [data-native-messages]`)) return;
         e.preventDefault();
         e.stopPropagation();
         const target = e.target as Element;

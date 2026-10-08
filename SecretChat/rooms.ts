@@ -325,10 +325,26 @@ export async function makeRoom(channelId: string, name: string, keyId?: string) 
 }
 
 /** Creates a new group DM with these friends (a DM for one friend) and makes it a room */
-export async function createRoom(name: string, userIds: string[]) {
+export async function createRoom(name: string, userIds: string[], icon?: string | null) {
     const channelId: string = await (ChannelActionCreators as any).ensurePrivateChannel(userIds);
     await makeRoom(channelId, name);
+    // Only group DMs have a name and picture (one friend = a normal DM). Discord sees both, so the group gets a
+    // random name there – the real room name only travels encrypted (with the key) and shows in SecretChat.
+    if (ChannelStore.getChannel(channelId)?.isGroupDM()) {
+        try {
+            await RestAPI.patch({ url: `/channels/${channelId}`, body: { name: randomGroupName(), ...(icon ? { icon } : {}) } });
+        } catch (e) {
+            logger.error("Setting the group name / picture failed", e);
+            showToast("Room created, but its Discord name / picture couldn't be set", Toasts.Type.FAILURE);
+        }
+    }
     return channelId;
+}
+
+/** Meaningless group name for Discord, e.g. "k7Qm2xPa9R" */
+function randomGroupName() {
+    const chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return Array.from(randomBytes(10), b => chars[b % chars.length]).join("");
 }
 
 /** Rooms open in the SecretChat window */
@@ -382,6 +398,12 @@ export function onRoomMessage(m: any) {
     if (!room || !authorId || authorId === myId() || roomMessages.has(m.id)) return;
     if (!shouldPing(room.channelId)) return;
 
+    if (settings.store.emergency) {
+        // No text while the emergency stop is on
+        playPing();
+        showNotification({ title: "🔒 SecretChat", body: "New message", noPersist: true });
+        return;
+    }
     const content = String(m.content ?? "");
     const plain = content.replace(/\s+/g, " ").trim();
     const text = content === LOCKED_TEXT ? "Encrypted message"

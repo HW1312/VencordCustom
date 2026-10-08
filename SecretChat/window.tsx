@@ -14,8 +14,11 @@ import type { Root } from "react-dom/client";
 
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
 import { Badge, unreadOf } from "./area";
-import { isSendGuarded } from "./messages";
-import { chatLabel, createRoom, deleteRoomForEveryone, isJoining, isOwnedGroup, joinRoom, pruneStale, reannounce, userName, windowView } from "./rooms";
+import { sendEncryptedFiles } from "./files";
+import { handshakes, isSendGuarded } from "./messages";
+import { NativeMessageList } from "./nativelist";
+import { chatLabel, createRoom, deleteRoomForEveryone, isJoining, isOwnedGroup, joinRoom, pruneStale, reannounce, roomMessages, userName, windowView } from "./rooms";
+import { settings } from "./settings";
 import { dismissInvite, Invite, removeRoom, renameRoom, Room, useStore } from "./store";
 import { Avatar, CloseIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon } from "./ui";
 
@@ -50,6 +53,10 @@ let root: Root | null = null;
 
 /** Opens the rooms window over Discord (or switches the room if it's open already) */
 export function openRoomsWindow(channelId?: string) {
+    if (settings.store.emergency) {
+        showToast("Emergency stop is on – right-click the lock to turn it off", Toasts.Type.FAILURE);
+        return;
+    }
     if (channelId) select(channelId);
     if (root) return;
 
@@ -86,6 +93,8 @@ function RoomsLayer() {
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key !== "Escape" || e.defaultPrevented) return;
+            // A Discord menu / popout / modal over the window gets the Esc first
+            if (document.querySelector('[role="menu"], [role="dialog"]')) return;
             const t = e.target as HTMLElement | null;
             if (t?.closest?.(".vc-chatpopout-menu, .vc-chatpopout-viewer, .vc-chatpopout-profile")) return;
             if ((t instanceof HTMLTextAreaElement || t instanceof HTMLInputElement) && t.value) return;
@@ -139,6 +148,9 @@ function RoomsWindow() {
             sidebar={RoomSidebar}
             title="Secret rooms"
             className={cl("chatwin")}
+            hideMessage={hideMessage}
+            renderMessages={renderMessages}
+            sendFiles={sendEncryptedFiles}
             onClose={closeRoomsWindow}
             emptyView={
                 <div className={cl("win-empty")}>
@@ -151,6 +163,15 @@ function RoomsWindow() {
 }
 
 const byName = (a: Room, b: Room) => a.name.localeCompare(b.name);
+
+/** Discord's own message components – avatars, embeds, link cards, its menus */
+const renderMessages = (channel: any) => <NativeMessageList key={channel.id} channel={channel} hide={hideMessage} />;
+
+/** Only real messages here: no key exchange (join / key / handshake) and no system messages (icon changed, …) */
+function hideMessage(m: any) {
+    if (roomMessages.has(m.id) || handshakes.has(m.id)) return true;
+    return m.type !== 0 && m.type !== 19; // normal message, reply
+}
 
 // ---------------------------------------------------------------- Sidebar
 
@@ -320,8 +341,35 @@ function InviteItem({ invite }: { invite: Invite; }) {
     );
 }
 
+/** Size of the group picture we upload – plenty for an icon and keeps the request small */
+const ICON_SIZE = 256;
+
+/** Image file → square PNG data URL (center crop), or null if it can't be read */
+function toIconDataUrl(file: File): Promise<string | null> {
+    return new Promise(resolve => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            const side = Math.min(img.naturalWidth, img.naturalHeight);
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = ICON_SIZE;
+            const ctx = canvas.getContext("2d");
+            if (!ctx || !side) return resolve(null), URL.revokeObjectURL(url);
+            ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, ICON_SIZE, ICON_SIZE);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+    });
+}
+
+const IMAGE_PATH = "M5 3a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm3.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM5 18l3.5-4.5 2.5 3 3.5-4.5L19 18H5Z";
+
 function NewRoomPanel({ onDone }: { onDone(): void; }) {
     const [name, setName] = useState("");
+    const [icon, setIcon] = useState<string | null>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
     const [query, setQuery] = useState("");
     const [picked, setPicked] = useState<string[]>([]);
     const [busy, setBusy] = useState(false);
@@ -350,7 +398,7 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
         if (!canCreate) return;
         setBusy(true);
         try {
-            const channelId = await createRoom(name, picked);
+            const channelId = await createRoom(name, picked, icon);
             select(channelId);
             onDone();
         } catch (e) {
@@ -361,7 +409,36 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
 
     return (
         <div className={classes(cl("panel"), cl("side-panel"))}>
-            <input className={cl("input")} value={name} autoFocus placeholder="Room name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
+            <div className={cl("name-row")}>
+                <button
+                    className={classes(cl("icon-pick"), icon && cl("icon-pick-set"))}
+                    disabled={picked.length < 2}
+                    title={picked.length < 2
+                        ? "A picture needs a group – pick at least 2 friends"
+                        : icon ? "Change picture (right-click to remove)" : "Add a group picture (optional)"}
+                    onClick={() => fileRef.current?.click()}
+                    onContextMenu={e => { e.preventDefault(); setIcon(null); }}
+                >
+                    {icon && picked.length >= 2
+                        ? <img src={icon} alt="" />
+                        : <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d={IMAGE_PATH} /></svg>}
+                </button>
+                <input className={cl("input")} value={name} autoFocus placeholder="Room name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    hidden
+                    onChange={async e => {
+                        const file = e.currentTarget.files?.[0];
+                        e.currentTarget.value = "";
+                        if (!file) return;
+                        const data = await toIconDataUrl(file);
+                        if (data) setIcon(data);
+                        else showToast("That image couldn't be read", Toasts.Type.FAILURE);
+                    }}
+                />
+            </div>
             <input className={cl("input")} value={query} placeholder="Search friends" onChange={e => setQuery(e.currentTarget.value)} />
             <div className={cl("pick-list")}>
                 {shown.map(f => {

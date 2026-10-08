@@ -27,6 +27,12 @@ export const settings = definePluginSettings({
         description: "Show the SecretChat icon in the title bar at the top (next to Back / Forward)",
         default: true
     },
+    emergency: {
+        type: OptionType.BOOLEAN,
+        description: "Emergency stop: show all messages encrypted again (right-click the lock in the title bar / server list)",
+        default: false,
+        hidden: true
+    },
     roomPings: {
         type: OptionType.BOOLEAN,
         description: "Ping (sound + notification) for new messages in secret rooms – Discord's own notifications are always off there",

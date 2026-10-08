@@ -13,7 +13,9 @@ import { findByProps } from "@webpack";
 import { showToast, Toasts, UserStore } from "@webpack/common";
 
 import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
+import { isFileText, takeFile } from "./files";
 import { onRoomMessage, processRoomMessage } from "./rooms";
+import { settings } from "./settings";
 import { addKey, channelKey, containsInviteCode, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
 const logger = new Logger("SecretChat");
@@ -154,8 +156,12 @@ function processMessage(m: any, live: boolean) {
 
     const result = tryDecrypt(content, authorId);
     if (result) {
+        encryptedSeen.set(m.id, { channelId: m.channel_id, authorId, raw: content });
+        // Emergency stop: show everything as it was sent (random characters) until it's turned off
+        if (settings.store.emergency) return;
         if (result.plain != null) {
-            m.content = result.plain;
+            // File message: the .bin goes out of the message, the decrypted file shows below it
+            m.content = takeFile(m, result.plain, result.keyId) ?? result.plain;
             decrypted.set(m.id, result.keyId);
             locked.delete(m.id);
         } else {
@@ -227,13 +233,41 @@ export function retryHandshakes() {
 }
 
 /** After a key was added: decrypt messages that were shown as locked */
+/** Every encrypted message seen: message id → its sent (encrypted) text – to hide / show them again */
+const encryptedSeen = new Map<string, { channelId: string; authorId: string; raw: string; }>();
+
+/** Emergency stop on: every decrypted message goes back to its encrypted text. Off: decrypt them again. */
+export function applyEmergency(on: boolean) {
+    if (on) {
+        for (const [id, e] of encryptedSeen) {
+            if (!decrypted.has(id) && !locked.has(id)) continue;
+            updateMessage(e.channelId, id, { content: e.raw });
+        }
+        decrypted.clear();
+        locked.clear();
+    } else {
+        for (const [id, e] of encryptedSeen) {
+            const result = tryDecrypt(e.raw, e.authorId);
+            if (!result) continue;
+            if (result.plain != null) {
+                decrypted.set(id, result.keyId);
+                updateMessage(e.channelId, id, { content: isFileText(result.plain) ? "" : result.plain });
+            } else {
+                locked.set(id, e);
+                updateMessage(e.channelId, id, { content: LOCKED_TEXT });
+            }
+        }
+    }
+    emit();
+}
+
 export function retryLocked() {
     for (const [id, { channelId, authorId, raw }] of locked) {
         const result = tryDecrypt(raw, authorId);
         if (result?.plain == null) continue;
         locked.delete(id);
         decrypted.set(id, result.keyId);
-        updateMessage(channelId, id, { content: result.plain });
+        updateMessage(channelId, id, { content: isFileText(result.plain) ? "" : result.plain });
     }
 }
 

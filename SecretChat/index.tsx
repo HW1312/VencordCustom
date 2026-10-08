@@ -16,6 +16,7 @@ import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, showToast, To
 
 import { loadedMessageHooks } from "../ChatPopout/messages";
 import { renderTitleBarButton, ServerListIcon } from "./area";
+import { EncryptedFile } from "./files";
 import { decryptLoaded, intercept, onBeforeEdit, onBeforeSend, retryHandshakes, retryLocked, startHandshake, unwrapMessageActions, wrapMessageActions } from "./messages";
 import { isRoomMessage, onChannelDelete, retryRooms } from "./rooms";
 import { settings } from "./settings";
@@ -86,7 +87,12 @@ export default definePlugin({
     onBeforeMessageEdit: onBeforeEdit,
 
     renderMessageDecoration: props => <LockDecoration message={props.message} />,
-    renderMessageAccessory: props => <MessageCard message={props.message} />,
+    renderMessageAccessory: props => (
+        <>
+            <MessageCard message={props.message} />
+            <EncryptedFile message={props.message} />
+        </>
+    ),
 
     chatBarButton: {
         icon: LockIcon,
