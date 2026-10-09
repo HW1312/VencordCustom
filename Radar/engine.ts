@@ -653,8 +653,11 @@ export function snapshotMessage(message: any): MessageSnapshot {
     const ts = message.timestamp;
     const timestamp = typeof ts?.valueOf === "function" ? Number(ts.valueOf()) : Date.parse(ts) || Date.now();
 
-    let content: string = message.content ?? "";
-    if (!content && message.embeds?.length) content = message.embeds[0]?.rawDescription ?? message.embeds[0]?.description ?? "[Embed]";
+    // Forwarded messages carry their text and files in a snapshot of the original
+    const inner = message.messageSnapshots?.[0]?.message;
+    let content: string = message.content || inner?.content || "";
+    const embeds = message.embeds?.length ? message.embeds : inner?.embeds;
+    if (!content && embeds?.length) content = embeds[0]?.rawDescription ?? embeds[0]?.description ?? "[Embed]";
 
     return {
         guildId,
@@ -662,10 +665,11 @@ export function snapshotMessage(message: any): MessageSnapshot {
         messageId: message.id,
         authorId: message.author?.id,
         authorName: userName(message.author, guildId),
+        authorUsername: message.author?.username,
         authorAvatar: avatarUrl(message.author),
         content: excerpt(content, 400),
         timestamp,
-        attachments: message.attachments?.length ?? 0,
+        attachments: (message.attachments?.length || inner?.attachments?.length) ?? 0,
         guildName: guild?.name,
         channelName: channel?.name ?? (channel ? "Direct message" : undefined)
     };

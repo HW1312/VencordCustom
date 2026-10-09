@@ -716,14 +716,17 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
-    const s = settings.use(["showChatBarButton", "autoLoad", "showEmbeds", "pagesPerClick", "thumbSize", "zipWarnMb"]);
+    const s = settings.use(["showChatBarButton", "showHeaderButton", "autoLoad", "showEmbeds", "pagesPerClick", "thumbSize", "zipWarnMb"]);
 
     return (
         <div className={cl("settings")}>
             <div className={cl("muted")}>
-                Open via the gallery button in the chat bar or by right-clicking a channel, thread or DM → "Media Gallery".
+                Open via the gallery button in the channel header or chat bar, or by right-clicking a channel, thread, DM or message → "Media Gallery".
                 History is loaded throttled (about 1 request per second) and cached for this session.
             </div>
+            <Row label="Channel header button" hint="Top right next to the pins, also in channels where you can't write.">
+                <Switch checked={s.showHeaderButton} onChange={v => settings.store.showHeaderButton = v} />
+            </Row>
             <Row label="Chat bar button">
                 <Switch checked={s.showChatBarButton} onChange={v => settings.store.showChatBarButton = v} />
             </Row>

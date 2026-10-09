@@ -7,6 +7,7 @@ import { showToast } from "@webpack/common";
 
 import { fireRule, snapshotMessage } from "./engine";
 import { settings } from "./index";
+import { collectMedia, deleteMediaFiles, saveMediaOffline } from "./media";
 import { Bookmark, bookmarksStore, logger, Reminder, remindersStore, Rule, uid } from "./store";
 
 // ---------------------------------------------------------------- Quick picks
@@ -193,20 +194,31 @@ export function findBookmark(messageId: string) {
     return bookmarksStore.value.find(b => b.message.messageId === messageId);
 }
 
-export function addBookmark(message: any, tags: string[], note: string) {
+/** offline: also save images, videos and the avatar on this PC */
+export function addBookmark(message: any, tags: string[], note: string, offline: boolean) {
     const existing = findBookmark(message.id);
     if (existing) {
         bookmarksStore.update(list => list.map(b => b.id === existing.id ? { ...b, tags, note: note.trim() } : b));
         showToast("Bookmark updated", "success");
         return;
     }
-    const bookmark: Bookmark = { id: uid(), createdAt: Date.now(), tags, note: note.trim(), message: snapshotMessage(message) };
+    const bookmark: Bookmark = {
+        id: uid(),
+        createdAt: Date.now(),
+        tags,
+        note: note.trim(),
+        message: snapshotMessage(message),
+        media: collectMedia(message)
+    };
     bookmarksStore.update(list => [bookmark, ...list]);
     showToast("Bookmark saved", "success");
+    if (offline) saveMediaOffline(bookmark);
 }
 
 export function deleteBookmark(id: string) {
+    const bookmark = bookmarksStore.value.find(b => b.id === id);
     bookmarksStore.update(list => list.filter(b => b.id !== id));
+    if (bookmark?.offline) deleteMediaFiles(id);
 }
 
 export function allTags() {

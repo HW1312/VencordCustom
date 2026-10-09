@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { ChannelStore, Menu, RunningGameStore, VoiceStateStore } from "@webpack/common";
@@ -54,6 +54,12 @@ export const settings = definePluginSettings({
     reminderFlash: {
         type: OptionType.BOOLEAN,
         description: "Flash the taskbar on reminders",
+        default: true,
+        hidden: true
+    },
+    bookmarkSaveMedia: {
+        type: OptionType.BOOLEAN,
+        description: "Save images and videos of new bookmarks on this PC",
         default: true,
         hidden: true
     },
@@ -128,6 +134,18 @@ const messageContextMenu: NavContextMenuPatchCallback = (children, { message }: 
     if (!message?.id || !message.channel_id) return;
     const bookmarked = !!findBookmark(message.id);
 
+    const bookmarkItem = (
+        <Menu.MenuItem
+            id="vc-radar-bookmark"
+            label={bookmarked ? "Edit Radar bookmark" : "Save to Radar bookmarks"}
+            action={() => openBookmarkModal(message)}
+        />
+    );
+    // Right below Discord's own "Bookmark", so the two aren't confused
+    const group = findGroupChildrenByChildId("bookmark", children);
+    const index = group?.findIndex(c => c?.props?.id === "bookmark") ?? -1;
+    if (group && index !== -1) group.splice(index + 1, 0, bookmarkItem);
+
     children.push(
         <Menu.MenuGroup>
             <Menu.MenuItem id="vc-radar-remind" label="Remind me…">
@@ -137,11 +155,7 @@ const messageContextMenu: NavContextMenuPatchCallback = (children, { message }: 
                 <Menu.MenuSeparator />
                 <Menu.MenuItem id="vc-radar-remind-custom" label="Custom time / note…" action={() => openReminderModal(message)} />
             </Menu.MenuItem>
-            <Menu.MenuItem
-                id="vc-radar-bookmark"
-                label={bookmarked ? "Edit bookmark" : "Add bookmark"}
-                action={() => openBookmarkModal(message)}
-            />
+            {index === -1 && bookmarkItem}
         </Menu.MenuGroup>
     );
 };

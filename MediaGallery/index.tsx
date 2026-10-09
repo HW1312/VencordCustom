@@ -7,8 +7,10 @@
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { definePluginSettings } from "@api/Settings";
+import ErrorBoundary from "@components/ErrorBoundary";
 import definePlugin, { OptionType } from "@utils/types";
-import { Menu } from "@webpack/common";
+import { findComponentByCodeLazy } from "@webpack";
+import { ChannelStore, Menu } from "@webpack/common";
 
 import { clearAll } from "./store";
 import { GalleryIcon, openGallery, SettingsPanel } from "./ui";
@@ -23,6 +25,12 @@ export const settings = definePluginSettings({
     showChatBarButton: {
         type: OptionType.BOOLEAN,
         description: "Show button in the chat bar",
+        default: true,
+        hidden: true
+    },
+    showHeaderButton: {
+        type: OptionType.BOOLEAN,
+        description: "Show button in the channel header (also where you can't write)",
         default: true,
         hidden: true
     },
@@ -83,6 +91,40 @@ const userContext: NavContextMenuPatchCallback = (children, props) => {
     channelContext(children, props);
 };
 
+/** Right-click on a message: gallery of the channel it is in */
+const messageContext: NavContextMenuPatchCallback = (children, { message }) => {
+    const channel = message?.channel_id ? ChannelStore.getChannel(message.channel_id) : null;
+    if (!channel || NO_MESSAGES.has(channel.type)) return;
+
+    const item = (
+        <Menu.MenuItem
+            id="vc-mediagallery-open"
+            label="Media Gallery"
+            icon={GalleryIcon}
+            action={() => openGallery(channel)}
+        />
+    );
+    const group = findGroupChildrenByChildId("copy-link", children);
+    if (group) group.push(item);
+    else children.push(<Menu.MenuGroup>{item}</Menu.MenuGroup>);
+};
+
+const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
+
+/** Channel header: always visible, unlike the chat bar button which needs write permission */
+function HeaderButton({ channel }: { channel: any; }) {
+    const { showHeaderButton } = settings.use(["showHeaderButton"]);
+    if (!showHeaderButton || !channel?.id || NO_MESSAGES.has(channel.type)) return null;
+    return (
+        <HeaderBarIcon
+            className="vc-mediagallery-header-btn"
+            tooltip="Media Gallery"
+            icon={() => <GalleryIcon width={20} height={20} />}
+            onClick={() => openGallery(channel)}
+        />
+    );
+}
+
 const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
     const { showChatBarButton } = settings.use(["showChatBarButton"]);
     if (!showChatBarButton || !isMainChat || !channel) return null;
@@ -103,7 +145,24 @@ export default definePlugin({
     tags: ["Media", "Chat", "Utility"],
     settings,
 
+    patches: [
+        {
+            // Header of every chat (DM, channel, thread)
+            find: "Missing channel in Channel.renderHeaderToolbar",
+            replacement: {
+                match: /this\.renderHeaderToolbar\(\)/,
+                replace: "$self.wrapToolbar($&,this?.props?.channel)"
+            }
+        }
+    ],
+
+    wrapToolbar(toolbar: any, channel: any) {
+        const button = <ErrorBoundary noop key="vc-mediagallery-toolbar"><HeaderButton channel={channel} /></ErrorBoundary>;
+        return Array.isArray(toolbar) ? [button, ...toolbar] : [button, toolbar];
+    },
+
     contextMenus: {
+        "message": messageContext,
         "channel-context": channelContext,
         "thread-context": channelContext,
         "gdm-context": channelContext,

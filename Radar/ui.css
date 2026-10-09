@@ -1533,3 +1533,195 @@ input[type="datetime-local"].vc-radar-input {
         animation: none;
     }
 }
+
+/* ---------- Bookmarks: author, media, saved state ---------- */
+
+.vc-radar-bm .vc-radar-item-title {
+    flex: 0 1 auto;
+}
+
+.vc-radar-bm-username {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-bm-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+.vc-radar-bm-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-code, monospace);
+    font-size: 10.5px;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.vc-radar-bm-id:hover {
+    color: var(--radar-text);
+    background: color-mix(in srgb, var(--radar-text) 14%, transparent);
+}
+
+.vc-radar-media-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.vc-radar-media-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84px;
+    height: 84px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--radar-line);
+    border-radius: 10px;
+    background: var(--radar-soft-2);
+    cursor: zoom-in;
+    transition: transform 0.2s var(--radar-spring), border-color 0.15s;
+}
+
+.vc-radar-media-tile:hover {
+    transform: scale(1.04);
+    border-color: color-mix(in srgb, var(--radar-a) 60%, transparent);
+}
+
+.vc-radar-media-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vc-radar-media-plain {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 0 6px;
+    color: var(--radar-muted);
+}
+
+.vc-radar-media-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+}
+
+.vc-radar-media-saved {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    display: flex;
+    padding: 2px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--radar-grad);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+.vc-radar-media-more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    background: rgb(0 0 0 / 55%);
+}
+
+.vc-radar-bm-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: none;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--radar-muted);
+    background: var(--radar-soft-2);
+}
+
+.vc-radar-bm-status-ok {
+    color: var(--radar-a);
+    background: color-mix(in srgb, var(--radar-a) 14%, transparent);
+}
+
+.vc-radar-bm-status-warn {
+    color: var(--radar-warn);
+    background: color-mix(in srgb, var(--radar-warn) 14%, transparent);
+    cursor: pointer;
+}
+
+.vc-radar-viewer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 240px;
+    max-height: 70vh;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: rgb(0 0 0 / 35%);
+}
+
+.vc-radar-viewer img,
+.vc-radar-viewer video {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+.vc-radar-viewer-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    display: flex;
+    padding: 6px;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    background: rgb(0 0 0 / 50%);
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: background 0.15s;
+}
+
+.vc-radar-viewer-nav:hover {
+    background: rgb(0 0 0 / 75%);
+}
+
+.vc-radar-viewer-prev {
+    left: 8px;
+}
+
+.vc-radar-viewer-next {
+    right: 8px;
+}

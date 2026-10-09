@@ -6,6 +6,7 @@
 import "./ui.css";
 
 import ErrorBoundary from "@components/ErrorBoundary";
+import { copyWithToast } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { useForceUpdater } from "@utils/react";
 import { RenderModalProps } from "@vencord/discord-types";
@@ -17,9 +18,10 @@ import { Avatar, Button, cl, Empty, Field, Icon, IconButton, IconName, RadarLogo
 import { openRuleEditor, TriggerBadge } from "./editor";
 import { ACTIONS, highlights, highlightSignal, jumpTo, placeLabel, removeHighlight, snapshotMessage, TRIGGERS } from "./engine";
 import { settings } from "./index";
+import { bookmarkMediaSize, collectMedia, formatBytes, openBookmarkFolder, removeOfflineMedia, saveMediaOffline, useMediaSrc } from "./media";
 import { addBookmark, addReminder, allTags, clearDoneReminders, deleteBookmark, deleteReminder, findBookmark, formatRelative, formatWhen, getQuickPicks, parseTags, snoozeReminder } from "./reminders";
 import { playSound, SOUND_OPTIONS } from "./sounds";
-import { Bookmark, bookmarksStore, deleteRule, InboxItem, inboxStore, markAllRead, MessageSnapshot, Reminder, remindersStore, Rule, rulesStore, toggleRule, useSignal, useStore } from "./store";
+import { Bookmark, bookmarksStore, deleteRule, InboxItem, inboxStore, markAllRead, MessageSnapshot, Reminder, remindersStore, Rule, rulesStore, SavedMedia, toggleRule, useSignal, useStore } from "./store";
 
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
@@ -294,28 +296,120 @@ function RemindersTab({ close }: { close?(): void; }) {
 
 // ---------------------------------------------------------------- Bookmarks
 
+/** Bigger pictures only load in the viewer */
+const LAZY_IMAGE_BYTES = 20 * 1024 * 1024;
+const MAX_TILES = 4;
+
+function MediaTile({ b, m, more, onOpen }: { b: Bookmark; m: SavedMedia; more?: number; onOpen(): void; }) {
+    const thumb = m.kind === "image" && (m.size ?? 0) < LAZY_IMAGE_BYTES;
+    const src = useMediaSrc(b.id, m.local, m.url, thumb);
+    const [broken, setBroken] = useState(false);
+    useEffect(() => setBroken(false), [src]);
+
+    return (
+        <button
+            type="button"
+            className={classes(cl("media-tile"), !thumb && cl("media-tile-plain"))}
+            title={m.local ? `${m.name} · saved on this PC` : m.name}
+            onClick={e => { e.stopPropagation(); onOpen(); }}
+        >
+            {thumb && src && !broken
+                ? <img src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
+                : (
+                    <span className={cl("media-plain")}>
+                        <Icon name={m.kind === "video" ? "play" : m.kind === "image" ? "image" : "file"} size={18} />
+                        <span className={cl("media-name")}>{m.name}</span>
+                    </span>
+                )}
+            {m.local && <span className={cl("media-saved")}><Icon name="check" size={9} /></span>}
+            {more ? <span className={cl("media-more")}>+{more}</span> : null}
+        </button>
+    );
+}
+
+function MediaStrip({ b }: { b: Bookmark; }) {
+    const media = b.media ?? [];
+    if (!media.length) return null;
+    const shown = media.slice(0, MAX_TILES);
+    return (
+        <span className={cl("media-strip")}>
+            {shown.map((m, i) => (
+                <MediaTile
+                    key={m.key}
+                    b={b}
+                    m={m}
+                    more={i === shown.length - 1 && media.length > MAX_TILES ? media.length - MAX_TILES : undefined}
+                    onOpen={() => openMediaViewer(b.id, i)}
+                />
+            ))}
+        </span>
+    );
+}
+
+function SaveStatus({ b }: { b: Bookmark; }) {
+    if (!b.offline) return null;
+    if (b.saveState === "saving") return <span className={cl("bm-status")}><Icon name="download" size={11} />Saving on this PC…</span>;
+    if (b.saveState === "failed") {
+        return (
+            <button
+                type="button"
+                className={classes(cl("bm-status"), cl("bm-status-warn"))}
+                title="Discord's links expire after about a day. Open the message in Discord once, then try again."
+                onClick={e => { e.stopPropagation(); saveMediaOffline(b); }}
+            >
+                Some files could not be saved · Retry
+            </button>
+        );
+    }
+    return <span className={classes(cl("bm-status"), cl("bm-status-ok"))}><Icon name="check" size={11} />Saved on this PC</span>;
+}
+
 function BookmarkRow({ b, onTag }: { b: Bookmark; onTag(t: string): void; }) {
     const m = b.message;
+    const avatar = useMediaSrc(b.id, b.avatarLocal, m.authorAvatar);
+    const hasMedia = !!b.media?.length;
+
     return (
-        <div className={classes(cl("item"), cl("item-click"))} onClick={() => jumpTo(m)}>
-            <Avatar src={m.authorAvatar} fallback="user" size={34} />
+        <div className={classes(cl("item"), cl("item-click"), cl("bm"))} onClick={() => jumpTo(m)}>
+            <Avatar src={avatar} fallback="user" size={36} />
             <span className={cl("item-main")}>
                 <span className={cl("item-top")}>
                     <span className={cl("item-title")}>{m.authorName}</span>
+                    {m.authorUsername && m.authorUsername !== m.authorName && <span className={cl("bm-username")}>@{m.authorUsername}</span>}
                     <span className={cl("item-time")} title={`Saved ${new Date(b.createdAt).toLocaleString("en-GB")}`}>{formatWhen(m.timestamp)}</span>
                 </span>
-                <span className={cl("row-hint")}>{m.guildId ? `#${m.channelName ?? "?"}${m.guildName ? ` · ${m.guildName}` : ""}` : placeLabel(null, m.channelId)}</span>
-                <span className={cl("item-body")}>{m.content || (m.attachments ? `[${m.attachments} ${m.attachments === 1 ? "attachment" : "attachments"}]` : "[no text]")}</span>
+                <span className={cl("bm-meta")}>
+                    {m.authorId && (
+                        <button
+                            type="button"
+                            className={cl("bm-id")}
+                            title="Copy user ID"
+                            onClick={e => { e.stopPropagation(); copyWithToast(m.authorId, "User ID copied"); }}
+                        >
+                            <Icon name="copy" size={10} />
+                            {m.authorId}
+                        </button>
+                    )}
+                    <span className={cl("row-hint")}>{m.guildId ? `#${m.channelName ?? "?"}${m.guildName ? ` · ${m.guildName}` : ""}` : placeLabel(null, m.channelId)}</span>
+                </span>
+                {(m.content || !hasMedia) && (
+                    <span className={cl("item-body")}>{m.content || (m.attachments ? `[${m.attachments} ${m.attachments === 1 ? "attachment" : "attachments"}]` : "[no text]")}</span>
+                )}
+                <MediaStrip b={b} />
                 {b.note && <span className={cl("item-note")}>{b.note}</span>}
-                {b.tags.length > 0 && (
+                {(b.tags.length > 0 || b.offline) && (
                     <span className={cl("tags")}>
+                        <SaveStatus b={b} />
                         {b.tags.map(t => <button type="button" key={t} className={cl("tag")} onClick={e => { e.stopPropagation(); onTag(t); }}>#{t}</button>)}
                     </span>
                 )}
             </span>
             <span className={cl("item-actions")}>
                 <IconButton icon="jump" label="Go to message" onClick={() => jumpTo(m)} />
-                <IconButton icon="edit" label="Edit tags" onClick={() => openBookmarkEditor(b)} />
+                {b.offline
+                    ? <IconButton icon="folder" label="Show saved files" onClick={() => openBookmarkFolder(b.id)} />
+                    : hasMedia && <IconButton icon="download" label="Save images & videos on this PC" onClick={() => saveMediaOffline(b)} />}
+                <IconButton icon="edit" label="Edit bookmark" onClick={() => openBookmarkEditor(b)} />
                 <IconButton icon="trash" label="Delete" danger onClick={() => deleteBookmark(b.id)} />
             </span>
         </div>
@@ -331,14 +425,15 @@ function BookmarksTab() {
     const q = query.trim().toLowerCase();
     const shown = bookmarks.filter(b =>
         (!tag || b.tags.includes(tag))
-        && (!q || [b.message.content, b.message.authorName, b.message.channelName, b.message.guildName, b.note, ...b.tags].some(s => s?.toLowerCase().includes(q)))
+        && (!q || [b.message.content, b.message.authorName, b.message.authorUsername, b.message.authorId, b.message.channelName, b.message.guildName, b.note, ...b.tags, ...(b.media ?? []).map(m => m.name)]
+            .some(s => s?.toLowerCase().includes(q)))
     );
 
     return (
         <>
             <div className={cl("picker-box")}>
                 <Icon name="search" size={16} className={cl("picker-search")} />
-                <input className={cl("input")} value={query} placeholder="Search bookmarks…" onChange={e => setQuery(e.currentTarget.value)} />
+                <input className={cl("input")} value={query} placeholder="Search text, person, user ID, server, tag…" onChange={e => setQuery(e.currentTarget.value)} />
             </div>
             {tags.length > 0 && (
                 <div className={cl("tags")}>
@@ -352,7 +447,7 @@ function BookmarksTab() {
                     <Empty
                         icon="bookmark"
                         title={bookmarks.length ? "Nothing found" : "No bookmarks yet"}
-                        hint={bookmarks.length ? "Adjust your search or tag filter." : "Right-click a message → “Add bookmark”."}
+                        hint={bookmarks.length ? "Adjust your search or tag filter." : "Right-click any message, picture or video → “Save to Radar bookmarks”."}
                     />
                 )}
         </>
@@ -362,7 +457,9 @@ function BookmarksTab() {
 // ---------------------------------------------------------------- Options
 
 function OptionsTab() {
-    const s = settings.use(["showTitleBarButton", "cooldown", "reminderSound", "reminderVolume", "reminderFlash"]);
+    const s = settings.use(["showTitleBarButton", "cooldown", "reminderSound", "reminderVolume", "reminderFlash", "bookmarkSaveMedia"]);
+    const [mediaBytes, setMediaBytes] = useState<number | null>(null);
+    useEffect(() => { bookmarkMediaSize().then(setMediaBytes, () => setMediaBytes(null)); }, []);
 
     return (
         <>
@@ -405,6 +502,24 @@ function OptionsTab() {
                     <span className={cl("range-value")}>{s.reminderVolume}%</span>
                 </div>
                 <ToggleRow checked={s.reminderFlash} onChange={v => settings.store.reminderFlash = v} icon="flash" label="Flash the taskbar on due reminders" />
+            </div>
+
+            <SectionTitle icon="bookmark">Bookmarks</SectionTitle>
+            <div className={cl("card")}>
+                <ToggleRow
+                    checked={s.bookmarkSaveMedia}
+                    onChange={v => settings.store.bookmarkSaveMedia = v}
+                    icon="download"
+                    label="Save images & videos of new bookmarks on this PC"
+                    hint="They stay in the bookmark even if the message gets deleted. You can still change it per bookmark."
+                />
+                <div className={cl("row-static")}>
+                    <span className={cl("row-text")}>
+                        <span className={cl("row-label")}>Saved files</span>
+                        <span className={cl("row-hint")}>{mediaBytes == null ? "…" : mediaBytes ? `${formatBytes(mediaBytes)} used` : "Nothing saved yet"}</span>
+                    </span>
+                    <Button icon="folder" small variant="secondary" onClick={() => openBookmarkFolder()}>Open folder</Button>
+                </div>
             </div>
 
             <div className={cl("note")}>
@@ -543,22 +658,30 @@ export function openReminderModal(message?: any) {
 function BookmarkModal({ modalProps, message, existing }: { modalProps: RenderModalProps; message?: any; existing?: Bookmark; }) {
     const [tags, setTags] = useState((existing?.tags ?? []).join(", "));
     const [note, setNote] = useState(existing?.note ?? "");
+    const [offline, setOffline] = useState(existing ? !!existing.offline : settings.store.bookmarkSaveMedia);
     const known = useMemo(allTags, []);
     const current = parseTags(tags);
 
+    const preview = existing?.message ?? (message ? snapshotMessage(message) : null);
+    const mediaCount = existing?.media?.length ?? (message ? collectMedia(message).length : 0);
+
     const save = () => {
-        if (message) addBookmark(message, current, note);
-        else if (existing) bookmarksStore.update(list => list.map(b => b.id === existing.id ? { ...b, tags: current, note: note.trim() } : b));
+        if (message) {
+            addBookmark(message, current, note, offline);
+        } else if (existing) {
+            bookmarksStore.update(list => list.map(b => b.id === existing.id ? { ...b, tags: current, note: note.trim() } : b));
+            const latest = bookmarksStore.value.find(b => b.id === existing.id);
+            if (latest && offline && !existing.offline) saveMediaOffline(latest);
+            if (latest && !offline && existing.offline) removeOfflineMedia(latest);
+        }
         modalProps.onClose();
     };
-
-    const preview = existing?.message ?? (message ? snapshotMessage(message) : null);
 
     return (
         <Modal
             {...modalProps}
             size="sm"
-            title={existing ? "Edit bookmark" : "Add bookmark"}
+            title={existing ? "Edit bookmark" : "Save to Radar bookmarks"}
             actions={[
                 ...(existing ? [{ text: "Remove", variant: "critical-primary", onClick: () => { deleteBookmark(existing.id); modalProps.onClose(); } }] : []),
                 { text: "Cancel", variant: "secondary", onClick: modalProps.onClose },
@@ -568,6 +691,17 @@ function BookmarkModal({ modalProps, message, existing }: { modalProps: RenderMo
             <div className={cl("modal-body")}>
                 <div className={cl("editor")}>
                     {preview && <SnapshotPreview m={preview} />}
+                    <div className={cl("card")}>
+                        <ToggleRow
+                            checked={offline}
+                            onChange={setOffline}
+                            icon="download"
+                            label={mediaCount ? `Save ${mediaCount === 1 ? "the image / video" : `all ${mediaCount} files`} on this PC` : "Save the avatar on this PC"}
+                            hint={offline && existing?.offline
+                                ? "Turning this off deletes the saved copies."
+                                : "Stays in your bookmark even if the message or the account gets deleted."}
+                        />
+                    </div>
                     <Field label="Tags (optional)" hint="Separate with commas, e.g. “important, recipes”">
                         <input className={cl("input")} value={tags} placeholder="important, read later" onChange={e => setTags(e.currentTarget.value)} autoFocus />
                     </Field>
@@ -596,6 +730,67 @@ export function openBookmarkModal(message: any) {
 
 function openBookmarkEditor(existing: Bookmark) {
     openModal(props => <BookmarkModal modalProps={props} existing={existing} />);
+}
+
+// ---------------------------------------------------------------- Dialog: picture / video viewer
+
+function MediaViewer({ modalProps, bookmarkId, start }: { modalProps: RenderModalProps; bookmarkId: string; start: number; }) {
+    const bookmarks = useStore(bookmarksStore);
+    const b = bookmarks.find(x => x.id === bookmarkId);
+    const media = b?.media ?? [];
+    const [index, setIndex] = useState(Math.min(start, Math.max(0, media.length - 1)));
+    const m = media[index];
+    const src = useMediaSrc(bookmarkId, m?.local, m?.url, !!m);
+    const [broken, setBroken] = useState(false);
+    useEffect(() => setBroken(false), [src]);
+
+    const step = (d: number) => setIndex(i => (i + d + media.length) % media.length);
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "ArrowLeft") step(-1);
+            else if (e.key === "ArrowRight") step(1);
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [media.length]);
+
+    if (!b || !m) return null;
+
+    return (
+        <Modal
+            {...modalProps}
+            size="lg"
+            title={m.name}
+            subtitle={`${b.message.authorName}${media.length > 1 ? ` · ${index + 1} of ${media.length}` : ""} · ${m.local ? "saved on this PC" : "from Discord, may disappear"}`}
+            actions={[
+                ...(b.offline ? [{ text: "Show in folder", variant: "secondary", onClick: () => openBookmarkFolder(b.id) }] : []),
+                { text: "Go to message", variant: "secondary", onClick: () => { modalProps.onClose(); jumpTo(b.message); } },
+                { text: "Close", variant: "primary", onClick: modalProps.onClose }
+            ]}
+        >
+            <div className={cl("viewer")}>
+                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-prev"))} aria-label="Previous" onClick={() => step(-1)}><Icon name="chevronLeft" size={22} /></button>}
+                {!src
+                    ? <span className={cl("row-hint")}>Loading…</span>
+                    : broken
+                        ? <Empty icon="image" title="Not available anymore" hint="Discord no longer has this file and it wasn't saved on this PC." />
+                        : m.kind === "image"
+                            ? <img key={src} src={src} alt={m.name} onError={() => setBroken(true)} />
+                            : m.kind === "video"
+                                ? <video key={src} src={src} controls autoPlay onError={() => setBroken(true)} />
+                                : (
+                                    <Empty icon="file" title={m.name} hint={m.size ? formatBytes(m.size) : undefined}>
+                                        {b.offline && <Button icon="folder" onClick={() => openBookmarkFolder(b.id)}>Show in folder</Button>}
+                                    </Empty>
+                                )}
+                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-next"))} aria-label="Next" onClick={() => step(1)}><Icon name="chevronRight" size={22} /></button>}
+            </div>
+        </Modal>
+    );
+}
+
+function openMediaViewer(bookmarkId: string, start: number) {
+    openModal(props => <MediaViewer modalProps={props} bookmarkId={bookmarkId} start={start} />);
 }
 
 // ---------------------------------------------------------------- Highlight under messages

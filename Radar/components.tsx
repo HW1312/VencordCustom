@@ -41,6 +41,13 @@ const ICONS = {
     doneAll: "M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7Zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41ZM.41 13.41 6 19l1.41-1.41L1.83 12 .41 13.41Z",
     user: "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z",
     server: "M4 5h16v4H4V5Zm0 5h16v4H4v-4Zm0 5h16v4H4v-4Zm2-9v2h2V6H6Zm0 5v2h2v-2H6Zm0 5v2h2v-2H6Z",
+    image: "M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2ZM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5Z",
+    file: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6Zm2 16H8v-2h8v2Zm0-4H8v-2h8v2Zm-3-5V3.5L18.5 9H13Z",
+    download: "M19 9h-4V3H9v6H5l7 7 7-7ZM5 18v2h14v-2H5Z",
+    folder: "M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2Z",
+    copy: "M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1Zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2Zm0 16H8V7h11v14Z",
+    chevronLeft: "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12l4.58-4.59Z",
+    chevronRight: "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6Z",
     hash: "M10.99 3.97 10.5 7h4l.49-3.03 1.98.32L16.5 7H20v2h-3.82l-.65 4H19v2h-3.79l-.5 3.03-1.97-.32L13.2 15h-4l-.49 3.03-1.97-.32L7.2 15H4v-2h3.53l.65-4H5V7h3.5l.52-3.35 1.97.32ZM10.18 9l-.65 4h4l.65-4h-4Z"
 } satisfies Record<EngineIcon, string> & Record<string, string>;
 
@@ -228,6 +235,8 @@ export function Field({ label, hint, children }: { label: ReactNode; hint?: Reac
 
 export function Avatar({ src, fallback, size = 32, round = true }: { src?: string; fallback: IconName; size?: number; round?: boolean; }) {
     const [failed, setFailed] = useState(false);
+    // A new address (e.g. the saved copy finished loading) gets a fresh chance
+    useLayoutEffect(() => setFailed(false), [src]);
     return (
         <span className={classes(cl("avatar"), !round && cl("avatar-square"))} style={{ width: size, height: size }}>
             {src && !failed

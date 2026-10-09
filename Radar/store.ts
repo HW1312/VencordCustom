@@ -71,6 +71,8 @@ export interface MessageSnapshot {
     messageId: string;
     authorId: string;
     authorName: string;
+    /** Unique Discord username (@name), authorName is the display name */
+    authorUsername?: string;
     authorAvatar?: string;
     content: string;
     timestamp: number;
@@ -90,12 +92,34 @@ export interface Reminder {
     missed?: boolean;
 }
 
+/** Image, video or file of a bookmarked message */
+export interface SavedMedia {
+    /** Attachment id, or "embed-<n>" for pictures/videos from links */
+    key: string;
+    kind: "image" | "video" | "file";
+    name: string;
+    /** Discord CDN address - expires after a while and is gone once the message is deleted */
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+    /** File name in the bookmark's folder on this PC, once saved */
+    local?: string;
+}
+
 export interface Bookmark {
     id: string;
     createdAt: number;
     tags: string[];
     note: string;
     message: MessageSnapshot;
+    media?: SavedMedia[];
+    /** Keep images, videos and the avatar on this PC */
+    offline?: boolean;
+    /** Avatar file in the bookmark's folder */
+    avatarLocal?: string;
+    /** "saving" while downloading, "failed" if some files could not be saved */
+    saveState?: "saving" | "failed";
 }
 
 export const DEFAULT_CONDITIONS: Conditions = {
