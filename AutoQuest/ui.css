@@ -1,0 +1,469 @@
+/* ---------------------------------------------------------------- Window (same look as SecretChat) */
+
+.vc-autoquest-window {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 12px;
+    color: var(--text-default, var(--text-normal));
+}
+
+/* Status bar */
+
+.vc-autoquest-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 6px 0 14px;
+    border-radius: 10px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 14%));
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s, color 0.2s;
+}
+
+.vc-autoquest-status-on {
+    background: rgb(35 165 90 / 16%);
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-autoquest-status-attention {
+    background: rgb(240 178 50 / 16%);
+    color: var(--status-warning, #f0b232);
+}
+
+.vc-autoquest-status-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentcolor;
+}
+
+.vc-autoquest-status-on .vc-autoquest-status-dot,
+.vc-autoquest-status-attention .vc-autoquest-status-dot {
+    animation: vc-autoquest-pulse 1.6s ease-in-out infinite;
+}
+
+.vc-autoquest-status-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-autoquest-status-text b {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-autoquest-status-orbs {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    background: rgb(167 139 250 / 16%);
+    color: #c4b5fd;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.vc-autoquest-status-btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 7px;
+    background: rgb(0 0 0 / 18%);
+    color: var(--text-default, var(--text-normal));
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.vc-autoquest-status-btn:hover {
+    background: rgb(0 0 0 / 30%);
+}
+
+.vc-autoquest-status-btn:active {
+    transform: scale(0.9);
+}
+
+.vc-autoquest-status-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vc-autoquest-spin svg {
+    animation: vc-autoquest-spin 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tabs */
+
+.vc-autoquest-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--background-tertiary, rgb(0 0 0 / 18%));
+}
+
+.vc-autoquest-tab {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 34px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.vc-autoquest-tab:hover {
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-autoquest-tab-on,
+.vc-autoquest-tab-on:hover {
+    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
+    color: var(--text-default, var(--text-normal));
+}
+
+.vc-autoquest-tab-count {
+    min-width: 18px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 9px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 24%));
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+}
+
+.vc-autoquest-tab-on .vc-autoquest-tab-count {
+    background: var(--status-positive, #23a55a);
+    color: #fff;
+}
+
+/* Rows */
+
+.vc-autoquest-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 120px;
+}
+
+.vc-autoquest-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--background-secondary, rgb(128 128 128 / 8%));
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.vc-autoquest-row:hover {
+    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+}
+
+.vc-autoquest-row-running,
+.vc-autoquest-row-running:hover {
+    border-color: var(--status-positive, #23a55a);
+    background: rgb(35 165 90 / 10%);
+}
+
+.vc-autoquest-row-waiting,
+.vc-autoquest-row-claimable {
+    border-color: rgb(240 178 50 / 60%);
+}
+
+.vc-autoquest-row-claimed,
+.vc-autoquest-row-unsupported,
+.vc-autoquest-row-failed {
+    opacity: 0.65;
+}
+
+.vc-autoquest-row-setting {
+    cursor: pointer;
+}
+
+.vc-autoquest-tile {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+}
+
+.vc-autoquest-tile-icon {
+    background: rgb(88 101 242 / 22%);
+    color: var(--brand-500, #5865f2);
+}
+
+.vc-autoquest-row-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.vc-autoquest-row-title {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-autoquest-row-sub {
+    display: flex;
+    gap: 6px;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.vc-autoquest-row-sub > span + span::before {
+    content: "·";
+    margin-right: 6px;
+}
+
+.vc-autoquest-row-note {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-autoquest-bar {
+    height: 4px;
+    margin-top: 2px;
+    border-radius: 2px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    overflow: hidden;
+}
+
+.vc-autoquest-bar > div {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--status-positive, #23a55a);
+    transition: width 0.5s ease;
+}
+
+.vc-autoquest-row-side {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+/* Reward + state */
+
+.vc-autoquest-reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 150px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--background-modifier-accent, rgb(128 128 128 / 18%));
+    color: var(--text-default, var(--text-normal));
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-autoquest-reward > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-autoquest-reward > svg {
+    flex: none;
+}
+
+.vc-autoquest-reward-orbs {
+    background: rgb(167 139 250 / 16%);
+    color: #c4b5fd;
+}
+
+.vc-autoquest-orb {
+    flex: none;
+    filter: drop-shadow(0 0 4px rgb(167 139 250 / 55%));
+}
+
+.vc-autoquest-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vc-autoquest-state-running,
+.vc-autoquest-state-done,
+.vc-autoquest-state-claimed {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-autoquest-state-running::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    margin-right: 2px;
+    border-radius: 50%;
+    background: currentcolor;
+    animation: vc-autoquest-pulse 1.6s ease-in-out infinite;
+}
+
+.vc-autoquest-state-waiting {
+    color: var(--status-warning, #f0b232);
+}
+
+.vc-autoquest-state-failed {
+    color: var(--status-danger, #da373c);
+}
+
+/* Buttons */
+
+.vc-autoquest-btn {
+    height: 28px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 6px;
+    background: var(--brand-500, #5865f2);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+}
+
+.vc-autoquest-btn:hover {
+    filter: brightness(1.12);
+}
+
+.vc-autoquest-btn:active {
+    transform: scale(0.95);
+}
+
+.vc-autoquest-btn-claim {
+    background: var(--status-warning, #f0b232);
+    color: #1e1f22;
+}
+
+.vc-autoquest-btn-open {
+    height: 36px;
+    margin-bottom: 12px;
+    padding: 0 18px;
+    font-size: 14px;
+}
+
+.vc-autoquest-empty {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* ---------------------------------------------------------------- Title bar */
+
+.vc-autoquest-tb,
+.vc-autoquest-tb-btn {
+    -webkit-app-region: no-drag;
+    position: relative;
+}
+
+.vc-autoquest-tb-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    transition: color 0.15s, transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.vc-autoquest-tb-btn:hover .vc-autoquest-tb-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    transform: scale(1.12) rotate(-8deg);
+}
+
+.vc-autoquest-tb-btn:active .vc-autoquest-tb-icon {
+    transform: scale(0.88);
+}
+
+.vc-autoquest-tb-running .vc-autoquest-tb-icon {
+    color: var(--status-positive, #23a55a);
+}
+
+.vc-autoquest-tb-attention .vc-autoquest-tb-icon {
+    color: var(--status-warning, #f0b232);
+}
+
+.vc-autoquest-tb-running::after,
+.vc-autoquest-tb-attention::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--status-positive, #23a55a);
+    pointer-events: none;
+    animation: vc-autoquest-pulse 1.6s ease-in-out infinite;
+}
+
+.vc-autoquest-tb-attention::after {
+    background: var(--status-warning, #f0b232);
+}
+
+@keyframes vc-autoquest-pulse {
+    0%,
+    100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+@keyframes vc-autoquest-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Master switch */
+
+.vc-autoquest-status-paused {
+    background: var(--background-modifier-accent, rgb(128 128 128 / 14%));
+    color: var(--text-muted);
+}
+
+.vc-autoquest-status-switch {
+    display: flex;
+    flex: none;
+    align-items: center;
+}
+
+.vc-autoquest-status-switch > * {
+    margin: 0;
+}
