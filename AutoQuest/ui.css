@@ -1,206 +1,370 @@
-/* ---------------------------------------------------------------- Window (same look as SecretChat) */
+/* ---------------------------------------------------------------- Window (macOS / iOS look) */
 
-.vc-autoquest-window {
+.vc-autoquest-modal {
+    --vc-aq-glass: rgb(32 32 36 / 78%);
+    --vc-aq-group: rgb(255 255 255 / 6%);
+    --vc-aq-group-hover: rgb(255 255 255 / 9%);
+    --vc-aq-sep: rgb(255 255 255 / 8%);
+    --vc-aq-edge: rgb(255 255 255 / 12%);
+    --vc-aq-title: rgb(255 255 255 / 92%);
+    --vc-aq-text: rgb(255 255 255 / 70%);
+    --vc-aq-dim: rgb(255 255 255 / 45%);
+    --vc-aq-track: rgb(120 120 128 / 32%);
+    --vc-aq-thumb: rgb(99 99 102 / 90%);
+    --vc-aq-blue: #0a84ff;
+    --vc-aq-green: #30d158;
+    --vc-aq-orange: #ff9f0a;
+    --vc-aq-red: #ff453a;
+    --vc-aq-purple: #bf5af2;
+
+    overflow: hidden;
+    border: 0.5px solid var(--vc-aq-edge) !important;
+    border-radius: 22px !important;
+    background: var(--vc-aq-glass) !important;
+    box-shadow: 0 30px 80px rgb(0 0 0 / 45%), inset 0 0.5px 0 rgb(255 255 255 / 10%) !important;
+    backdrop-filter: blur(40px) saturate(180%);
+}
+
+.theme-light .vc-autoquest-modal {
+    --vc-aq-glass: rgb(242 242 247 / 86%);
+    --vc-aq-group: rgb(255 255 255 / 85%);
+    --vc-aq-group-hover: rgb(255 255 255 / 100%);
+    --vc-aq-sep: rgb(60 60 67 / 14%);
+    --vc-aq-edge: rgb(0 0 0 / 8%);
+    --vc-aq-title: rgb(0 0 0 / 88%);
+    --vc-aq-text: rgb(60 60 67 / 85%);
+    --vc-aq-dim: rgb(60 60 67 / 55%);
+    --vc-aq-track: rgb(120 120 128 / 16%);
+    --vc-aq-thumb: #fff;
+    --vc-aq-blue: #007aff;
+    --vc-aq-green: #34c759;
+    --vc-aq-orange: #ff9500;
+    --vc-aq-red: #ff3b30;
+    --vc-aq-purple: #af52de;
+}
+
+.vc-autoquest-sheet {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-bottom: 12px;
-    color: var(--text-default, var(--text-normal));
+    gap: 14px;
+    height: min(680px, 82vh);
+    padding: 18px 18px 0;
+    box-sizing: border-box;
+    color: var(--vc-aq-text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", var(--font-primary), sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Status bar */
+/* Header */
 
-.vc-autoquest-status {
+.vc-autoquest-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    box-sizing: border-box;
-    padding: 0 6px 0 14px;
-    border-radius: 10px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 14%));
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    transition: background 0.2s, color 0.2s;
+    gap: 12px;
 }
 
-.vc-autoquest-status-on {
-    background: rgb(35 165 90 / 16%);
-    color: var(--status-positive, #23a55a);
-}
-
-.vc-autoquest-status-attention {
-    background: rgb(240 178 50 / 16%);
-    color: var(--status-warning, #f0b232);
-}
-
-.vc-autoquest-status-dot {
-    flex: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentcolor;
-}
-
-.vc-autoquest-status-on .vc-autoquest-status-dot,
-.vc-autoquest-status-attention .vc-autoquest-status-dot {
-    animation: vc-autoquest-pulse 1.6s ease-in-out infinite;
-}
-
-.vc-autoquest-status-text {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.vc-autoquest-status-text b {
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-autoquest-status-orbs {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
-    border-radius: 12px;
-    background: rgb(167 139 250 / 16%);
-    color: #c4b5fd;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.vc-autoquest-status-btn {
+.vc-autoquest-app-icon {
     display: flex;
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: linear-gradient(160deg, #ffd25a, #ff9f0a 55%, #f26b1d);
+    box-shadow: 0 2px 8px rgb(255 159 10 / 35%), inset 0 0.5px 0 rgb(255 255 255 / 40%);
+    color: #fff;
+    transition: filter 0.3s;
+}
+
+.vc-autoquest-sheet-paused .vc-autoquest-app-icon {
+    filter: grayscale(1) brightness(0.8);
+}
+
+.vc-autoquest-header-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-autoquest-title {
+    margin: 0;
+    color: var(--vc-aq-title);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+.vc-autoquest-subtitle {
+    overflow: hidden;
+    color: var(--vc-aq-dim);
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-autoquest-subtitle-live {
+    color: var(--vc-aq-green);
+}
+
+.vc-autoquest-round-btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
     border: none;
-    border-radius: 7px;
-    background: rgb(0 0 0 / 18%);
-    color: var(--text-default, var(--text-normal));
+    border-radius: 50%;
+    background: var(--vc-aq-group);
+    color: var(--vc-aq-text);
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
+    transition: background 0.15s, transform 0.12s, color 0.15s;
 }
 
-.vc-autoquest-status-btn:hover {
-    background: rgb(0 0 0 / 30%);
+.vc-autoquest-round-btn:hover {
+    background: var(--vc-aq-group-hover);
+    color: var(--vc-aq-title);
 }
 
-.vc-autoquest-status-btn:active {
-    transform: scale(0.9);
+.vc-autoquest-round-btn:active {
+    transform: scale(0.88);
 }
 
-.vc-autoquest-status-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.vc-autoquest-round-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 .vc-autoquest-spin svg {
     animation: vc-autoquest-spin 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Tabs */
+/* iOS switch */
 
-.vc-autoquest-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 10px;
-    background: var(--background-tertiary, rgb(0 0 0 / 18%));
+.vc-autoquest-toggle {
+    position: relative;
+    flex: none;
+    width: 46px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 14px;
+    background: var(--vc-aq-track);
+    cursor: pointer;
+    transition: background 0.25s;
 }
 
-.vc-autoquest-tab {
+.vc-autoquest-toggle-on {
+    background: var(--vc-aq-green);
+}
+
+.vc-autoquest-toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 22%), 0 0 0 0.5px rgb(0 0 0 / 4%);
+    transition: transform 0.28s cubic-bezier(0.3, 1.3, 0.5, 1), width 0.18s;
+}
+
+.vc-autoquest-toggle:active .vc-autoquest-toggle-knob {
+    width: 29px;
+}
+
+.vc-autoquest-toggle-on .vc-autoquest-toggle-knob {
+    transform: translateX(18px);
+}
+
+.vc-autoquest-toggle-on:active .vc-autoquest-toggle-knob {
+    transform: translateX(13px);
+}
+
+/* Stats widgets */
+
+.vc-autoquest-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.4fr;
+    gap: 10px;
+}
+
+.vc-autoquest-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--vc-aq-group);
+}
+
+.vc-autoquest-stat-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--vc-aq-title);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-autoquest-stat-label {
+    color: var(--vc-aq-dim);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.vc-autoquest-stat-blue .vc-autoquest-stat-value {
+    color: var(--vc-aq-blue);
+}
+
+.vc-autoquest-stat-orange .vc-autoquest-stat-value {
+    color: var(--vc-aq-orange);
+}
+
+.vc-autoquest-stat-purple .vc-autoquest-stat-value {
+    color: var(--vc-aq-purple);
+}
+
+/* Segmented control */
+
+.vc-autoquest-segmented {
+    position: relative;
+    display: flex;
+    flex: none;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--vc-aq-track);
+}
+
+.vc-autoquest-segmented-thumb {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc((100% - 4px) / var(--vc-aq-segs));
+    border-radius: 7px;
+    background: var(--vc-aq-thumb);
+    box-shadow: 0 3px 8px rgb(0 0 0 / 12%), 0 3px 1px rgb(0 0 0 / 4%), 0 0 0 0.5px rgb(0 0 0 / 4%);
+    transform: translateX(calc(100% * var(--vc-aq-seg)));
+    transition: transform 0.3s cubic-bezier(0.3, 1.1, 0.5, 1);
+}
+
+.vc-autoquest-segment {
+    position: relative;
     display: flex;
     flex: 1;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 34px;
+    height: 30px;
     border: none;
-    border-radius: 7px;
     background: none;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 600;
+    color: var(--vc-aq-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
 }
 
-.vc-autoquest-tab:hover {
-    color: var(--text-default, var(--text-normal));
+.vc-autoquest-segment-on {
+    color: var(--vc-aq-title);
+    font-weight: 600;
 }
 
-.vc-autoquest-tab-on,
-.vc-autoquest-tab-on:hover {
-    background: var(--background-modifier-selected, rgb(128 128 128 / 24%));
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-autoquest-tab-count {
-    min-width: 18px;
+.vc-autoquest-segment-count {
+    min-width: 16px;
     padding: 0 5px;
     box-sizing: border-box;
-    border-radius: 9px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 24%));
+    border-radius: 8px;
+    background: var(--vc-aq-sep);
+    color: var(--vc-aq-dim);
     font-size: 11px;
-    line-height: 18px;
-    text-align: center;
+    font-weight: 600;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
 }
 
-.vc-autoquest-tab-on .vc-autoquest-tab-count {
-    background: var(--status-positive, #23a55a);
-    color: #fff;
+/* Scroll area with grouped sections */
+
+.vc-autoquest-scroll {
+    flex: 1;
+    min-height: 0;
+    margin: 0 -18px;
+    padding: 0 18px 18px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--vc-aq-track) transparent;
 }
 
-/* Rows */
-
-.vc-autoquest-rows {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-height: 120px;
+.vc-autoquest-section + .vc-autoquest-section {
+    margin-top: 18px;
 }
 
-.vc-autoquest-row {
+.vc-autoquest-section-title {
+    margin: 0 0 6px 14px;
+    color: var(--vc-aq-dim);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.vc-autoquest-section-footer {
+    margin: 6px 14px 0;
+    color: var(--vc-aq-dim);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.vc-autoquest-group {
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--vc-aq-group);
+}
+
+.vc-autoquest-item {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 10px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    background: var(--background-secondary, rgb(128 128 128 / 8%));
-    transition: background 0.15s, border-color 0.15s;
+    min-height: 44px;
+    padding: 9px 14px;
+    transition: background 0.15s;
 }
 
-.vc-autoquest-row:hover {
-    background: var(--background-modifier-hover, rgb(128 128 128 / 14%));
+/* Inset separator like iOS lists */
+.vc-autoquest-item + .vc-autoquest-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 66px;
+    height: 0.5px;
+    background: var(--vc-aq-sep);
 }
 
-.vc-autoquest-row-running,
-.vc-autoquest-row-running:hover {
-    border-color: var(--status-positive, #23a55a);
-    background: rgb(35 165 90 / 10%);
+.vc-autoquest-item-setting + .vc-autoquest-item-setting::before {
+    left: 54px;
 }
 
-.vc-autoquest-row-waiting,
-.vc-autoquest-row-claimable {
-    border-color: rgb(240 178 50 / 60%);
+.vc-autoquest-item:hover {
+    background: var(--vc-aq-group-hover);
 }
 
-.vc-autoquest-row-claimed,
-.vc-autoquest-row-unsupported,
-.vc-autoquest-row-failed {
-    opacity: 0.65;
-}
-
-.vc-autoquest-row-setting {
+.vc-autoquest-item-setting {
     cursor: pointer;
+}
+
+.vc-autoquest-item-claimed,
+.vc-autoquest-item-unsupported,
+.vc-autoquest-item-failed {
+    opacity: 0.7;
 }
 
 .vc-autoquest-tile {
@@ -210,72 +374,98 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: 9px;
     object-fit: cover;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    background: var(--vc-aq-sep);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
 }
 
 .vc-autoquest-tile-icon {
-    background: rgb(88 101 242 / 22%);
-    color: var(--brand-500, #5865f2);
+    background: linear-gradient(160deg, #6e7bff, #4b53d6);
+    color: #fff;
 }
 
-.vc-autoquest-row-main {
+.vc-autoquest-glyph {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    color: #fff;
+}
+
+.vc-autoquest-glyph-blue { background: linear-gradient(160deg, #40a0ff, #0a6cff); }
+.vc-autoquest-glyph-green { background: linear-gradient(160deg, #5be27e, #28b84b); }
+.vc-autoquest-glyph-purple { background: linear-gradient(160deg, #d07cf7, #9b3fd6); }
+.vc-autoquest-glyph-red { background: linear-gradient(160deg, #ff6b61, #e5322a); }
+.vc-autoquest-glyph-indigo { background: linear-gradient(160deg, #7d7aff, #4f4ad9); }
+.vc-autoquest-glyph-teal { background: linear-gradient(160deg, #5ad8e6, #23a6c2); }
+.vc-autoquest-glyph-orange { background: linear-gradient(160deg, #ffb340, #ff8a00); }
+.vc-autoquest-glyph-yellow { background: linear-gradient(160deg, #ffd84d, #f5b400); }
+
+.vc-autoquest-item-main {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
 }
 
-.vc-autoquest-row-title {
+.vc-autoquest-item-title {
     overflow: hidden;
-    font-size: 15px;
-    font-weight: 600;
+    color: var(--vc-aq-title);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.1px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.vc-autoquest-row-sub {
+.vc-autoquest-item-sub {
     display: flex;
+    align-items: center;
     gap: 6px;
     overflow: hidden;
-    color: var(--text-muted);
+    color: var(--vc-aq-dim);
     font-size: 12px;
     white-space: nowrap;
 }
 
-.vc-autoquest-row-sub > span + span::before {
+.vc-autoquest-item-sub > * + *::before {
     content: "·";
     margin-right: 6px;
+    color: var(--vc-aq-dim);
 }
 
-.vc-autoquest-row-note {
+.vc-autoquest-item-note {
     overflow: hidden;
+    color: var(--vc-aq-dim);
+    font-size: 11.5px;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.vc-autoquest-bar {
+.vc-autoquest-progress {
     height: 4px;
-    margin-top: 2px;
+    margin: 4px 0 1px;
     border-radius: 2px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    background: var(--vc-aq-track);
     overflow: hidden;
 }
 
-.vc-autoquest-bar > div {
+.vc-autoquest-progress > div {
     height: 100%;
     border-radius: 2px;
-    background: var(--status-positive, #23a55a);
-    transition: width 0.5s ease;
+    background: var(--vc-aq-blue);
+    transition: width 0.6s cubic-bezier(0.3, 1, 0.5, 1);
 }
 
-.vc-autoquest-row-side {
+.vc-autoquest-item-side {
     display: flex;
     flex: none;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    align-items: center;
 }
 
 /* Reward + state */
@@ -284,13 +474,9 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    max-width: 150px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 18%));
-    color: var(--text-default, var(--text-normal));
-    font-size: 12px;
-    font-weight: 600;
+    max-width: 170px;
+    color: var(--vc-aq-dim);
+    font-weight: 500;
 }
 
 .vc-autoquest-reward > span {
@@ -304,92 +490,152 @@
 }
 
 .vc-autoquest-reward-orbs {
-    background: rgb(167 139 250 / 16%);
-    color: #c4b5fd;
+    color: var(--vc-aq-purple, #b9a6ff);
+    font-weight: 600;
 }
 
 .vc-autoquest-orb {
     flex: none;
-    filter: drop-shadow(0 0 4px rgb(167 139 250 / 55%));
 }
 
 .vc-autoquest-state {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    color: var(--text-muted);
-    font-size: 12px;
+    gap: 6px;
+    color: var(--vc-aq-dim);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-autoquest-state-ok {
+    color: var(--vc-aq-green);
+}
+
+.vc-autoquest-state-warn {
+    color: var(--vc-aq-orange);
     font-weight: 600;
 }
 
-.vc-autoquest-state-running,
-.vc-autoquest-state-done,
-.vc-autoquest-state-claimed {
-    color: var(--status-positive, #23a55a);
+.vc-autoquest-state-bad {
+    color: var(--vc-aq-red);
 }
 
-.vc-autoquest-state-running::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    margin-right: 2px;
+.vc-autoquest-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
     border-radius: 50%;
-    background: currentcolor;
-    animation: vc-autoquest-pulse 1.6s ease-in-out infinite;
+    background: var(--vc-aq-green);
+    color: #fff;
 }
 
-.vc-autoquest-state-waiting {
-    color: var(--status-warning, #f0b232);
-}
-
-.vc-autoquest-state-failed {
-    color: var(--status-danger, #da373c);
-}
-
-/* Buttons */
-
-.vc-autoquest-btn {
+.vc-autoquest-pill {
     height: 28px;
     padding: 0 14px;
     border: none;
-    border-radius: 6px;
-    background: var(--brand-500, #5865f2);
+    border-radius: 14px;
+    background: var(--vc-aq-blue, #0a84ff);
     color: #fff;
+    font: inherit;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: filter 0.15s, transform 0.1s;
+    transition: filter 0.15s, transform 0.12s;
 }
 
-.vc-autoquest-btn:hover {
-    filter: brightness(1.12);
+.vc-autoquest-pill:hover {
+    filter: brightness(1.1);
 }
 
-.vc-autoquest-btn:active {
-    transform: scale(0.95);
+.vc-autoquest-pill:active {
+    transform: scale(0.94);
 }
 
-.vc-autoquest-btn-claim {
-    background: var(--status-warning, #f0b232);
-    color: #1e1f22;
-}
-
-.vc-autoquest-btn-open {
-    height: 36px;
-    margin-bottom: 12px;
-    padding: 0 18px;
+.vc-autoquest-link-row {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: none;
+    background: none;
+    color: var(--vc-aq-blue);
+    font: inherit;
     font-size: 14px;
+    text-align: left;
+    cursor: pointer;
 }
+
+.vc-autoquest-link-row:hover {
+    background: var(--vc-aq-group-hover);
+}
+
+/* iOS activity indicator */
+
+.vc-autoquest-spinner {
+    position: relative;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+}
+
+.vc-autoquest-spinner > i {
+    position: absolute;
+    top: 0;
+    left: 6px;
+    width: 2px;
+    height: 4px;
+    border-radius: 1px;
+    background: currentcolor;
+    transform-origin: 1px 7px;
+    animation: vc-autoquest-fade 0.8s linear infinite;
+}
+
+/* Empty state */
 
 .vc-autoquest-empty {
     display: flex;
-    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 48px 20px;
+    color: var(--vc-aq-dim);
+    font-size: 13px;
+    text-align: center;
+}
+
+.vc-autoquest-empty b {
+    color: var(--vc-aq-title);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vc-autoquest-empty-icon {
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    color: var(--text-muted);
-    font-size: 14px;
-    text-align: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: var(--vc-aq-group);
+    color: var(--vc-aq-dim);
+}
+
+@keyframes vc-autoquest-fade {
+    from { opacity: 1; }
+    to { opacity: 0.15; }
+}
+
+@keyframes vc-autoquest-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes vc-autoquest-pulse {
+    0%,
+    100% { opacity: 1; }
+    50% { opacity: 0.4; }
 }
 
 /* ---------------------------------------------------------------- Title bar */
@@ -440,30 +686,208 @@
     background: var(--status-warning, #f0b232);
 }
 
-@keyframes vc-autoquest-pulse {
-    0%,
-    100% { opacity: 1; }
-    50% { opacity: 0.4; }
+/* ---------------------------------------------------------------- Toasts (top right, macOS style) */
+
+.vc-autoquest-toasts-host {
+    position: fixed;
+    top: 40px;
+    right: 14px;
+    z-index: 1100;
+    pointer-events: none;
 }
 
-@keyframes vc-autoquest-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Master switch */
-
-.vc-autoquest-status-paused {
-    background: var(--background-modifier-accent, rgb(128 128 128 / 14%));
-    color: var(--text-muted);
-}
-
-.vc-autoquest-status-switch {
+.vc-autoquest-toasts {
     display: flex;
-    flex: none;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
 }
 
-.vc-autoquest-status-switch > * {
-    margin: 0;
+.vc-autoquest-toast {
+    --vc-aq-glass: rgb(38 38 42 / 72%);
+    --vc-aq-glass-hover: rgb(50 50 55 / 78%);
+    --vc-aq-edge: rgb(255 255 255 / 12%);
+    --vc-aq-title: rgb(255 255 255 / 92%);
+    --vc-aq-text: rgb(255 255 255 / 70%);
+    --vc-aq-dim: rgb(255 255 255 / 45%);
+
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 356px;
+    box-sizing: border-box;
+    padding: 11px 14px 11px 11px;
+    border: 0.5px solid var(--vc-aq-edge);
+    border-radius: 18px;
+    background: var(--vc-aq-glass);
+    box-shadow:
+        0 0 0 0.5px rgb(0 0 0 / 30%),
+        0 10px 30px rgb(0 0 0 / 30%),
+        inset 0 0.5px 0 rgb(255 255 255 / 8%);
+    backdrop-filter: blur(28px) saturate(180%);
+    color: var(--vc-aq-text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", var(--font-primary), sans-serif;
+    pointer-events: auto;
+    transform-origin: top right;
+    animation: vc-autoquest-toast-in 0.45s cubic-bezier(0.22, 1.35, 0.36, 1);
+    transition: background 0.15s, transform 0.15s;
+}
+
+.theme-light .vc-autoquest-toast {
+    --vc-aq-glass: rgb(246 246 248 / 78%);
+    --vc-aq-glass-hover: rgb(236 236 240 / 85%);
+    --vc-aq-edge: rgb(0 0 0 / 8%);
+    --vc-aq-title: rgb(0 0 0 / 88%);
+    --vc-aq-text: rgb(0 0 0 / 68%);
+    --vc-aq-dim: rgb(0 0 0 / 40%);
+}
+
+.vc-autoquest-toast-click {
+    cursor: pointer;
+}
+
+.vc-autoquest-toast-click:hover {
+    background: var(--vc-aq-glass-hover);
+}
+
+.vc-autoquest-toast-click:active {
+    transform: scale(0.985);
+}
+
+.vc-autoquest-toast-leave {
+    animation: vc-autoquest-toast-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.vc-autoquest-toast-img,
+.vc-autoquest-toast-icon {
+    flex: none;
+    align-self: flex-start;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    object-fit: cover;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.vc-autoquest-toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #7b83f6, #5865f2);
+    color: #fff;
+}
+
+.vc-autoquest-toast-success .vc-autoquest-toast-icon {
+    background: linear-gradient(180deg, #4cd474, #23a55a);
+}
+
+.vc-autoquest-toast-attention .vc-autoquest-toast-icon {
+    background: linear-gradient(180deg, #ffcb5c, #f0a020);
+}
+
+.vc-autoquest-toast-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.vc-autoquest-toast-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.vc-autoquest-toast-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--vc-aq-title);
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-autoquest-toast-when {
+    flex: none;
+    color: var(--vc-aq-dim);
+    font-size: 12px;
+}
+
+.vc-autoquest-toast-body {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.vc-autoquest-toast-side {
+    display: flex;
+    margin-top: 4px;
+}
+
+/* Reward as a quiet line instead of a chip */
+.vc-autoquest-toast .vc-autoquest-reward {
+    max-width: 100%;
+    padding: 0;
+    background: none;
+    color: var(--vc-aq-dim);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.vc-autoquest-toast .vc-autoquest-reward-orbs {
+    color: #b9a6ff;
+}
+
+.vc-autoquest-toast .vc-autoquest-reward-orbs > span::after {
+    content: " Orbs";
+}
+
+/* macOS: round close button at the top left, only on hover */
+.vc-autoquest-toast-close {
+    position: absolute;
+    top: -7px;
+    left: -7px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0.5px solid var(--vc-aq-edge);
+    border-radius: 50%;
+    background: var(--vc-aq-glass-hover);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+    backdrop-filter: blur(20px);
+    color: var(--vc-aq-text);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.vc-autoquest-toast:hover .vc-autoquest-toast-close {
+    opacity: 1;
+    transform: none;
+}
+
+.vc-autoquest-toast-close:hover {
+    color: var(--vc-aq-title);
+}
+
+@keyframes vc-autoquest-toast-in {
+    from { opacity: 0; transform: translateX(110%); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes vc-autoquest-toast-out {
+    to { opacity: 0; transform: translateX(30%) scale(0.96); }
 }

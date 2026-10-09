@@ -11,17 +11,18 @@
 
 import "./ui.css";
 
-import { showNotification } from "@api/Notifications";
 import { definePluginSettings } from "@api/Settings";
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
+import { ModalRoot, ModalSize } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByCodeLazy, findComponentByCodeLazy, findStoreLazy } from "@webpack";
-import { ChannelStore, FluxDispatcher, GuildChannelStore, Modal, NavigationRouter, openModal, RestAPI, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, GuildChannelStore, NavigationRouter, openModal, RestAPI, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
+
+import { showQuestToast, ToastKind, unmountToasts } from "./toast";
 
 const cl = classNameFactory("vc-autoquest-");
 const logger = new Logger("AutoQuest");
@@ -232,9 +233,10 @@ function tileOf(quest: any) {
     return a.gameTileDark ? assetUrl(quest, a.gameTileDark) : assetUrl(quest, a.gameTile, "dark");
 }
 
-function notify(title: string, body: string, onClick?: () => void) {
+/** Own toast at the top right – with the quest's picture and reward */
+function notify(quest: any, kind: ToastKind, title: string, body: string, onClick?: () => void) {
     if (!settings.store.notify) return;
-    showNotification({ title, body, onClick });
+    showQuestToast({ title, body, kind, image: tileOf(quest), side: <RewardChip reward={rewardOf(quest)} />, onClick });
 }
 
 const openQuests = () => NavigationRouter.transitionTo("/quest-home");
@@ -356,11 +358,12 @@ async function runLane(lane: Lane, quest: any) {
         logger.error(`${nameOf(quest)} failed`, e);
         skip.add(quest.id);
         setStatus(quest.id, { state: "failed", note: e?.body?.message ?? e?.message ?? String(e) });
-    } finally {
-        if (busy[lane] === quest.id) delete busy[lane];
     }
     if (!alive) return;
+    // The lane stays taken during the pause, so no other check starts the next quest early
     await sleep(rand(BETWEEN_QUESTS));
+    if (busy[lane] === quest.id) delete busy[lane];
+    if (!alive) return;
     check();
 }
 
@@ -371,7 +374,7 @@ async function claim(quest: any) {
 
     if (!settings.store.autoClaim) {
         setStatus(quest.id, { state: "claimable" });
-        notify("Quest completed", `${name} is done – click to claim the reward`, openQuests);
+        notify(quest, "attention", "Quest completed", `${name} – click to claim the reward`, openQuests);
         return;
     }
 
@@ -381,12 +384,12 @@ async function claim(quest: any) {
         const res = await request(() => claimQuest(quest.id, platform, LOCATION));
         if (res?.errors?.length) throw new Error("claim refused");
         setStatus(quest.id, { state: "claimed" });
-        notify("Quest reward claimed", `${name} – reward claimed`);
+        notify(quest, "success", "Reward claimed", name);
     } catch (e) {
         // Usually a captcha – claiming by hand works
         logger.warn(`Couldn't claim ${name}`, e);
         setStatus(quest.id, { state: "claimable", note: "Needs to be claimed by hand" });
-        notify("Quest claimable", `${name} is done – click to claim the reward`, openQuests);
+        notify(quest, "attention", "Quest claimable", `${name} – click to claim it yourself`, openQuests);
     }
 }
 
@@ -499,7 +502,7 @@ async function doStream(quest: any) {
     };
     const minutes = Math.ceil((task.target - progressOf(quest, task.name)) / 60);
     setStatus(quest.id, { state: "waiting", note: "Stream any window in a voice channel with someone else" });
-    notify("Stream quest ready", `${nameOf(quest)}: stream any window in a voice channel with at least one other person for ${minutes} min`);
+    notify(quest, "attention", "Stream quest ready", `${nameOf(quest)}: stream any window in a voice channel with at least one other person for ${minutes} min`);
 
     try {
         await waitForHeartbeats(quest, task.name, task.target);
@@ -558,6 +561,8 @@ const KIND_PATH: Record<Lane, string> = {
 const CHECK_PATH = "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z";
 const REFRESH_PATH = "M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z";
 const GIFT_PATH = "M20 7h-2.2A3 3 0 0 0 12 3.8 3 3 0 0 0 6.2 7H4a2 2 0 0 0-2 2v2a1 1 0 0 0 1 1h8V7h2v5h8a1 1 0 0 0 1-1V9a2 2 0 0 0-2-2ZM9 7a1 1 0 1 1 1-1v1H9Zm6 0h-1V6a1 1 0 1 1 1 1ZM4 14v5a2 2 0 0 0 2 2h5v-7H4Zm9 7h5a2 2 0 0 0 2-2v-5h-7v7Z";
+
+const QUEST_PATH = "M7.5 2h9A1.5 1.5 0 0 1 18 3.5V5h2.5A1.5 1.5 0 0 1 22 6.5V8a5 5 0 0 1-4.6 5 6 6 0 0 1-4.4 3.9V19h3a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h3v-2.1A6 6 0 0 1 6.6 13 5 5 0 0 1 2 8V6.5A1.5 1.5 0 0 1 3.5 5H6V3.5A1.5 1.5 0 0 1 7.5 2ZM6 7H4v1a3 3 0 0 0 2.1 2.9A6 6 0 0 1 6 10V7Zm12 0v3l-.1.9A3 3 0 0 0 20 8V7h-2Z";
 
 function Icon({ path, size = 16 }: { path: string; size?: number; }) {
     return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden><path fill="currentColor" d={path} /></svg>;
@@ -657,165 +662,276 @@ function RewardChip({ reward }: { reward: Reward | null; }) {
     );
 }
 
+/** iOS style switch */
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange(v: boolean): void; label: string; }) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            aria-label={label}
+            className={classes(cl("toggle"), checked && cl("toggle-on"))}
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(!checked); }}
+        >
+            <span className={cl("toggle-knob")} />
+        </button>
+    );
+}
+
+/** iOS activity indicator */
+function Spinner() {
+    return (
+        <span className={cl("spinner")} aria-hidden>
+            {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ transform: `rotate(${i * 45}deg)`, animationDelay: `${(i - 8) * 0.1}s` }} />)}
+        </span>
+    );
+}
+
 function QuestRow({ row }: { row: Row; }) {
     const pct = row.target ? Math.min(100, row.done / row.target * 100) : 0;
-    const showProgress = !!row.target && !["unsupported", "available", "claimed"].includes(row.state);
+    const showProgress = !!row.target && !["unsupported", "available", "claimed", "done", "claimable"].includes(row.state);
+
+    let side: ReactNode;
+    switch (row.state) {
+        case "running":
+            side = <span className={cl("state")}><Spinner />{Math.round(pct)}%</span>;
+            break;
+        case "claimable":
+            side = <button className={cl("pill")} onClick={openQuests}>Claim</button>;
+            break;
+        case "claimed":
+        case "done":
+            side = <span className={classes(cl("state"), cl("state-ok"))}><span className={cl("check")}><Icon path={CHECK_PATH} size={11} /></span>{STATE_TEXT[row.state]}</span>;
+            break;
+        case "waiting":
+            side = <span className={classes(cl("state"), cl("state-warn"))}>Needs you</span>;
+            break;
+        case "failed":
+            side = <span className={classes(cl("state"), cl("state-bad"))}>Failed</span>;
+            break;
+        case "queued":
+            side = <span className={cl("state")}>Up next</span>;
+            break;
+        default:
+            side = <span className={cl("state")}>{STATE_TEXT[row.state]}</span>;
+    }
 
     return (
-        <div className={classes(cl("row"), cl(`row-${row.state}`))}>
+        <div className={classes(cl("item"), cl(`item-${row.state}`))}>
             <Tile row={row} />
-            <div className={cl("row-main")}>
-                <div className={cl("row-title")}>{row.name}</div>
-                <div className={cl("row-sub")}>
+            <div className={cl("item-main")}>
+                <div className={cl("item-title")}>{row.name}</div>
+                <div className={cl("item-sub")}>
+                    <RewardChip reward={row.reward} />
                     {row.task && <span>{TASK_TEXT[row.task]}</span>}
-                    {showProgress && <span>{time(Math.min(row.done, row.target))} / {time(row.target)}</span>}
-                    {row.note && <span className={cl("row-note")}>{row.note}</span>}
+                    {showProgress && <span>{time(Math.min(row.done, row.target))} of {time(row.target)}</span>}
                 </div>
-                {showProgress && <div className={cl("bar")}><div style={{ width: `${pct}%` }} /></div>}
+                {showProgress && <div className={cl("progress")}><div style={{ width: `${pct}%` }} /></div>}
+                {row.note && <div className={cl("item-note")}>{row.note}</div>}
             </div>
-            <div className={cl("row-side")}>
-                <RewardChip reward={row.reward} />
-                {row.state === "claimable"
-                    ? <button className={classes(cl("btn"), cl("btn-claim"))} onClick={openQuests}>Claim</button>
-                    : <span className={classes(cl("state"), cl(`state-${row.state}`))}>
-                        {row.state === "claimed" && <Icon path={CHECK_PATH} size={12} />}
-                        {STATE_TEXT[row.state]}
-                    </span>}
-            </div>
+            <div className={cl("item-side")}>{side}</div>
         </div>
     );
 }
 
-function StatusBar({ rows }: { rows: Row[]; }) {
-    const { active } = settings.use(["active"]);
-    const running = rows.filter(r => r.state === "running");
+function Section({ title, children, footer }: { title?: string; children: ReactNode; footer?: string; }) {
+    return (
+        <section className={cl("section")}>
+            {title && <h3 className={cl("section-title")}>{title}</h3>}
+            <div className={cl("group")}>{children}</div>
+            {footer && <p className={cl("section-footer")}>{footer}</p>}
+        </section>
+    );
+}
+
+function Stats({ rows }: { rows: Row[]; }) {
+    const running = rows.filter(r => r.state === "running").length;
     const needsYou = rows.filter(r => r.state === "waiting" || r.state === "claimable").length;
     const orbs = rows.filter(r => ACTIVE.includes(r.state)).reduce((n, r) => n + (r.reward?.orbs ?? 0), 0);
-    const [spin, setSpin] = useState(false);
-
-    let text: ReactNode;
-    if (!active) text = "Paused – nothing runs until you turn it on";
-    else if (running.length) text = <>Working on <b>{running.map(r => r.name).join(", ")}</b></>;
-    else if (needsYou) text = <><b>{needsYou}</b> need{needsYou === 1 ? "s" : ""} you</>;
-    else text = "Waiting for new quests";
+    const claimedOrbs = rows.filter(r => r.state === "claimed").reduce((n, r) => n + (r.reward?.orbs ?? 0), 0);
 
     return (
-        <div className={classes(cl("status"), !active && cl("status-paused"), active && running.length > 0 && cl("status-on"), active && !running.length && needsYou > 0 && cl("status-attention"))}>
-            <span className={cl("status-dot")} />
-            <span className={cl("status-text")}>{text}</span>
-            {orbs > 0 && <span className={cl("status-orbs")} title="Orbs from quests that aren't done yet"><OrbIcon size={16} />{orbs.toLocaleString()}</span>}
-            <Tooltip text={active ? "Pause AutoQuest" : "Turn AutoQuest on"}>
-                {(tip: any) => (
-                    <div {...tip} className={cl("status-switch")}>
-                        <Switch checked={active} onChange={v => settings.store.active = v} />
-                    </div>
-                )}
-            </Tooltip>
-            <Tooltip text="Check for new quests">
-                {(tip: any) => (
-                    <button
-                        {...tip}
-                        className={classes(cl("status-btn"), spin && cl("spin"))}
-                        disabled={!alive}
-                        onClick={() => {
-                            setSpin(true);
-                            setTimeout(() => setSpin(false), 700);
-                            skip.clear();
-                            claimTried.clear();
-                            request(fetchQuests).then(() => check()).catch(() => { });
-                        }}
-                    >
-                        <Icon path={REFRESH_PATH} size={18} />
-                    </button>
-                )}
-            </Tooltip>
+        <div className={cl("stats")}>
+            <div className={classes(cl("stat"), running > 0 && cl("stat-blue"))}>
+                <span className={cl("stat-value")}>{running}</span>
+                <span className={cl("stat-label")}>Running</span>
+            </div>
+            <div className={classes(cl("stat"), needsYou > 0 && cl("stat-orange"))}>
+                <span className={cl("stat-value")}>{needsYou}</span>
+                <span className={cl("stat-label")}>Need you</span>
+            </div>
+            <div className={classes(cl("stat"), cl("stat-purple"))} title={`${claimedOrbs.toLocaleString()} Orbs claimed so far`}>
+                <span className={cl("stat-value")}><OrbIcon size={18} />{orbs.toLocaleString()}</span>
+                <span className={cl("stat-label")}>Orbs to earn</span>
+            </div>
         </div>
     );
 }
 
-const TOGGLES = [
-    ["autoEnroll", "Accept new quests", "Joins quests as soon as Discord offers them"],
-    ["autoClaim", "Claim rewards", "If Discord wants a captcha you get a message instead"],
-    ["orbsOnly", "Only quests with Orbs", "Leaves quests with other rewards alone"],
-    ["video", "Video quests", "Watches the video in the background"],
-    ["game", "Game quests", "Pretends the game runs – desktop app only"],
-    ["stream", "Stream quests", "You still have to stream any window in a call"],
-    ["activity", "Activity quests", "Sends the activity's heartbeats"],
-    ["notify", "Notifications", "When a quest is done or needs you"],
-    ["showTitleBarButton", "Title bar icon", "The trophy next to the other plugin icons"]
-] as const;
+const SETTING_GROUPS: { title: string; footer?: string; items: { key: keyof typeof settings.store; label: string; sub: string; icon: string; color: string; }[]; }[] = [
+    {
+        title: "Automation",
+        items: [
+            { key: "autoEnroll", label: "Accept new quests", sub: "As soon as Discord offers them", icon: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2Z", color: "blue" },
+            { key: "autoClaim", label: "Claim rewards", sub: "A captcha means you claim it yourself", icon: GIFT_PATH, color: "green" },
+            { key: "orbsOnly", label: "Only quests with Orbs", sub: "Leaves other rewards alone", icon: ORB_FRAME, color: "purple" }
+        ]
+    },
+    {
+        title: "Quest types",
+        footer: "Game and stream quests only work in the desktop app. For stream quests you still stream any window in a call with someone else.",
+        items: [
+            { key: "video", label: "Video", sub: "Watched in the background", icon: KIND_PATH.video, color: "red" },
+            { key: "game", label: "Game", sub: "Pretends the game is running", icon: KIND_PATH.game, color: "indigo" },
+            { key: "stream", label: "Stream", sub: "Pretends you stream the game", icon: KIND_PATH.stream, color: "teal" },
+            { key: "activity", label: "Activity", sub: "Sends the activity's heartbeats", icon: KIND_PATH.activity, color: "orange" }
+        ]
+    },
+    {
+        title: "Appearance",
+        items: [
+            { key: "notify", label: "Notifications", sub: "Popups at the top right", icon: "M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z", color: "red" },
+            { key: "showTitleBarButton", label: "Title bar icon", sub: "The trophy next to the other icons", icon: QUEST_PATH, color: "yellow" }
+        ]
+    }
+];
 
 function SettingsTab() {
-    const s = settings.use(TOGGLES.map(t => t[0]));
+    const s = settings.use(SETTING_GROUPS.flatMap(g => g.items.map(i => i.key)) as any);
     return (
-        <div className={cl("rows")}>
-            {TOGGLES.map(([key, label, sub]) => (
-                <label key={key} className={classes(cl("row"), cl("row-setting"))}>
-                    <div className={cl("row-main")}>
-                        <div className={cl("row-title")}>{label}</div>
-                        <div className={cl("row-sub")}><span>{sub}</span></div>
-                    </div>
-                    <Switch checked={s[key]} onChange={v => settings.store[key] = v} />
-                </label>
+        <>
+            {SETTING_GROUPS.map(g => (
+                <Section key={g.title} title={g.title} footer={g.footer}>
+                    {g.items.map(i => (
+                        <div key={i.key} className={classes(cl("item"), cl("item-setting"))} onClick={() => (settings.store as any)[i.key] = !(s as any)[i.key]}>
+                            <span className={classes(cl("glyph"), cl(`glyph-${i.color}`))}><Icon path={i.icon} size={16} /></span>
+                            <div className={cl("item-main")}>
+                                <div className={cl("item-title")}>{i.label}</div>
+                                <div className={cl("item-sub")}><span>{i.sub}</span></div>
+                            </div>
+                            <Toggle label={i.label} checked={!!(s as any)[i.key]} onChange={v => (settings.store as any)[i.key] = v} />
+                        </div>
+                    ))}
+                </Section>
             ))}
-        </div>
+        </>
     );
 }
 
 type Tab = "active" | "done" | "settings";
 
-function QuestWindow() {
+/** Rows of one tab, split into iOS style sections */
+function QuestSections({ rows, tab }: { rows: Row[]; tab: Tab; }) {
+    const groups: [string, State[]][] = tab === "active"
+        ? [["Needs you", ["waiting", "claimable"]], ["In progress", ["running"]], ["Up next", ["queued"]], ["Not accepted yet", ["available"]]]
+        : [["Completed", ["done"]], ["Claimed", ["claimed"]], ["Failed", ["failed"]], ["Skipped", ["unsupported"]]];
+
+    const shown = groups.map(([title, states]) => [title, rows.filter(r => states.includes(r.state))] as const).filter(([, list]) => list.length);
+    if (!shown.length) {
+        return (
+            <div className={cl("empty")}>
+                <span className={cl("empty-icon")}><Icon path={QUEST_PATH} size={28} /></span>
+                <b>{tab === "active" ? "All caught up" : "Nothing here yet"}</b>
+                <span>{tab === "active" ? "New quests are picked up automatically." : "Finished quests show up here."}</span>
+            </div>
+        );
+    }
+    return <>{shown.map(([title, list]) => <Section key={title} title={title}>{list.map(r => <QuestRow key={r.id} row={r} />)}</Section>)}</>;
+}
+
+function QuestWindow({ onClose }: { onClose(): void; }) {
     const rows = useRows();
+    const { active } = settings.use(["active"]);
     const [tab, setTab] = useState<Tab>("active");
-    const active = rows.filter(r => ACTIVE.includes(r.state));
-    const done = rows.filter(r => !ACTIVE.includes(r.state));
+    const [spin, setSpin] = useState(false);
+
+    const running = rows.filter(r => r.state === "running");
+    const needsYou = rows.filter(r => r.state === "waiting" || r.state === "claimable").length;
+    const subtitle = !active ? "Paused"
+        : running.length ? `Working on ${running.map(r => r.name).join(", ")}`
+            : needsYou ? `${needsYou} quest${needsYou === 1 ? "" : "s"} need${needsYou === 1 ? "s" : ""} you`
+                : "Waiting for new quests";
 
     const tabs: { id: Tab; label: string; count?: number; }[] = [
-        { id: "active", label: "Quests", count: active.length },
-        { id: "done", label: "Done", count: done.length },
+        { id: "active", label: "Quests", count: rows.filter(r => ACTIVE.includes(r.state)).length },
+        { id: "done", label: "Done", count: rows.filter(r => !ACTIVE.includes(r.state)).length },
         { id: "settings", label: "Settings" }
     ];
-    const list = tab === "active" ? active : done;
+    const index = tabs.findIndex(t => t.id === tab);
 
     return (
-        <div className={cl("window")}>
-            <StatusBar rows={rows} />
+        <div className={classes(cl("sheet"), !active && cl("sheet-paused"))}>
+            <header className={cl("header")}>
+                <span className={cl("app-icon")}><Icon path={QUEST_PATH} size={22} /></span>
+                <div className={cl("header-text")}>
+                    <h2 className={cl("title")}>AutoQuest</h2>
+                    <span className={classes(cl("subtitle"), active && running.length > 0 && cl("subtitle-live"))}>{subtitle}</span>
+                </div>
+                <Tooltip text="Check for new quests">
+                    {(tip: any) => (
+                        <button
+                            {...tip}
+                            className={classes(cl("round-btn"), spin && cl("spin"))}
+                            disabled={!alive}
+                            onClick={() => {
+                                setSpin(true);
+                                setTimeout(() => setSpin(false), 700);
+                                skip.clear();
+                                claimTried.clear();
+                                request(fetchQuests).then(() => check()).catch(() => { });
+                            }}
+                        >
+                            <Icon path={REFRESH_PATH} size={16} />
+                        </button>
+                    )}
+                </Tooltip>
+                <Tooltip text={active ? "Pause AutoQuest" : "Turn AutoQuest on"}>
+                    {({ onMouseEnter, onMouseLeave }: any) => (
+                        <span onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+                            <Toggle label="AutoQuest on" checked={active} onChange={setActive} />
+                        </span>
+                    )}
+                </Tooltip>
+                <button className={classes(cl("round-btn"), cl("close"))} aria-label="Close" onClick={onClose}>
+                    <Icon path="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" size={14} />
+                </button>
+            </header>
 
-            <div className={cl("tabs")}>
+            <Stats rows={rows} />
+
+            <div className={cl("segmented")} style={{ "--vc-aq-seg": index, "--vc-aq-segs": tabs.length } as any}>
+                <span className={cl("segmented-thumb")} />
                 {tabs.map(t => (
-                    <button key={t.id} className={classes(cl("tab"), tab === t.id && cl("tab-on"))} onClick={() => setTab(t.id)}>
+                    <button key={t.id} className={classes(cl("segment"), tab === t.id && cl("segment-on"))} onClick={() => setTab(t.id)}>
                         {t.label}
-                        {!!t.count && <span className={cl("tab-count")}>{t.count}</span>}
+                        {!!t.count && <span className={cl("segment-count")}>{t.count}</span>}
                     </button>
                 ))}
             </div>
 
-            {tab === "settings" ? <SettingsTab /> : (
-                <div className={cl("rows")}>
-                    {list.length
-                        ? list.map(r => <QuestRow key={r.id} row={r} />)
-                        : <div className={cl("empty")}>
-                            {tab === "active" ? "No open quests – new ones are picked up automatically." : "Nothing finished yet."}
-                        </div>}
-                </div>
-            )}
+            <div className={cl("scroll")}>
+                {tab === "settings" ? <SettingsTab /> : <QuestSections rows={rows} tab={tab} />}
+            </div>
         </div>
     );
 }
 
+/** Vencord types it as never */
+const Root = ModalRoot as any;
+
 export function openQuestWindow() {
     openModal(props => (
-        <Modal {...props} size="md" title="AutoQuest">
+        <Root {...props} size={ModalSize.MEDIUM} className={cl("modal")}>
             <ErrorBoundary noop>
-                <QuestWindow />
+                <QuestWindow onClose={props.onClose} />
             </ErrorBoundary>
-        </Modal>
+        </Root>
     ));
 }
 
 function SettingsButton() {
     return (
-        <button className={classes(cl("btn"), cl("btn-open"))} onClick={openQuestWindow}>
+        <button className={cl("pill")} onClick={openQuestWindow}>
             Open AutoQuest
         </button>
     );
@@ -823,7 +939,6 @@ function SettingsButton() {
 
 // ---------------------------------------------------------------- Title bar
 
-const QUEST_PATH = "M7.5 2h9A1.5 1.5 0 0 1 18 3.5V5h2.5A1.5 1.5 0 0 1 22 6.5V8a5 5 0 0 1-4.6 5 6 6 0 0 1-4.4 3.9V19h3a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h3v-2.1A6 6 0 0 1 6.6 13 5 5 0 0 1 2 8V6.5A1.5 1.5 0 0 1 3.5 5H6V3.5A1.5 1.5 0 0 1 7.5 2ZM6 7H4v1a3 3 0 0 0 2.1 2.9A6 6 0 0 1 6 10V7Zm12 0v3l-.1.9A3 3 0 0 0 20 8V7h-2Z";
 
 function TitleBarButton() {
     const { showTitleBarButton } = settings.use(["showTitleBarButton"]);
@@ -865,6 +980,13 @@ export function renderTitleBarButton() {
 
 /** Plugin is on in Vencord – the master switch only works then */
 let enabled = false;
+
+/** Master switch – the setting's own onChange only runs from Vencord's settings page */
+function setActive(on: boolean) {
+    settings.store.active = on;
+    if (on) begin();
+    else halt();
+}
 
 /** Starts working (plugin on + master switch on) */
 function begin(delay = 1500) {
@@ -932,5 +1054,6 @@ export default definePlugin({
     stop() {
         enabled = false;
         halt();
+        unmountToasts();
     }
 });
