@@ -1,7 +1,7 @@
 /**
  * @name Apple Liquid Glass
  * @author 5406
- * @version 1.1.0
+ * @version 1.1.1
  * @description Dark, frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window.
  */
 
@@ -68,6 +68,7 @@
     --alg-text-primary: #f5f5f7;
     --alg-text-secondary: #98989f;
     --alg-text-tertiary: #6c6c70;
+    --alg-badge-red: #ff453a;             /* unread / mention badges (macOS system red) */
 
     /* Glass material */
     --alg-glass-rgb: 36, 36, 38;          /* glass tint color (r, g, b) */
@@ -1851,12 +1852,23 @@ section[role="dialog"] [role="tablist"] [role="tab"] {
     border-radius: var(--alg-radius-xs);
 }
 
-/* Unread / mention badges */
-:is([class^="numberBadge_"], [class*=" numberBadge_"]),
-:is([class^="mentionsBadge_"], [class*=" mentionsBadge_"]) {
-    box-shadow: 0 0 0 2px rgba(15, 15, 16, 0.6);
+/* Unread / mention badges: macOS notification pill in system red. Only the
+   pill itself is styled; its wrapper (mentionsBadge_) is square, so a ring on
+   it would draw a dark box around the pill. */
+:is([class^="numberBadge_"], [class*=" numberBadge_"]) {
+    background-color: var(--alg-badge-red) !important;
+    box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.28), 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-family: var(--alg-font-text);
+    font-size: 11px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* On server icons the pill overlaps the artwork, so it keeps a thin cut-out ring */
+:is([class^="lowerBadge_"], [class*=" lowerBadge_"]) > :is([class^="numberBadge_"], [class*=" numberBadge_"]) {
+    box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.28), 0 0 0 2px var(--alg-background-color);
 }
 
 
