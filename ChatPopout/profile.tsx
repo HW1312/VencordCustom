@@ -7,7 +7,7 @@
 import { copyToClipboard } from "@utils/clipboard";
 import { fetchUserProfile, openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
-import { GuildMemberStore, GuildRoleStore, IconUtils, PresenceStore, showToast, Toasts, useEffect, useLayoutEffect, useRef, UserProfileStore, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { GuildMemberStore, GuildRoleStore, IconUtils, PresenceStore, showToast, useEffect, useLayoutEffect, useRef, UserProfileStore, UserStore, useState, useStateFromStores } from "@webpack/common";
 
 import { MediaItem, openExternal } from "./media";
 import { CDN, cl, COPY_PATH, Icon, log, Markdown, tip } from "./shared";
@@ -48,7 +48,7 @@ function CopyIdButton({ userId }: { userId: string; }) {
             timer.current = setTimeout(() => setCopied(false), 1500);
         }, e => {
             log.error("Couldn't copy", e);
-            showToast("Couldn't copy", Toasts.Type.FAILURE);
+            showToast("Couldn't copy", "failure");
         });
     }
 

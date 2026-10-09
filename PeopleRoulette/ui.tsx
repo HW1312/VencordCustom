@@ -15,7 +15,7 @@ import type { Activity } from "@vencord/discord-types";
 import type { ReactNode } from "react";
 import { findComponentByCodeLazy } from "@webpack";
 import {
-    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, Parser, PresenceStore, showToast, SnowflakeUtils, Toasts, useEffect, useMemo,
+    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, Parser, PresenceStore, showToast, SnowflakeUtils, useEffect, useMemo,
     UserProfileStore, UserStore, useRef, useState, useStateFromStores
 } from "@webpack/common";
 
@@ -100,7 +100,7 @@ function BioLink({ href, children }: { href: string; children: ReactNode; }) {
             setCopied(true);
             clearTimeout(timer.current);
             timer.current = setTimeout(() => setCopied(false), 1500);
-        }, () => showToast("Couldn't copy the link", Toasts.Type.FAILURE));
+        }, () => showToast("Couldn't copy the link", "failure"));
     }
 
     return (

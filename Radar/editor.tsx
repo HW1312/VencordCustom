@@ -6,7 +6,7 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { RenderModalProps } from "@vencord/discord-types";
-import { ChannelStore, GuildChannelStore, GuildStore, IconUtils, Modal, openModal, RelationshipStore, RunningGameStore, SelectedChannelStore, showToast, Toasts, UserStore, useState, VoiceStateStore } from "@webpack/common";
+import { ChannelStore, GuildChannelStore, GuildStore, IconUtils, Modal, openModal, RelationshipStore, RunningGameStore, SelectedChannelStore, showToast, UserStore, useState, VoiceStateStore } from "@webpack/common";
 import type { ComponentType } from "react";
 
 import { cl, Field, Icon, IconButton, MultiPicker, PickerOption, SectionTitle, Segmented, TagInput, ToggleRow } from "./components";
@@ -503,7 +503,7 @@ function RuleEditorModal({ modalProps, initial }: { modalProps: RenderModalProps
     const save = () => {
         if (!rule || error) return;
         upsertRule({ ...rule, name: rule.name.trim() });
-        showToast(initial ? "Rule saved" : "Rule created", Toasts.Type.SUCCESS);
+        showToast(initial ? "Rule saved" : "Rule created", "success");
         modalProps.onClose();
     };
 

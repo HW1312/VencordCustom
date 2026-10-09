@@ -1,0 +1,1968 @@
+/**
+ * @name Apple Liquid Glass
+ * @author 5406
+ * @version 1.1.0
+ * @description Dark, frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window.
+ */
+
+/* ==========================================================================
+   APPLE LIQUID GLASS
+   --------------------------------------------------------------------------
+   A dark, layered, translucent redesign inspired by Apple's Liquid Glass
+   (macOS Tahoe / iOS 26). Pure CSS: no JavaScript, no plugins, no external
+   assets.
+
+   CSS cannot reproduce Apple's real-time refractive shaders. This theme
+   approximates the material with backdrop blur, saturation, tinted layers,
+   specular edge highlights and soft depth.
+
+   Selector strategy
+   - Discord's own design tokens (--background-*, --interactive-*, ...) are
+     overridden first. This restyles most of the app without class names.
+   - Hashed classes are matched by prefix and work with both naming schemes
+     Discord currently ships ("name_a1b2c3" and "name__a1b2c"):
+       :is([class^="name_"], [class*=" name_"])
+   - Messages, lists and navigation use stable id / data / ARIA attributes.
+
+   1.  Configuration
+   2.  Derived design system (do not edit)
+   3.  Discord token overrides
+   4.  Ambient wallpaper and app shell
+   5.  Glass material
+   6.  Server sidebar
+   7.  Channel sidebar and DM list
+   8.  User panel
+   9.  Chat area and header
+   10. Messages and message content
+   11. Message composer
+   12. Member list
+   13. Menus, popouts and tooltips
+   14. User profiles
+   15. Modals and dialogs
+   16. Settings
+   17. Controls (buttons, inputs, switches, sliders)
+   18. Voice and call
+   19. Secondary components
+   20. Motion
+   21. Fallbacks and accessibility
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. CONFIGURATION
+   Edit these values to customize the theme.
+   ========================================================================== */
+
+:root {
+    /* Accent: used sparingly for selection, focus, toggles and progress */
+    --alg-accent-color: #0a84ff;
+    --alg-accent-rgb: 10, 132, 255;
+
+    /* Base colors: five graphite elevation levels (window -> floating) */
+    --alg-background-color: #0f0f10;      /* window, server list */
+    --alg-surface-color: #1c1c1e;         /* chat, settings content */
+    --alg-level-1: #161617;               /* sidebars (under the glass) */
+    --alg-level-2: #1c1c1e;               /* main content */
+    --alg-level-3: #242426;               /* cards, inputs, grouped rows */
+    --alg-level-4: #2c2c2e;               /* popovers, menus */
+    --alg-text-primary: #f5f5f7;
+    --alg-text-secondary: #98989f;
+    --alg-text-tertiary: #6c6c70;
+
+    /* Glass material */
+    --alg-glass-rgb: 36, 36, 38;          /* glass tint color (r, g, b) */
+    --alg-glass-opacity: 0.74;            /* sidebars: frosted, not see-through */
+    --alg-glass-opacity-floating: 0.86;   /* menus, popouts, modals */
+    --alg-glass-blur: 28px;               /* panels */
+    --alg-glass-blur-strong: 40px;        /* floating surfaces */
+    --alg-glass-saturation: 180%;
+    --alg-glass-border: rgba(255, 255, 255, 0.09);
+    --alg-glass-highlight: rgba(255, 255, 255, 0.14);
+    --alg-glass-sheen: rgba(255, 255, 255, 0.05);
+
+    /* Shape */
+    --alg-border-radius: 12px;            /* base radius, others scale from it */
+
+    /* Depth */
+    --alg-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+    --alg-floating-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3);
+
+    /* Motion: 1 = default, 0.5 = twice as fast, 0 = no animation */
+    --alg-animation-speed: 1;
+
+    /* Ambient wallpaper: soft neutral light behind the glass (tint it if you like).
+       Set --alg-wallpaper-image to url("...") to use your own picture. */
+    --alg-wallpaper-image: none;
+    --alg-ambient-1: rgba(255, 255, 255, 0.045);
+    --alg-ambient-2: rgba(255, 255, 255, 0.025);
+    --alg-ambient-3: rgba(255, 255, 255, 0.015);
+
+    /* Typography */
+    --alg-font-text: "SF Pro Text", "SF Pro", -apple-system, BlinkMacSystemFont,
+        "Segoe UI Variable Text", "Segoe UI", Inter, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    --alg-font-display: "SF Pro Display", "SF Pro", -apple-system, BlinkMacSystemFont,
+        "Segoe UI Variable Display", "Segoe UI", Inter, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+    --alg-font-mono: "SF Mono", ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, Menlo, monospace;
+}
+
+
+/* ==========================================================================
+   2. DERIVED DESIGN SYSTEM
+   Built from the configuration above. Normally no need to edit.
+   ========================================================================== */
+
+:root {
+    /* Spacing: 8px grid */
+    --alg-space-half: 4px;
+    --alg-space-1: 8px;
+    --alg-space-2: 16px;
+    --alg-space-3: 24px;
+    --alg-space-4: 32px;
+
+    /* Radius scale */
+    --alg-radius-xs: calc(var(--alg-border-radius) * 0.5);    /*  6px */
+    --alg-radius-sm: calc(var(--alg-border-radius) * 0.75);   /*  9px */
+    --alg-radius-md: var(--alg-border-radius);                /* 12px */
+    --alg-radius-lg: calc(var(--alg-border-radius) * 1.34);   /* 16px */
+    --alg-radius-xl: calc(var(--alg-border-radius) * 1.84);   /* 22px */
+    --alg-radius-pill: 999px;
+
+    /* Accent tints */
+    --alg-accent-soft: rgba(var(--alg-accent-rgb), 0.18);
+    --alg-accent-softer: rgba(var(--alg-accent-rgb), 0.10);
+    --alg-accent-ring: 0 0 0 3px rgba(var(--alg-accent-rgb), 0.28);
+
+    /* Neutral fills (Apple "system fill" family) */
+    --alg-fill-1: rgba(255, 255, 255, 0.035);
+    --alg-fill-2: rgba(255, 255, 255, 0.06);
+    --alg-fill-3: rgba(255, 255, 255, 0.09);
+    --alg-fill-4: rgba(255, 255, 255, 0.13);
+    --alg-separator: rgba(255, 255, 255, 0.07);
+
+    /* Glass recipes */
+    --alg-glass-tint: rgba(var(--alg-glass-rgb), var(--alg-glass-opacity));
+    --alg-glass-tint-floating: rgba(var(--alg-glass-rgb), var(--alg-glass-opacity-floating));
+    --alg-glass-filter: blur(var(--alg-glass-blur)) saturate(var(--alg-glass-saturation));
+    --alg-glass-filter-strong: blur(var(--alg-glass-blur-strong)) saturate(var(--alg-glass-saturation));
+
+    /* Specular layer: soft light falling from the top edge */
+    --alg-specular: linear-gradient(180deg, var(--alg-glass-sheen) 0%, transparent 38%);
+    --alg-specular-strong: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 30%, transparent 60%);
+
+    /* Edge light: lit top rim plus a faint all-around hairline */
+    --alg-edge: inset 0 1px 0 0 var(--alg-glass-highlight), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+
+    /* Motion */
+    --alg-ease: cubic-bezier(0.25, 0.1, 0.25, 1);          /* standard */
+    --alg-ease-out: cubic-bezier(0.22, 1, 0.36, 1);        /* decelerate */
+    --alg-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);     /* iOS sheet-like */
+    --alg-dur-fast: calc(120ms * var(--alg-animation-speed));
+    --alg-dur: calc(200ms * var(--alg-animation-speed));
+    --alg-dur-slow: calc(320ms * var(--alg-animation-speed));
+
+    /* Ambient wallpaper, reused anywhere a full-screen backdrop is needed */
+    --alg-wallpaper:
+        radial-gradient(60vmax 50vmax at 8% 0%, var(--alg-ambient-1), transparent 60%),
+        radial-gradient(55vmax 45vmax at 100% 100%, var(--alg-ambient-2), transparent 60%),
+        radial-gradient(40vmax 35vmax at 70% 20%, var(--alg-ambient-3), transparent 65%),
+        linear-gradient(160deg, #141415 0%, var(--alg-background-color) 45%, #0b0b0c 100%);
+}
+
+
+/* ==========================================================================
+   3. DISCORD TOKEN OVERRIDES
+   ":not(#alg)" adds id-level specificity, so these win over Discord's own
+   .theme-dark definitions regardless of stylesheet load order. The theme is
+   designed for Discord's dark appearance.
+   ========================================================================== */
+
+:root:not(#alg),
+:is(.theme-dark, .theme-darker, .theme-midnight):not(#alg) {
+    /* Typography */
+    --font-primary: var(--alg-font-text);
+    --font-display: var(--alg-font-display);
+    --font-headline: var(--alg-font-display);
+    --font-code: var(--alg-font-mono);
+
+    /* Radii */
+    --radius-xs: var(--alg-radius-xs);
+    --radius-sm: var(--alg-radius-sm);
+    --radius-md: var(--alg-radius-md);
+    --radius-lg: var(--alg-radius-lg);
+    --radius-xl: var(--alg-radius-xl);
+
+    /* Accent (replaces blurple) */
+    --brand-500: var(--alg-accent-color);
+    --brand-560: color-mix(in srgb, var(--alg-accent-color) 88%, #000);
+    --brand-600: color-mix(in srgb, var(--alg-accent-color) 78%, #000);
+    --brand-360: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
+    --background-brand: var(--alg-accent-color);
+    --control-brand-foreground: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
+    --control-brand-foreground-new: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
+    --text-brand: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
+    --text-link: #4da3ff;
+    --border-focus: var(--alg-accent-color);
+    --control-primary-background-default: var(--alg-accent-color);
+    --control-primary-background-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
+    --control-primary-background-active: color-mix(in srgb, var(--alg-accent-color) 85%, #000);
+    --brand-460: color-mix(in srgb, var(--alg-accent-color) 90%, #fff);
+    --badge-background-brand: var(--alg-accent-color);
+    --checkbox-background-selected-default: var(--alg-accent-color);
+    --checkbox-background-selected-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
+    --checkbox-border-selected-default: var(--alg-accent-color);
+    --checkbox-border-selected-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
+    --radio-background-selected-default: var(--alg-accent-color);
+    --radio-background-selected-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
+    --radio-border-selected-default: var(--alg-accent-color);
+    --radio-border-selected-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
+    --radio-foreground-active: var(--alg-accent-color);
+    --switch-background-selected-default: var(--alg-accent-color);
+    --switch-thumb-icon-active: var(--alg-accent-color);
+
+    /* Text */
+    --text-strong: var(--alg-text-primary);
+    --text-default: #e6e6eb;
+    --text-normal: #e6e6eb;
+    --text-subtle: var(--alg-text-secondary);
+    --text-muted: var(--alg-text-secondary);
+    --header-primary: var(--alg-text-primary);
+    --header-secondary: var(--alg-text-secondary);
+    --interactive-text-default: var(--alg-text-secondary);
+    --interactive-text-hover: var(--alg-text-primary);
+    --interactive-text-active: #ffffff;
+    --interactive-normal: var(--alg-text-secondary);
+    --interactive-hover: var(--alg-text-primary);
+    --interactive-active: #ffffff;
+    --channels-default: var(--alg-text-secondary);
+    --channel-icon: var(--alg-text-tertiary);
+    --icon-default: #d4d4da;
+    --icon-muted: var(--alg-text-tertiary);
+    --icon-strong: var(--alg-text-primary);
+
+    /* Base surfaces: opaque graphite. Glass is applied explicitly per panel
+       (section 5) so nothing that expects a solid background turns see-through. */
+    --background-base-lowest: var(--alg-background-color);
+    --background-base-lower: var(--alg-level-2);
+    --background-base-low: var(--alg-level-3);
+    --background-primary: var(--alg-level-2);
+    --background-secondary: var(--alg-level-1);
+    --background-secondary-alt: var(--alg-level-3);
+    --background-tertiary: var(--alg-background-color);
+    --app-frame-background: var(--alg-background-color);
+    --app-frame-border: var(--alg-glass-border);
+    --chat-background: var(--alg-level-2);
+    --chat-background-default: var(--alg-level-2);
+    --home-background: var(--alg-level-2);
+    --panel-bg: var(--alg-level-1);
+    --channel-background-default: var(--alg-level-2);
+
+    /* Discord's Custom Color themes paint a gradient into single areas through
+       these; "initial" makes every var() fall back to the theme's own surfaces.
+       The color is reapplied once, behind the glass (section 4b). */
+    --background-gradient-lowest: initial;
+    --background-gradient-lower: initial;
+    --background-gradient-low: initial;
+    --background-gradient-high: initial;
+    --background-gradient-higher: initial;
+    --background-gradient-highest: initial;
+    --background-gradient-chat: initial;
+
+    /* Raised surfaces (popouts, cards, menus, modals) */
+    --background-surface-high: var(--alg-level-3);
+    --background-surface-higher: var(--alg-level-4);
+    --background-surface-highest: #3a3a3c;
+    --background-floating: var(--alg-level-4);
+    --bg-surface-raised: var(--alg-level-3);
+    --modal-background: var(--alg-level-2);
+    --modal-footer-background: var(--alg-level-1);
+    --card-background-default: var(--alg-level-3);
+    --card-secondary-bg: var(--alg-level-4);
+    --embed-background: rgba(255, 255, 255, 0.04);
+    --embed-background-alternate: rgba(255, 255, 255, 0.06);
+    --background-code: rgba(0, 0, 0, 0.28);
+    --channeltextarea-background: var(--alg-level-3);
+
+    /* Interaction fills */
+    --background-mod-subtle: var(--alg-fill-2);
+    --background-mod-normal: var(--alg-fill-3);
+    --background-mod-strong: var(--alg-fill-4);
+    --background-mod-muted: var(--alg-fill-1);
+    --background-modifier-hover: var(--alg-fill-2);
+    --background-modifier-active: var(--alg-fill-3);
+    --background-modifier-selected: var(--alg-fill-3);
+    --background-modifier-accent: var(--alg-separator);
+    --interactive-background-hover: var(--alg-fill-2);
+    --interactive-background-active: var(--alg-fill-3);
+    --interactive-background-selected: var(--alg-fill-4);
+
+    /* Messages */
+    --message-background-hover: var(--alg-fill-1);
+    --message-highlight-background-default: var(--alg-accent-softer);
+    --message-highlight-background-hover: var(--alg-accent-soft);
+    --message-mentioned-background-default: rgba(255, 214, 10, 0.07);
+    --message-mentioned-background-hover: rgba(255, 214, 10, 0.1);
+    --mention-background: rgba(var(--alg-accent-rgb), 0.2);
+    --mention-foreground: #8cc4ff;
+
+    /* Reactions */
+    --reaction-background-default: var(--alg-fill-2);
+    --reaction-background-hover: var(--alg-fill-3);
+    --reaction-background-reacted-default: var(--alg-accent-soft);
+    --reaction-background-reacted-hover: rgba(var(--alg-accent-rgb), 0.26);
+    --reaction-border-default: transparent;
+    --reaction-border-hover: var(--alg-glass-border);
+    --reaction-border-reacted-default: rgba(var(--alg-accent-rgb), 0.45);
+    --reaction-border-reacted-hover: rgba(var(--alg-accent-rgb), 0.6);
+
+    /* Inputs */
+    --input-background-default: var(--alg-level-3);
+    --input-border-default: var(--alg-glass-border);
+    --input-border-hover: rgba(255, 255, 255, 0.16);
+    --input-border-active: var(--alg-accent-color);
+    --input-placeholder-text-default: var(--alg-text-tertiary);
+    --input-text-default: var(--alg-text-primary);
+
+    /* Borders */
+    --border-subtle: var(--alg-separator);
+    --border-muted: var(--alg-glass-border);
+    --border-normal: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --chat-border: var(--alg-separator);
+
+    /* Overlays and shadows */
+    --background-scrim: rgba(0, 0, 0, 0.6);
+    --background-scrim-lightbox: rgba(0, 0, 0, 0.82);
+    --shadow-low: 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-high: var(--alg-floating-shadow);
+
+    /* Scrollbars */
+    --scrollbar-thin-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-thin-track: transparent;
+    --scrollbar-auto-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-auto-track: transparent;
+    --scrollbar-auto-scrollbar-color-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-auto-scrollbar-color-track: transparent;
+
+    /* Progress, sliders, spoilers */
+    --progressbar-indicator-background: var(--alg-accent-color);
+    --progressbar-track-background: var(--alg-fill-3);
+    --slider-track-background: var(--alg-fill-4);
+    --spoiler-hidden-background: rgba(255, 255, 255, 0.14);
+    --spoiler-hidden-background-hover: rgba(255, 255, 255, 0.2);
+    --spoiler-revealed-background: var(--alg-fill-2);
+}
+
+
+/* ==========================================================================
+   4. AMBIENT WALLPAPER AND APP SHELL
+   ========================================================================== */
+
+html,
+body {
+    background: var(--alg-background-color);
+}
+
+#app-mount {
+    background: var(--alg-wallpaper-image) center / cover no-repeat, var(--alg-wallpaper);
+    background-color: var(--alg-background-color);
+    color: var(--alg-text-primary);
+    font-family: var(--alg-font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* Top-level containers stay transparent so the wallpaper reads through */
+#app-mount :is([class^="app_"], [class*=" app_"]),
+#app-mount :is([class^="bg_"], [class*=" bg_"]),
+#app-mount :is([class^="base_"], [class*=" base_"]),
+#app-mount :is([class^="container_"], [class*=" container_"]):has(> :is([class^="base_"], [class*=" base_"])) {
+    background: transparent;
+}
+
+/* The fade strip Discord draws under the guild list */
+:is([class^="sidebar_"], [class*=" sidebar_"]):has(:is([class^="sidebarList_"], [class*=" sidebarList_"]))::after {
+    background: transparent;
+}
+
+/* Main content area: plain graphite; the channel list panel carries the rounded edge */
+:is([class^="page_"], [class*=" page_"]) {
+    background: var(--alg-level-2);
+}
+
+/* Window title bar: unified macOS-style toolbar */
+:is([class^="titleBar_"], [class*=" titleBar_"]),
+:is([class^="bar_"], [class*=" bar_"]):has(> :is([class^="trailing_"], [class*=" trailing_"])) {
+    background: transparent;
+}
+
+/* Centered window title */
+:is([class^="bar_"], [class*=" bar_"]):has(> :is([class^="trailing_"], [class*=" trailing_"])) > :is([class^="title_"], [class*=" title_"]) * {
+    color: var(--alg-text-secondary);
+    font-family: var(--alg-font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+/* Toolbar icons: quiet monochrome, soft rounded hover */
+:is([class^="bar_"], [class*=" bar_"]):has(> :is([class^="trailing_"], [class*=" trailing_"])) [aria-label]:is([class^="clickable_"], [class*=" clickable_"], [class^="button_"], [class*=" button_"]) {
+    border-radius: var(--alg-radius-xs);
+    color: var(--alg-text-tertiary);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="bar_"], [class*=" bar_"]):has(> :is([class^="trailing_"], [class*=" trailing_"])) [aria-label]:is([class^="clickable_"], [class*=" clickable_"], [class^="button_"], [class*=" button_"]):hover {
+    background-color: var(--alg-fill-2);
+    color: var(--alg-text-primary);
+}
+
+/* Window buttons as macOS traffic lights (close, minimize, zoom) */
+:is([class^="winButtons_"], [class*=" winButtons_"]) {
+    align-items: center;
+    gap: 8px;
+    padding-inline: 12px 14px;
+}
+
+:is([class^="winButtons_"], [class*=" winButtons_"])::before {
+    display: none;
+}
+
+:is([class^="winButton_"], [class*=" winButton_"]) {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+    padding: 0;
+    transition: filter var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="winButton_"], [class*=" winButton_"])[aria-label="Close"],
+:is([class^="winButtonClose_"], [class*=" winButtonClose_"]) {
+    background-color: #ff5f57 !important;
+    order: 1;
+}
+
+:is([class^="winButton_"], [class*=" winButton_"])[aria-label="Minimize"] {
+    background-color: #febc2e !important;
+    order: 2;
+}
+
+:is([class^="winButton_"], [class*=" winButton_"])[aria-label="Maximize"] {
+    background-color: #28c840 !important;
+    order: 3;
+}
+
+/* Glyphs appear only while hovering the group, like on macOS */
+:is([class^="winButton_"], [class*=" winButton_"]) svg {
+    width: 8px;
+    height: 8px;
+    color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="winButtons_"], [class*=" winButtons_"]):hover svg {
+    opacity: 1;
+}
+
+:is([class^="winButton_"], [class*=" winButton_"]):active {
+    filter: brightness(0.85);
+}
+
+
+/* ==========================================================================
+   4b. DISCORD CUSTOM COLOR THEMES (Appearance > Color)
+   The chosen gradient becomes a dimmed wallpaper behind the whole window,
+   and the content area turns slightly translucent so it tints evenly.
+   ========================================================================== */
+
+html.custom-theme-background #app-mount {
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.62)),
+        var(--custom-theme-background, none) center / cover fixed;
+    background-color: var(--alg-background-color);
+}
+
+html.custom-theme-background :is([class^="page_"], [class*=" page_"]) {
+    background: rgba(28, 28, 30, 0.8);
+}
+
+html.custom-theme-background :is([class^="callContainer_"], [class*=" callContainer_"]) {
+    background: rgba(15, 15, 16, 0.72);
+}
+
+
+/* ==========================================================================
+   5. GLASS MATERIAL
+   Every glass surface gets the same recipe. Blur is applied to large panels
+   and floating layers only, never to individual messages.
+   ========================================================================== */
+
+/* 5a. Panel glass: channel list, member list, thread sidebar */
+:is([class^="sidebarList_"], [class*=" sidebarList_"]),
+:is([class^="membersWrap_"], [class*=" membersWrap_"]),
+:is([class^="threadSidebarOpen_"], [class*=" threadSidebarOpen_"]) > :last-child {
+    background-color: var(--alg-glass-tint);
+    background-image: var(--alg-specular);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+}
+
+/* 5b. Floating glass: menus, popouts, tooltips, pickers */
+:is([class^="menu_"], [class*=" menu_"])[role="menu"],
+:is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"],
+:is([class^="messagesPopout_"], [class*=" messagesPopout_"]),
+:is([class^="popout_"], [class*=" popout_"])[role="dialog"],
+:is([class^="popover_"], [class*=" popover_"])[role="dialog"],
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]),
+[role="listbox"]:is([class^="popout_"], [class*=" popout_"], [class^="scroller_"], [class*=" scroller_"]) {
+    background-color: var(--alg-glass-tint-floating);
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid var(--alg-glass-border);
+    box-shadow: var(--alg-edge), var(--alg-floating-shadow);
+}
+
+
+/* ==========================================================================
+   6. SERVER SIDEBAR
+   ========================================================================== */
+
+:is([class^="guilds_"], [class*=" guilds_"]),
+[data-list-id="guildsnav"] {
+    background: transparent;
+}
+
+/* Server icons: soft lift on hover. Discord's squircle masks stay intact. */
+[data-list-id="guildsnav"] [data-list-item-id^="guildsnav___"] {
+    transition: filter var(--alg-dur) var(--alg-ease), scale var(--alg-dur) var(--alg-ease-spring);
+}
+
+[data-list-id="guildsnav"] [data-list-item-id^="guildsnav___"]:hover {
+    filter: brightness(1.08) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+    scale: 1.04;
+}
+
+[data-list-id="guildsnav"] [data-list-item-id^="guildsnav___"]:active {
+    scale: 0.97;
+}
+
+/* Selection / unread indicator: slim white capsule */
+[data-list-id="guildsnav"] :is([class^="pill_"], [class*=" pill_"]) span {
+    background-color: var(--alg-text-primary);
+    border-radius: 0 var(--alg-radius-pill) var(--alg-radius-pill) 0;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+    transition: height var(--alg-dur) var(--alg-ease-spring), opacity var(--alg-dur) var(--alg-ease);
+}
+
+/* Separator: short fading hairline */
+:is([class^="guildSeparator_"], [class*=" guildSeparator_"]) {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+    height: 1px;
+    border-radius: 1px;
+}
+
+/* Expanded server folders */
+[data-list-id="guildsnav"] :is([class^="folderGroupBackground_"], [class*=" folderGroupBackground_"]) {
+    background: var(--alg-fill-2);
+    box-shadow: var(--alg-edge);
+}
+
+/* Round action buttons (add server, discover, download) */
+[data-list-id="guildsnav"] :is([class^="circleIconButton_"], [class*=" circleIconButton_"]) {
+    background: var(--alg-fill-2);
+    box-shadow: var(--alg-edge);
+    transition: background-color var(--alg-dur) var(--alg-ease), color var(--alg-dur) var(--alg-ease);
+}
+
+[data-list-id="guildsnav"] :is([class^="circleIconButton_"], [class*=" circleIconButton_"]):hover {
+    background: var(--alg-fill-4);
+}
+
+
+/* ==========================================================================
+   7. CHANNEL SIDEBAR AND DM LIST
+   ========================================================================== */
+
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) {
+    border-color: var(--alg-glass-border);
+    border-start-start-radius: var(--alg-radius-lg);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Server header / banner area */
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) header {
+    background: transparent;
+    box-shadow: inset 0 -1px 0 0 var(--alg-separator);
+    transition: background-color var(--alg-dur) var(--alg-ease);
+}
+
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) header:hover {
+    background-color: var(--alg-fill-1);
+}
+
+/* Channel rows */
+[data-list-item-id^="channels___"] {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* Selected channel: neutral rounded fill, as in the macOS sidebar */
+:is([class^="modeSelected_"], [class*=" modeSelected_"]) [data-list-item-id^="channels___"],
+:is([class^="modeSelected_"], [class*=" modeSelected_"]) :is([class^="link_"], [class*=" link_"]) {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+:is([class^="modeSelected_"], [class*=" modeSelected_"]) :is([class^="name_"], [class*=" name_"]) {
+    color: #ffffff;
+}
+
+/* The channel list's own nav paints a solid fill over the glass panel */
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) > nav {
+    background: transparent;
+}
+
+/* Unread channel marker (the small pill left of a channel, not the bars) */
+:is([class^="containerDefault_"], [class*=" containerDefault_"]) :is([class^="unread_"], [class*=" unread_"]):not(:is([class^="bar_"], [class*=" bar_"])) {
+    background-color: var(--alg-text-primary);
+    border-radius: 0 var(--alg-radius-pill) var(--alg-radius-pill) 0;
+}
+
+/* "New Unreads" / "New Mentions" bars: floating glass capsules */
+:is([class^="unreadBar_"], [class*=" unreadBar_"]),
+:is([class^="unreadMentionsBar_"], [class*=" unreadMentionsBar_"]) {
+    background-color: rgba(var(--alg-glass-rgb), 0.9);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-pill);
+    box-shadow: var(--alg-edge), var(--shadow-medium);
+    color: var(--alg-text-primary);
+    font-weight: 600;
+}
+
+:is([class^="unreadMentionsBar_"], [class*=" unreadMentionsBar_"]):is([class^="mention_"], [class*=" mention_"]) {
+    background-color: #ff453a;
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+/* Category headings: small, quiet, slightly tracked */
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) :is([class^="wrapperCommon_"], [class*=" wrapperCommon_"]) :is([class^="name_"], [class*=" name_"]) {
+    color: var(--alg-text-tertiary);
+    font-family: var(--alg-font-text);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="sidebarList_"], [class*=" sidebarList_"]) :is([class^="wrapperCommon_"], [class*=" wrapperCommon_"]):hover :is([class^="name_"], [class*=" name_"]) {
+    color: var(--alg-text-secondary);
+}
+
+/* Users connected to voice channels */
+:is([class^="voiceUser_"], [class*=" voiceUser_"]) {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="voiceUser_"], [class*=" voiceUser_"]):hover {
+    background-color: var(--alg-fill-2);
+}
+
+/* DM list: transparent, the channel list panel already provides the glass */
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) {
+    background: transparent;
+}
+
+/* DM list rows */
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="interactive_"], [class*=" interactive_"]) {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="interactiveSelected_"], [class*=" interactiveSelected_"]) {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+/* "Find or start a conversation" bar at the top of the DM list */
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) {
+    border-bottom-color: var(--alg-separator);
+}
+
+/* ...rendered as a macOS search field: magnifier, left-aligned placeholder */
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) button {
+    background: rgba(118, 118, 128, 0.2) !important;
+    border: none !important;
+    border-radius: var(--alg-radius-sm) !important;
+    box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.06);
+    justify-content: flex-start;
+    padding-inline: 30px 10px;
+    position: relative;
+}
+
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) button::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 10px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    translate: 0 -50%;
+    background-color: var(--alg-text-tertiary);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m15.5 15.5 5 5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) button * {
+    color: var(--alg-text-tertiary);
+    font-weight: 400;
+    justify-content: flex-start;
+    text-align: start;
+}
+
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) button:hover {
+    background: rgba(118, 118, 128, 0.28) !important;
+}
+
+
+/* ==========================================================================
+   8. USER PANEL (bottom-left account and voice controls)
+   ========================================================================== */
+
+:is([class^="panels_"], [class*=" panels_"]) {
+    background-color: var(--alg-glass-tint-floating);
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-lg);
+    box-shadow: var(--alg-edge), var(--alg-panel-shadow);
+}
+
+/* No overflow clipping on the panel: the quest card expands upward out of it.
+   Inner surfaces follow the panel's corner radius instead. */
+:is([class^="panels_"], [class*=" panels_"]) > :first-child,
+:is([class^="panels_"], [class*=" panels_"]) > :first-child :is([class^="wrapper_"], [class*=" wrapper_"], [class^="contentWrapper_"], [class*=" contentWrapper_"]) {
+    border-top-left-radius: calc(var(--alg-radius-lg) - 1px) !important;
+    border-top-right-radius: calc(var(--alg-radius-lg) - 1px) !important;
+}
+
+:is([class^="panels_"], [class*=" panels_"]) > :last-child,
+:is([class^="panels_"], [class*=" panels_"]) > :last-child > :first-child {
+    border-bottom-left-radius: calc(var(--alg-radius-lg) - 1px) !important;
+    border-bottom-right-radius: calc(var(--alg-radius-lg) - 1px) !important;
+}
+
+/* Quest progress card: same tone as the panel glass, no frame of its own.
+   The fill must stay opaque: it covers the collapsed layer while expanded. */
+:is([class^="panels_"], [class*=" panels_"]) :is([class^="wrapperVisible_"], [class*=" wrapperVisible_"]) {
+    background-color: rgb(var(--alg-glass-rgb)) !important;
+    border-bottom: 1px solid var(--alg-separator);
+}
+
+:is([class^="postEnrollmentBackground_"], [class*=" postEnrollmentBackground_"]) {
+    background-color: rgb(var(--alg-glass-rgb)) !important;
+    border: none !important;
+    border-top-left-radius: calc(var(--alg-radius-lg) - 1px) !important;
+    border-top-right-radius: calc(var(--alg-radius-lg) - 1px) !important;
+}
+
+/* Inner sections (account row, voice connection, activity) */
+:is([class^="panels_"], [class*=" panels_"]) > * {
+    background: transparent;
+}
+
+:is([class^="panels_"], [class*=" panels_"]) button {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+
+/* ==========================================================================
+   9. CHAT AREA AND HEADER
+   ========================================================================== */
+
+:is([class^="chatContent_"], [class*=" chatContent_"]),
+:is([class^="chat_"], [class*=" chat_"]) {
+    background: transparent;
+}
+
+/* Channel header bar */
+:is([class^="chat_"], [class*=" chat_"]) > section,
+:is([class^="page_"], [class*=" page_"]) > section {
+    background: transparent;
+    border-bottom: 1px solid var(--alg-separator);
+    box-shadow: none;
+}
+
+/* Header search field */
+:is([class^="search_"], [class*=" search_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) {
+    background: var(--alg-fill-2);
+    border-radius: var(--alg-radius-sm);
+    box-shadow: var(--alg-edge);
+    transition: background-color var(--alg-dur) var(--alg-ease), box-shadow var(--alg-dur) var(--alg-ease);
+}
+
+:is([class^="search_"], [class*=" search_"]) :is([class^="searchBar_"], [class*=" searchBar_"]):focus-within {
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: var(--alg-edge), var(--alg-accent-ring);
+}
+
+/* "New messages" / "jump to present" bars */
+:is([class^="newMessagesBar_"], [class*=" newMessagesBar_"]),
+:is([class^="jumpToPresentBar_"], [class*=" jumpToPresentBar_"]) {
+    background-color: var(--alg-glass-tint-floating);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-pill);
+    box-shadow: var(--alg-edge), var(--shadow-medium);
+}
+
+/* Date dividers */
+[role="separator"][id^="---new-messages-bar"],
+:is([class^="divider_"], [class*=" divider_"])[role="separator"] {
+    border-color: var(--alg-separator);
+}
+
+
+/* ==========================================================================
+   10. MESSAGES AND MESSAGE CONTENT
+   Messages are not cards. They get a quiet rounded hover only, with no blur
+   and no shadow, so long histories stay cheap and easy to scan.
+   ========================================================================== */
+
+li[id^="chat-messages-"] > div {
+    border-radius: var(--alg-radius-md);
+    margin-inline: var(--alg-space-1);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* Usernames and timestamps */
+[id^="message-username-"] {
+    font-family: var(--alg-font-text);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+li[id^="chat-messages-"] time {
+    color: var(--alg-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Message text */
+[id^="message-content-"] {
+    line-height: 1.45;
+    letter-spacing: -0.003em;
+}
+
+/* Reply preview above a message */
+[id^="message-reply-context-"] {
+    opacity: 0.82;
+    transition: opacity var(--alg-dur-fast) var(--alg-ease);
+}
+
+li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
+    opacity: 1;
+}
+
+/* Hover toolbar (react, reply, more); class verified in the live client. */
+:is([class^="buttonsInner_"], [class*=" buttonsInner_"]) {
+    background-color: var(--alg-glass-tint-floating);
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-sm);
+    box-shadow: var(--alg-edge), var(--shadow-medium);
+}
+
+:is([class^="buttonsInner_"], [class*=" buttonsInner_"]) [role="button"] {
+    border-radius: var(--alg-radius-xs);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* Embeds: inset glass cards; Discord's colored edge stays visible */
+:is([class^="embedFull_"], [class*=" embedFull_"]) {
+    background: var(--embed-background);
+    border-radius: var(--alg-radius-md);
+    box-shadow: inset 0 0 0 1px var(--alg-separator), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Images, videos and file attachments */
+[id^="message-accessories-"] :is([class^="imageWrapper_"], [class*=" imageWrapper_"]),
+[id^="message-accessories-"] video,
+[id^="message-accessories-"] :is([class^="attachment_"], [class*=" attachment_"]) {
+    border-radius: var(--alg-radius-md);
+}
+
+[id^="message-accessories-"] :is([class^="attachment_"], [class*=" attachment_"]) {
+    background: var(--alg-fill-2);
+    border: 1px solid var(--alg-separator);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Code blocks */
+:is([class^="markup_"], [class*=" markup_"]) pre {
+    border-radius: var(--alg-radius-md);
+}
+
+:is([class^="markup_"], [class*=" markup_"]) pre > code,
+:is([class^="codeContainer_"], [class*=" codeContainer_"]) {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--alg-separator);
+    border-radius: var(--alg-radius-md);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    font-family: var(--alg-font-mono);
+    font-size: 0.875em;
+    line-height: 1.55;
+}
+
+:is([class^="markup_"], [class*=" markup_"]) code.inline {
+    background: var(--alg-fill-3);
+    border: none;
+    border-radius: var(--alg-radius-xs);
+    font-family: var(--alg-font-mono);
+    padding: 0.1em 0.35em;
+}
+
+/* Block quotes */
+:is([class^="blockquoteDivider_"], [class*=" blockquoteDivider_"]) {
+    background-color: rgba(255, 255, 255, 0.22);
+    border-radius: var(--alg-radius-pill);
+}
+
+/* Mentions */
+:is([class^="markup_"], [class*=" markup_"]) :is(.mention, [class*="roleMention_"]) {
+    border-radius: var(--alg-radius-xs);
+    padding: 0 3px;
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* Reactions */
+:is([class^="reactions_"], [class*=" reactions_"]) :is([class^="reaction_"], [class*=" reaction_"]) {
+    border-radius: var(--alg-radius-pill);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), border-color var(--alg-dur-fast) var(--alg-ease), scale var(--alg-dur-fast) var(--alg-ease-spring);
+}
+
+:is([class^="reactions_"], [class*=" reactions_"]) :is([class^="reaction_"], [class*=" reaction_"]):active {
+    scale: 0.94;
+}
+
+
+/* ==========================================================================
+   11. MESSAGE COMPOSER
+   A floating Liquid Glass capsule.
+   ========================================================================== */
+
+/* Containers around the input stay transparent */
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])),
+:is([class^="scrollableContainer_"], [class*=" scrollableContainer_"]),
+:is([class^="themedBackground_"], [class*=" themedBackground_"]) {
+    background: transparent;
+}
+
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) {
+    padding-inline: var(--alg-space-2);
+}
+
+/* The input box (innermost channelTextArea) */
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]):not(:has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"]))) {
+    background-color: rgba(var(--alg-glass-rgb), 0.88);
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-xl);
+    box-shadow: var(--alg-edge), 0 10px 30px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: border-color var(--alg-dur) var(--alg-ease), box-shadow var(--alg-dur) var(--alg-ease), background-color var(--alg-dur) var(--alg-ease);
+}
+
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]):not(:has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"]))):hover {
+    border-color: rgba(255, 255, 255, 0.13);
+}
+
+/* Focus: brighter rim plus a gentle accent halo */
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]):not(:has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"]))):focus-within {
+    background-color: rgba(var(--alg-glass-rgb), 0.94);
+    border-color: rgba(var(--alg-accent-rgb), 0.5);
+    box-shadow: var(--alg-edge), var(--alg-accent-ring), 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* Typing area */
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) [role="textbox"] {
+    color: var(--alg-text-primary);
+    caret-color: var(--alg-accent-color);
+    line-height: 1.45;
+}
+
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) [class*="placeholder"] {
+    color: var(--alg-text-tertiary);
+}
+
+/* Attach (+) button: round glass bubble */
+:is([class^="attachButton_"], [class*=" attachButton_"]) {
+    border-radius: var(--alg-radius-pill);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="attachButton_"], [class*=" attachButton_"]):hover {
+    background-color: var(--alg-fill-3);
+}
+
+/* Trailing buttons (gift, GIF, sticker, emoji, apps) */
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="buttons_"], [class*=" buttons_"]) button,
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="buttons_"], [class*=" buttons_"]) [role="button"] {
+    border-radius: var(--alg-radius-pill);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease), scale var(--alg-dur-fast) var(--alg-ease-spring);
+}
+
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="buttons_"], [class*=" buttons_"]) button:hover {
+    background-color: var(--alg-fill-2);
+}
+
+:is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="buttons_"], [class*=" buttons_"]) button:active {
+    scale: 0.92;
+}
+
+/* Bars stacked on top of the composer (replying to, slowmode, upload) */
+:is([class^="stackedBars_"], [class*=" stackedBars_"]),
+:is([class^="floatingBars_"], [class*=" floatingBars_"]) {
+    border-radius: var(--alg-radius-xl) var(--alg-radius-xl) 0 0;
+}
+
+:is([class^="stackedBars_"], [class*=" stackedBars_"]) > * {
+    background-color: rgba(var(--alg-glass-rgb), 0.5);
+}
+
+/* Typing indicator below the composer */
+:is([class^="typing_"], [class*=" typing_"]) {
+    background: transparent;
+    color: var(--alg-text-secondary);
+}
+
+/* Autocomplete (mentions, emoji, commands) */
+:is([class^="autocomplete_"], [class*=" autocomplete_"]) {
+    background-color: var(--alg-glass-tint-floating);
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-lg);
+    box-shadow: var(--alg-edge), var(--alg-floating-shadow);
+    overflow: hidden;
+}
+
+
+/* ==========================================================================
+   12. MEMBER LIST
+   ========================================================================== */
+
+:is([class^="membersWrap_"], [class*=" membersWrap_"]) {
+    border-inline-start: 1px solid var(--alg-glass-border);
+    box-shadow: inset 1px 0 0 0 rgba(255, 255, 255, 0.03);
+}
+
+:is([class^="members_"], [class*=" members_"]) {
+    background: transparent;
+}
+
+/* Role group headings */
+:is([class^="membersGroup_"], [class*=" membersGroup_"]) {
+    color: var(--alg-text-tertiary);
+    font-family: var(--alg-font-text);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Member rows: Discord fills them with the chat color, which shows up as dark
+   tiles on the glass panel; they stay transparent until hovered. */
+:is([class^="members_"], [class*=" members_"]) :is([class^="member_"], [class*=" member_"]) {
+    background-color: transparent !important;
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), opacity var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="members_"], [class*=" members_"]) :is([class^="member_"], [class*=" member_"]):hover {
+    background-color: var(--alg-fill-2) !important;
+}
+
+:is([class^="members_"], [class*=" members_"]) :is([class^="member_"], [class*=" member_"]):active {
+    background-color: var(--alg-fill-3) !important;
+}
+
+/* Activity cards at the top of the member list (music, games) */
+:is([class^="membersWrap_"], [class*=" membersWrap_"]) :is([class^="container_"], [class*=" container_"]):is([class*="usesCardRows_"], [class*="openOnHover_"]) {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: var(--alg-radius-md) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="membersWrap_"], [class*=" membersWrap_"]) :is([class^="container_"], [class*=" container_"]):is([class*="usesCardRows_"], [class*="openOnHover_"]):hover {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+
+/* ==========================================================================
+   13. MENUS, POPOUTS AND TOOLTIPS
+   Material is applied in section 5b. This section handles shape and items.
+   ========================================================================== */
+
+/* Context and dropdown menus */
+:is([class^="menu_"], [class*=" menu_"])[role="menu"] {
+    border-radius: var(--alg-radius-md);
+    padding: 5px 0;
+}
+
+[role="menu"] [role="menuitem"],
+[role="menu"] [role="menuitemcheckbox"],
+[role="menu"] [role="menuitemradio"] {
+    border-radius: var(--alg-radius-xs);
+    margin: 0 5px;
+    min-height: 28px;
+    padding-block: 4px;
+    padding-inline: 10px;
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* macOS menu typography: 13px regular, compact 16px icons */
+[role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]) :is([class^="label_"], [class*=" label_"]),
+[role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]) :is([class^="label_"], [class*=" label_"]) * {
+    font-size: 13.5px;
+    font-weight: 400;
+    letter-spacing: -0.003em;
+}
+
+[role="menu"] :is([class^="iconContainer_"], [class*=" iconContainer_"]) svg {
+    width: 16px;
+    height: 16px;
+}
+
+[role="menu"] :is([class^="menu_"], [class*=" menu_"]) > * {
+    padding-block: 3px;
+}
+
+/* Focused menu item: Apple uses the accent for the highlighted row */
+[role="menu"] :is([class^="focused_"], [class*=" focused_"]):is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]) {
+    background-color: var(--alg-accent-color);
+    color: #ffffff;
+}
+
+[role="menu"] :is([class^="focused_"], [class*=" focused_"]) :is(svg, [class*="subtext"]) {
+    color: #ffffff;
+}
+
+/* Destructive items keep their red */
+[role="menu"] :is([class^="colorDanger_"], [class*=" colorDanger_"]):is([class^="focused_"], [class*=" focused_"]) {
+    background-color: #ff453a;
+}
+
+[role="menu"] [role="separator"],
+[role="menu"] :is([class^="separator_"], [class*=" separator_"]) {
+    border-color: var(--alg-separator);
+    margin: 4px 14px;
+}
+
+/* Tooltips: compact dark glass capsules */
+:is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"] {
+    border-radius: var(--alg-radius-sm);
+    color: var(--alg-text-primary);
+    font-weight: 500;
+}
+
+:is([class^="tooltipPrimary_"], [class*=" tooltipPrimary_"]) {
+    background-color: var(--alg-glass-tint-floating);
+}
+
+/* The arrow cannot be blurred, so it is hidden for a cleaner capsule */
+:is([class^="tooltipPointer_"], [class*=" tooltipPointer_"]),
+:is([class^="tooltipPointerBg_"], [class*=" tooltipPointerBg_"]) {
+    opacity: 0;
+}
+
+/* Generic popouts */
+:is([class^="popout_"], [class*=" popout_"])[role="dialog"],
+:is([class^="popover_"], [class*=" popover_"])[role="dialog"],
+:is([class^="messagesPopout_"], [class*=" messagesPopout_"]) {
+    border-radius: var(--alg-radius-lg);
+    overflow: hidden;
+}
+
+/* Pinned messages and inbox headers */
+:is([class^="messagesPopout_"], [class*=" messagesPopout_"]) header,
+:is([class^="messagesPopout_"], [class*=" messagesPopout_"]) :is([class^="header_"], [class*=" header_"]) {
+    background: transparent;
+    border-bottom: 1px solid var(--alg-separator);
+}
+
+
+/* ==========================================================================
+   14. USER PROFILES
+   "outer_" is verified; "userPopoutOuter_" is kept for older builds.
+   ========================================================================== */
+
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]),
+[role="dialog"]:is([class^="userPopoutOuter_"], [class*=" userPopoutOuter_"]) {
+    border-radius: var(--alg-radius-lg);
+    overflow: hidden;
+}
+
+/* Profile popout card. Discord gives it a stable, unhashed class name. */
+.user-profile-popout {
+    background-color: rgba(var(--alg-glass-rgb), 0.9) !important;
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--alg-radius-lg) !important;
+    box-shadow: var(--alg-edge), var(--alg-floating-shadow);
+    overflow: hidden;
+}
+
+.user-profile-popout > *,
+.user-profile-popout header [class*="banner"] {
+    border-top-left-radius: calc(var(--alg-radius-lg) - 1px) !important;
+    border-top-right-radius: calc(var(--alg-radius-lg) - 1px) !important;
+}
+
+/* Cards inside the profile (activity, "In voice", notes) */
+.user-profile-popout :is(section, ul) > :is(li, div):has(> * > [class*="headerText"], > [class*="header"]) {
+    border-radius: var(--alg-radius-md);
+}
+
+/* Inner profile body: a second, quieter glass layer */
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]) :is([class^="inner_"], [class*=" inner_"]) {
+    background-color: rgba(0, 0, 0, 0.12);
+    border-radius: var(--alg-radius-md);
+}
+
+/* Profile sections and cards */
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]) section {
+    border-radius: var(--alg-radius-md);
+}
+
+/* Profile buttons (message, add friend, more) */
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]) button {
+    border-radius: var(--alg-radius-sm);
+}
+
+/* Profile message input */
+[role="dialog"]:is([class^="outer_"], [class*=" outer_"]) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]) {
+    background-color: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-md);
+}
+
+
+/* ==========================================================================
+   15. MODALS AND DIALOGS
+   ========================================================================== */
+
+/* Modal panel */
+[role="dialog"] > :is([class^="root_"], [class*=" root_"]),
+:is([class^="focusLock_"], [class*=" focusLock_"]) > :is([class^="root_"], [class*=" root_"]),
+[role="dialog"]:is([class^="modal_"], [class*=" modal_"]) {
+    background-color: var(--modal-background);
+    background-image: var(--alg-specular);
+    border: 1px solid var(--alg-glass-border);
+    border-radius: var(--alg-radius-xl);
+    box-shadow: var(--alg-edge), var(--alg-floating-shadow);
+    overflow: hidden;
+}
+
+/* Modal header and footer */
+:is([class^="focusLock_"], [class*=" focusLock_"]) :is([class^="footer_"], [class*=" footer_"]) {
+    background: var(--modal-footer-background);
+    border-top: 1px solid var(--alg-separator);
+    box-shadow: none;
+}
+
+:is([class^="focusLock_"], [class*=" focusLock_"]) h1 {
+    font-family: var(--alg-font-display);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+}
+
+/* Image / media viewer: deeper dim, no tint behind the media */
+:is([class^="focusLock_"], [class*=" focusLock_"]) img {
+    border-radius: var(--alg-radius-md);
+}
+
+
+/* ==========================================================================
+   16. SETTINGS
+   ========================================================================== */
+
+/* ---- Settings modal (current Discord) ----------------------------------- */
+
+/* Dim and soften everything behind any modal */
+:is([class^="scrim_"], [class*=" scrim_"]) {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    backdrop-filter: blur(10px) saturate(130%);
+}
+
+/* Window: one graphite surface with a lit rim and deep shadow */
+:is([class^="modal_"], [class*=" modal_"]):has(> :is([class^="modalContent_"], [class*=" modalContent_"])) {
+    background: var(--alg-level-1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--alg-radius-xl);
+    box-shadow: var(--alg-edge), 0 30px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+:is([class^="modalContentInner_"], [class*=" modalContentInner_"]) {
+    background: transparent;
+}
+
+/* Sidebar: floating inset glass panel, as in macOS Tahoe System Settings */
+:is([class^="modalContentInner_"], [class*=" modalContentInner_"]) aside {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--alg-radius-lg);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 4px 16px rgba(0, 0, 0, 0.2);
+    margin: var(--alg-space-1);
+    margin-inline-end: 0;
+    overflow: hidden;
+}
+
+/* Sidebar rows */
+aside nav [role="link"]:is([class^="item_"], [class*=" item_"]) {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+aside nav [role="link"]:is([class^="item_"], [class*=" item_"]):hover {
+    background-color: var(--alg-fill-2);
+    color: var(--alg-text-primary);
+}
+
+/* Selected row: filled accent with white label and icon */
+aside nav [role="link"]:is([class^="active_"], [class*=" active_"]) {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--alg-accent-color) 90%, #fff), var(--alg-accent-color)) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 2px 8px rgba(var(--alg-accent-rgb), 0.3);
+    color: #ffffff !important;
+}
+
+aside nav [role="link"]:is([class^="active_"], [class*=" active_"]) :is(svg, div) {
+    color: #ffffff !important;
+}
+
+/* Section labels in the sidebar */
+aside nav h3:is([class^="label_"], [class*=" label_"], [class*="label_"]) {
+    color: var(--alg-text-tertiary) !important;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+/* Sub-navigation (Voice / Camera / Streaming ...) */
+aside nav [role="listitem"] [role="link"]:is([class^="active_"], [class*=" active_"]) {
+    background: none !important;
+    box-shadow: none;
+    color: var(--alg-text-primary) !important;
+    font-weight: 600;
+}
+
+aside nav [role="listitem"] [role="link"]:is([class^="active_"], [class*=" active_"]) :is(svg, div) {
+    color: inherit !important;
+}
+
+aside nav [role="list"] :is([class^="thumb_"], [class*=" thumb_"]) {
+    background-color: var(--alg-accent-color);
+    border-radius: var(--alg-radius-pill);
+}
+
+aside nav [role="list"] :is([class^="track_"], [class*=" track_"]) {
+    background-color: var(--alg-separator);
+}
+
+/* Content column shares the window surface */
+:is([class^="modalContentInner_"], [class*=" modalContentInner_"]) :is([class^="content_"], [class*=" content_"]):has(> :is([class^="contentHeader_"], [class*=" contentHeader_"])) {
+    background: transparent;
+}
+
+/* Title bar of the content column */
+:is([class^="contentHeader_"], [class*=" contentHeader_"]) {
+    background: transparent;
+    border-bottom: 1px solid var(--alg-separator);
+}
+
+:is([class^="contentHeader_"], [class*=" contentHeader_"]) * {
+    font-family: var(--alg-font-display);
+    letter-spacing: -0.01em;
+}
+
+/* Page section titles ("Voice", "Camera"): large title */
+:is([class^="categories_"], [class*=" categories_"]) h2 {
+    font-family: var(--alg-font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Settings in a section form one grouped inset list (macOS System Settings):
+   rounded only at the ends, hairline dividers between rows. */
+:is([class^="categories_"], [class*=" categories_"]) > * > :is([class^="stack_"], [class*=" stack_"]):has(> :is([class^="container_"], [class*=" container_"])) {
+    gap: 0 !important;
+}
+
+:is([class^="categories_"], [class*=" categories_"]) > * > :is([class^="stack_"], [class*=" stack_"]) > :is([class^="container_"], [class*=" container_"]) {
+    background-color: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-top-width: 0;
+    border-radius: 0;
+    margin: 0 -12px !important;
+    padding: 12px 16px !important;
+}
+
+:is([class^="categories_"], [class*=" categories_"]) > * > :is([class^="stack_"], [class*=" stack_"]) > :is([class^="container_"], [class*=" container_"]):first-child {
+    border-top-width: 1px;
+    border-top-left-radius: var(--alg-radius-md);
+    border-top-right-radius: var(--alg-radius-md);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+:is([class^="categories_"], [class*=" categories_"]) > * > :is([class^="stack_"], [class*=" stack_"]) > :is([class^="container_"], [class*=" container_"]):last-child {
+    border-bottom-left-radius: var(--alg-radius-md);
+    border-bottom-right-radius: var(--alg-radius-md);
+}
+
+/* Discord's divider lines are redundant between cards */
+:is([class^="categories_"], [class*=" categories_"]) [role="separator"] {
+    display: none;
+}
+
+/* Setting labels */
+:is([class^="categories_"], [class*=" categories_"]) label {
+    font-weight: 600;
+}
+
+/* Expandable rows ("Advanced", disclosure groups) */
+:is([class^="baseControlItem_"], [class*=" baseControlItem_"]) {
+    border-radius: var(--alg-radius-md);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="baseControlItem_"], [class*=" baseControlItem_"]):is([class^="clickable_"], [class*=" clickable_"]):hover {
+    background-color: var(--alg-fill-2);
+}
+
+/* Camera preview and similar inset media frames */
+:is([class^="cameraWrapper_"], [class*=" cameraWrapper_"]) {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--alg-separator);
+    border-radius: var(--alg-radius-md);
+}
+
+/* ---- Legacy full-screen settings layout ---------------------------------- */
+
+:is([class^="standardSidebarView_"], [class*=" standardSidebarView_"]) {
+    background: var(--alg-wallpaper-image) center / cover no-repeat, var(--alg-wallpaper);
+    background-color: var(--alg-background-color);
+}
+
+:is([class^="sidebarRegion_"], [class*=" sidebarRegion_"]) {
+    background-color: var(--alg-level-1);
+    border-inline-end: 1px solid var(--alg-glass-border);
+}
+
+:is([class^="sidebarRegion_"], [class*=" sidebarRegion_"]) [role="tab"] {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="sidebarRegion_"], [class*=" sidebarRegion_"]) [role="tab"]:hover {
+    background-color: var(--alg-fill-2);
+}
+
+:is([class^="sidebarRegion_"], [class*=" sidebarRegion_"]) [role="tab"][aria-selected="true"] {
+    background-color: var(--alg-accent-color);
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
+}
+
+:is([class^="contentRegion_"], [class*=" contentRegion_"]) {
+    background: var(--alg-level-2);
+}
+
+:is([class^="contentRegion_"], [class*=" contentRegion_"]) :is(h1, h2) {
+    font-family: var(--alg-font-display);
+    letter-spacing: -0.015em;
+}
+
+:is([class^="toolsContainer_"], [class*=" toolsContainer_"]) [role="button"] {
+    background-color: var(--alg-fill-2);
+    border-color: var(--alg-glass-border);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+
+/* ==========================================================================
+   17. CONTROLS
+   ========================================================================== */
+
+/* Buttons */
+button {
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease),
+        border-color var(--alg-dur-fast) var(--alg-ease), box-shadow var(--alg-dur-fast) var(--alg-ease),
+        scale var(--alg-dur-fast) var(--alg-ease-spring);
+}
+
+button:active:not(:disabled) {
+    scale: 0.97;
+}
+
+/* Filled buttons: iOS 26 capsules. Accent stays filled; green and red use
+   Apple's "tinted" style (translucent color, colored label) to stay calm. */
+button:is([class^="button_"], [class*=" button_"]):is([class*="lookFilled_"], [class*="primary_"], [class*="secondary_"], [class*="critical_"]) {
+    border-radius: var(--alg-radius-pill);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+button:is([class*="lookFilled_"], [class*="primary_"]):is([class*="colorBrand_"], [class*="primary_"]):not([class*="colorPrimary_"], [class*="buttonColor_"], [class*="centerButton_"], [class*="primaryDark_"]) {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--alg-accent-color) 88%, #fff), var(--alg-accent-color)) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 2px 8px rgba(var(--alg-accent-rgb), 0.25);
+    color: #ffffff !important;
+}
+
+button[class*="lookFilled_"][class*="colorGreen_"] {
+    background: rgba(48, 209, 88, 0.16) !important;
+    border-color: rgba(48, 209, 88, 0.28) !important;
+    color: #30d158 !important;
+}
+
+button[class*="lookFilled_"][class*="colorGreen_"]:hover {
+    background: rgba(48, 209, 88, 0.24) !important;
+}
+
+button[class*="lookFilled_"][class*="colorRed_"],
+button[class*="critical_"][class*="button_"] {
+    background: rgba(255, 69, 58, 0.16) !important;
+    border-color: rgba(255, 69, 58, 0.28) !important;
+    color: #ff453a !important;
+}
+
+button[class*="lookFilled_"][class*="colorRed_"]:hover,
+button[class*="critical_"][class*="button_"]:hover {
+    background: rgba(255, 69, 58, 0.24) !important;
+}
+
+button[class*="lookFilled_"][class*="colorPrimary_"],
+button[class*="secondary_"][class*="button_"] {
+    background: var(--alg-fill-3) !important;
+    border-color: var(--alg-glass-border) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    color: var(--alg-text-primary) !important;
+}
+
+button[class*="lookFilled_"][class*="colorPrimary_"]:hover,
+button[class*="secondary_"][class*="button_"]:hover {
+    background: var(--alg-fill-4) !important;
+}
+
+/* User panel action buttons (camera, screen share, activities, soundboard) */
+:is([class^="panels_"], [class*=" panels_"]) button[class*="buttonColor_"] {
+    background: var(--alg-fill-2) !important;
+    border: none !important;
+    border-radius: var(--alg-radius-sm) !important;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    color: var(--alg-text-primary) !important;
+}
+
+:is([class^="panels_"], [class*=" panels_"]) button[class*="buttonColor_"]:hover {
+    background: var(--alg-fill-4) !important;
+}
+
+/* Text inputs and select fields */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+:is([class^="select_"], [class*=" select_"])[role="button"],
+:is([class^="select_"], [class*=" select_"])[role="combobox"] {
+    border-radius: var(--alg-radius-sm);
+    transition: border-color var(--alg-dur) var(--alg-ease), box-shadow var(--alg-dur) var(--alg-ease), background-color var(--alg-dur) var(--alg-ease);
+}
+
+/* Toggle switches: Apple-style capsule. Discord marks them with a stable
+   data attribute; the colors are inline styles, hence !important. */
+[data-mana-component="switch"] {
+    background-color: rgba(120, 120, 128, 0.36) !important;
+    border-color: transparent !important;
+    border-radius: var(--alg-radius-pill);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+    transition: background-color var(--alg-dur) var(--alg-ease);
+}
+
+label:has(input[type="checkbox"]:checked) > [data-mana-component="switch"] {
+    background-color: var(--alg-accent-color) !important;
+}
+
+label:has(input[type="checkbox"]:disabled) > [data-mana-component="switch"] {
+    opacity: 0.45 !important;
+}
+
+/* Bigger knob, like iOS / macOS */
+[data-mana-component="switch"] rect {
+    x: 2px;
+    y: 2px;
+    width: 20px;
+    height: 20px;
+    rx: 10px;
+    fill: #ffffff;
+}
+
+[data-mana-component="switch"] svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+/* Sliders */
+:is([class^="slider_"], [class*=" slider_"]) :is([class^="bar_"], [class*=" bar_"]) {
+    background-color: var(--alg-fill-4);
+    border-radius: var(--alg-radius-pill);
+}
+
+:is([class^="slider_"], [class*=" slider_"]) :is([class^="barFill_"], [class*=" barFill_"]) {
+    background-color: var(--alg-accent-color);
+    border-radius: var(--alg-radius-pill);
+}
+
+:is([class^="slider_"], [class*=" slider_"]) :is([class^="grabber_"], [class*=" grabber_"]) {
+    background-color: #ffffff;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+    transition: scale var(--alg-dur-fast) var(--alg-ease-spring);
+}
+
+:is([class^="slider_"], [class*=" slider_"]) :is([class^="grabber_"], [class*=" grabber_"]):active {
+    scale: 1.12;
+}
+
+/* Checkboxes and radios */
+input[type="checkbox"] + div,
+input[type="radio"] + div {
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), border-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+/* Keyboard focus: one consistent accent ring */
+:focus-visible {
+    outline-color: var(--alg-accent-color);
+}
+
+
+/* ==========================================================================
+   18. VOICE AND CALL
+   ========================================================================== */
+
+/* Call / stage area */
+:is([class^="callContainer_"], [class*=" callContainer_"]) {
+    background: var(--alg-background-color);
+}
+
+/* Participant tiles */
+:is([class^="callContainer_"], [class*=" callContainer_"]) :is([class^="tile_"], [class*=" tile_"]) {
+    border-radius: var(--alg-radius-lg);
+    box-shadow: inset 0 0 0 1px var(--alg-separator);
+    overflow: hidden;
+}
+
+/* Call controls, FaceTime style: each group is one floating glass capsule,
+   buttons inside are plain circles without their own borders. */
+:is([class^="buttonSection_"], [class*=" buttonSection_"]) {
+    background-color: rgba(var(--alg-glass-rgb), 0.78) !important;
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: var(--alg-radius-pill) !important;
+    box-shadow: var(--alg-edge), 0 10px 30px rgba(0, 0, 0, 0.45);
+    padding-inline: 6px;
+}
+
+:is([class^="buttonSection_"], [class*=" buttonSection_"]) :is(button, [role="button"]):is([class^="centerButton_"], [class*=" centerButton_"]),
+:is([class^="buttonSection_"], [class*=" buttonSection_"]) :is([class^="controlButton_"], [class*=" controlButton_"]) {
+    background-color: var(--alg-fill-3) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: none !important;
+    border-radius: var(--alg-radius-pill) !important;
+    box-shadow: none !important;
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="buttonSection_"], [class*=" buttonSection_"]) :is(button, [role="button"]):is([class^="centerButton_"], [class*=" centerButton_"]):hover,
+:is([class^="buttonSection_"], [class*=" buttonSection_"]) :is([class^="controlButton_"], [class*=" controlButton_"]):hover {
+    background-color: var(--alg-fill-4) !important;
+}
+
+/* Button + options caret pairs read as one split capsule */
+:is([class^="attachedButton_"], [class*=" attachedButton_"]) {
+    border-radius: var(--alg-radius-pill) 0 0 var(--alg-radius-pill) !important;
+}
+
+:is([class^="attachedCaret_"], [class*=" attachedCaret_"]) {
+    background-color: var(--alg-fill-3) !important;
+    border: none !important;
+    border-radius: 0 var(--alg-radius-pill) var(--alg-radius-pill) 0 !important;
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="attachedCaret_"], [class*=" attachedCaret_"]):hover {
+    background-color: var(--alg-fill-4) !important;
+}
+
+/* Leave / stop watching: Apple's red end-call capsule */
+button:is([class^="disconnect_"], [class*=" disconnect_"]) {
+    background: #ff453a !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: none !important;
+    border-radius: var(--alg-radius-pill) !important;
+    box-shadow: 0 6px 18px rgba(255, 69, 58, 0.35) !important;
+    color: #ffffff !important;
+}
+
+button:is([class^="disconnect_"], [class*=" disconnect_"]):hover {
+    background: #ff5a50 !important;
+}
+
+/* Voice connection panel inside the user panel */
+:is([class^="panels_"], [class*=" panels_"]) [class*="rtcConnectionStatus"] {
+    font-weight: 600;
+}
+
+
+/* ==========================================================================
+   19. SECONDARY COMPONENTS
+   ========================================================================== */
+
+/* Scrollbars: thin floating capsules */
+:is([class^="thin_"], [class*=" thin_"], [class^="auto_"], [class*=" auto_"])::-webkit-scrollbar-thumb {
+    border-radius: var(--alg-radius-pill);
+}
+
+:is([class^="thin_"], [class*=" thin_"], [class^="auto_"], [class*=" auto_"])::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.28);
+}
+
+:is([class^="auto_"], [class*=" auto_"])::-webkit-scrollbar-track {
+    background: transparent;
+    border-color: transparent;
+}
+
+/* Emoji / GIF / sticker picker: the outer drawer is the single glass card,
+   everything inside sits flat on it. */
+section[role="dialog"] > * > :is([class^="contentWrapper_"], [class*=" contentWrapper_"]) {
+    background-color: rgba(var(--alg-glass-rgb), 0.9) !important;
+    background-image: var(--alg-specular-strong);
+    -webkit-backdrop-filter: var(--alg-glass-filter-strong);
+    backdrop-filter: var(--alg-glass-filter-strong);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: var(--alg-radius-lg) !important;
+    box-shadow: var(--alg-edge), var(--alg-floating-shadow);
+    overflow: hidden;
+}
+
+section[role="dialog"] :is([class^="emojiPicker_"], [class*=" emojiPicker_"]) {
+    background: transparent;
+    border: none;
+    border-top: 1px solid var(--alg-separator);
+    border-radius: 0;
+}
+
+section[role="dialog"] [role="tablist"] [role="tab"] {
+    border-radius: var(--alg-radius-pill);
+}
+
+/* Thread and forum cards */
+:is([class^="forumPost_"], [class*=" forumPost_"]),
+:is([class^="mainCard_"], [class*=" mainCard_"]) {
+    background-color: var(--alg-fill-1);
+    border: 1px solid var(--alg-separator);
+    border-radius: var(--alg-radius-lg);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+    transition: background-color var(--alg-dur) var(--alg-ease), border-color var(--alg-dur) var(--alg-ease);
+}
+
+:is([class^="forumPost_"], [class*=" forumPost_"]):hover,
+:is([class^="mainCard_"], [class*=" mainCard_"]):hover {
+    background-color: var(--alg-fill-2);
+    border-color: var(--alg-glass-border);
+}
+
+/* Thread sidebar */
+:is([class^="threadSidebarOpen_"], [class*=" threadSidebarOpen_"]) > :last-child {
+    border-inline-start: 1px solid var(--alg-glass-border);
+}
+
+/* Friends list rows */
+:is([class^="peopleListItem_"], [class*=" peopleListItem_"]) {
+    border-radius: var(--alg-radius-md);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="peopleListItem_"], [class*=" peopleListItem_"]):hover {
+    background-color: var(--alg-fill-2);
+}
+
+/* Friends tab bar items */
+:is([class^="tabBar_"], [class*=" tabBar_"]) [role="tab"] {
+    border-radius: var(--alg-radius-sm);
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease);
+}
+
+:is([class^="tabBar_"], [class*=" tabBar_"]) [role="tab"][aria-selected="true"] {
+    background-color: var(--alg-fill-3);
+    color: var(--alg-text-primary);
+}
+
+/* Activity and game cards */
+:is([class^="activityCard_"], [class*=" activityCard_"]),
+:is([class^="activityPanel_"], [class*=" activityPanel_"]) {
+    background-color: var(--alg-fill-1);
+    border-color: var(--alg-separator);
+    border-radius: var(--alg-radius-md);
+}
+
+/* Notices and banners along the top of the app */
+:is([class^="notice_"], [class*=" notice_"]) {
+    border-radius: 0 0 var(--alg-radius-md) var(--alg-radius-md);
+}
+
+/* Spoilers */
+:is([class^="spoilerContent_"], [class*=" spoilerContent_"]) {
+    border-radius: var(--alg-radius-xs);
+}
+
+/* Unread / mention badges */
+:is([class^="numberBadge_"], [class*=" numberBadge_"]),
+:is([class^="mentionsBadge_"], [class*=" mentionsBadge_"]) {
+    box-shadow: 0 0 0 2px rgba(15, 15, 16, 0.6);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+
+/* ==========================================================================
+   20. MOTION
+   Short, restrained entrances. The standalone "scale" property composes with
+   the inline transforms Discord uses for positioning, so nothing jumps.
+   ========================================================================== */
+
+@keyframes alg-surface-in {
+    from {
+        opacity: 0;
+        scale: 0.97;
+    }
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+@keyframes alg-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+:is([class^="menu_"], [class*=" menu_"])[role="menu"],
+:is([class^="autocomplete_"], [class*=" autocomplete_"]),
+:is([class^="emojiPicker_"], [class*=" emojiPicker_"]) {
+    animation: alg-surface-in var(--alg-dur) var(--alg-ease-out) both;
+    transform-origin: top center;
+}
+
+:is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"] {
+    animation: alg-fade-in var(--alg-dur-fast) var(--alg-ease) both;
+}
+
+
+/* ==========================================================================
+   21. FALLBACKS AND ACCESSIBILITY
+   ========================================================================== */
+
+/* No backdrop-filter support: make every glass surface opaque enough to read */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root {
+        --alg-glass-opacity: 0.88;
+        --alg-glass-opacity-floating: 0.96;
+    }
+
+    :is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]) {
+        background-color: var(--alg-surface-color);
+    }
+}
+
+/* System "reduce motion" setting, and Discord's own reduced-motion option */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --alg-animation-speed: 0;
+    }
+
+    :is([class^="menu_"], [class*=" menu_"])[role="menu"],
+    :is([class^="autocomplete_"], [class*=" autocomplete_"]),
+    :is([class^="emojiPicker_"], [class*=" emojiPicker_"]),
+    :is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"] {
+        animation: none;
+    }
+
+    [data-list-id="guildsnav"] [data-list-item-id^="guildsnav___"]:hover,
+    button:active:not(:disabled) {
+        scale: none;
+    }
+}
+
+html.reduce-motion {
+    --alg-animation-speed: 0;
+}
+
+html.reduce-motion :is([class^="menu_"], [class*=" menu_"])[role="menu"],
+html.reduce-motion :is([class^="autocomplete_"], [class*=" autocomplete_"]),
+html.reduce-motion :is([class^="emojiPicker_"], [class*=" emojiPicker_"]),
+html.reduce-motion :is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"] {
+    animation: none;
+}
+
+/* Higher-contrast reading: prefers-contrast boosts glass opacity and borders */
+@media (prefers-contrast: more) {
+    :root {
+        --alg-glass-opacity: 0.85;
+        --alg-glass-opacity-floating: 0.95;
+        --alg-glass-border: rgba(255, 255, 255, 0.24);
+        --alg-text-secondary: #c7c7cc;
+    }
+}
+
+/* Windows high-contrast / forced colors: step aside entirely */
+@media (forced-colors: active) {
+    #app-mount,
+    :is([class^="standardSidebarView_"], [class*=" standardSidebarView_"]) {
+        background: Canvas;
+    }
+
+    * {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}

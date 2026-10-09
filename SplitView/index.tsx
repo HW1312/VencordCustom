@@ -9,7 +9,7 @@ import { definePluginSettings } from "@api/Settings";
 import { getCurrentChannel } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { ChannelStore, Menu, showToast, Toasts } from "@webpack/common";
+import { ChannelStore, Menu, showToast } from "@webpack/common";
 
 import { emitChannelEvent } from "./messages";
 import { activate, mountFallbackRoot, renderTitleBarButton, setDragInfo, SettingsPanel, SPLIT_PATH, unmountAll } from "./ui";
@@ -121,22 +121,22 @@ export function openPanel(channelId: string | null | undefined, guildId?: string
     if (!channelId) return;
     const channel = ChannelStore.getChannel(channelId);
     if (!channel) {
-        showToast("SplitView: Channel not found", Toasts.Type.FAILURE);
+        showToast("SplitView: Channel not found", "failure");
         return;
     }
     if (!isTextCapable(channel)) {
-        showToast("SplitView: This channel has no text chat", Toasts.Type.FAILURE);
+        showToast("SplitView: This channel has no text chat", "failure");
         return;
     }
 
     const list = getPanels();
     settings.store.visible = true;
     if (list.some(p => p.channelId === channelId)) {
-        showToast("SplitView: Channel is already open", Toasts.Type.MESSAGE);
+        showToast("SplitView: Channel is already open", "message");
         return;
     }
     if (list.length >= MAX_PANELS) {
-        showToast(`SplitView: Maximum of ${MAX_PANELS} panels – close one first`, Toasts.Type.FAILURE);
+        showToast(`SplitView: Maximum of ${MAX_PANELS} panels – close one first`, "failure");
         return;
     }
     list.push({ channelId, guildId: guildId ?? channel.guild_id ?? null });
@@ -210,7 +210,7 @@ function onKeyDown(e: KeyboardEvent) {
     e.stopPropagation();
     const channel = getCurrentChannel();
     if (!channel) {
-        showToast("SplitView: No channel selected", Toasts.Type.FAILURE);
+        showToast("SplitView: No channel selected", "failure");
         return;
     }
     openPanel(channel.id, channel.guild_id);

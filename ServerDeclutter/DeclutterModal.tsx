@@ -5,7 +5,7 @@
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { ConfirmModal, GuildReadStateStore, GuildStore, Modal, NavigationRouter, openModal, showToast, SortedGuildStore, Toasts, useEffect, useMemo, UserGuildSettingsStore, useState } from "@webpack/common";
+import { ConfirmModal, GuildReadStateStore, GuildStore, Modal, NavigationRouter, openModal, showToast, SortedGuildStore, useEffect, useMemo, UserGuildSettingsStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { BulkResult, canWriteFolders, describeError, isOwnedGuild, leaveGuild, markGuildRead, moveToFolder, runBulk, setGuildMuted } from "./actions";
@@ -45,7 +45,7 @@ function useRows() {
         try {
             return buildRows();
         } catch (e) {
-            showToast(`Server list could not be read: ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`Server list could not be read: ${describeError(e)}`, "failure");
             return [];
         }
     }, [tick]);
@@ -265,7 +265,7 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
         const skipped = chosen.length - targets.length;
 
         if (!targets.length) {
-            showToast(kind === "leave" ? "You cannot leave servers you own" : "None of the selected servers need this action", Toasts.Type.MESSAGE);
+            showToast(kind === "leave" ? "You cannot leave servers you own" : "None of the selected servers need this action", "message");
             return;
         }
 
@@ -305,10 +305,10 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                 try {
                     await moveToFolder(ids2, archiveName);
                     hooks.onProgress({ done: 1, total: 1, label: "Done" });
-                    showToast(`${ids2.length} ${ids2.length === 1 ? "server" : "servers"} moved to "${archiveName}"`, Toasts.Type.SUCCESS);
+                    showToast(`${ids2.length} ${ids2.length === 1 ? "server" : "servers"} moved to "${archiveName}"`, "success");
                 } catch (e) {
                     hooks.onLog("error", describeError(e));
-                    showToast(`Move failed: ${describeError(e)}`, Toasts.Type.FAILURE);
+                    showToast(`Move failed: ${describeError(e)}`, "failure");
                 }
             });
             refresh();
@@ -328,7 +328,7 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
         try {
             result = await job.run(info.title, ids2.length, (token, hooks) => runBulk(ids2, worker, { token, interval, ...hooks }));
         } catch (e) {
-            showToast(`${info.title} failed: ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`${info.title} failed: ${describeError(e)}`, "failure");
         }
         refresh();
         if (!result) return;
@@ -336,7 +336,7 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
         const parts = [`${result.ok.length} ${info.verb}`];
         if (result.failed.length) parts.push(`${result.failed.length} failed`);
         if (result.cancelled) parts.push("cancelled");
-        showToast(`${info.title}: ${parts.join(", ")}`, result.failed.length ? Toasts.Type.FAILURE : Toasts.Type.SUCCESS);
+        showToast(`${info.title}: ${parts.join(", ")}`, result.failed.length ? "failure" : "success");
         if (kind === "leave") setSelected(new Set());
     }
 

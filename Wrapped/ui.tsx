@@ -10,7 +10,7 @@ import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { saveFile } from "@utils/web";
 import { findComponentByCodeLazy } from "@webpack";
-import { ChannelStore, ConfirmModal, GuildStore, IconUtils, Modal, openModal, showToast, Toasts, useEffect, useMemo, UserStore, useState } from "@webpack/common";
+import { ChannelStore, ConfirmModal, GuildStore, IconUtils, Modal, openModal, showToast, useEffect, useMemo, UserStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { AllTimeData, cancelBackfill, clearAllTime, getBackfill, onBackfillChange, runBackfill } from "./backfill";
@@ -395,8 +395,8 @@ function confirmReset() {
             variant="critical-primary"
             onConfirm={() => {
                 Promise.all([resetStats(), clearAllTime()])
-                    .then(() => showToast("Wrapped was reset", Toasts.Type.SUCCESS))
-                    .catch(() => showToast("Reset failed", Toasts.Type.FAILURE));
+                    .then(() => showToast("Wrapped was reset", "success"))
+                    .catch(() => showToast("Reset failed", "failure"));
             }}
         />
     ));

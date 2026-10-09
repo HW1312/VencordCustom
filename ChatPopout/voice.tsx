@@ -6,7 +6,7 @@
 
 import { classes } from "@utils/misc";
 import { findByPropsLazy, findStoreLazy } from "@webpack";
-import { GuildChannelStore, MediaEngineStore, PermissionsBits, PermissionStore, RestAPI, SelectedChannelStore, showToast, Toasts, UserStore, useState, useStateFromStores, VoiceStateStore } from "@webpack/common";
+import { GuildChannelStore, MediaEngineStore, PermissionsBits, PermissionStore, RestAPI, SelectedChannelStore, showToast, UserStore, useState, useStateFromStores, VoiceStateStore } from "@webpack/common";
 
 import { isInCall, openCallPopout, settings } from "./index";
 import { MenuItem } from "./menu";
@@ -166,7 +166,7 @@ export function VolumeSlider({ userId, context = "default", label = "User Volume
 function patchMember(guildId: string, userId: string, body: Record<string, unknown>, what: string) {
     RestAPI.patch({ url: `/guilds/${guildId}/members/${userId}`, body }).catch((e: any) => {
         log.error(`Couldn't ${what}`, e);
-        showToast(e?.body?.message ? `Couldn't ${what}: ${e.body.message}` : `Couldn't ${what}`, Toasts.Type.FAILURE);
+        showToast(e?.body?.message ? `Couldn't ${what}: ${e.body.message}` : `Couldn't ${what}`, "failure");
     });
 }
 

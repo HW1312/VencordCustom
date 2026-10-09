@@ -10,7 +10,7 @@ import { copyToClipboard } from "@utils/clipboard";
 import { insertTextIntoChatInputBox } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import { contextMenus } from "./menus";
 import { FormatHubIcon, openFormatHub, SettingsPanel } from "./ui";
@@ -97,10 +97,10 @@ export async function copyFormat(entry: SavedFormat) {
     try {
         await copyToClipboard(entry.syntax);
         pushRecent(entry);
-        showToast(`Copied: ${entry.syntax.length > 60 ? entry.syntax.slice(0, 57) + "…" : entry.syntax}`, Toasts.Type.SUCCESS);
+        showToast(`Copied: ${entry.syntax.length > 60 ? entry.syntax.slice(0, 57) + "…" : entry.syntax}`, "success");
     } catch (e) {
         logger.error("Copy failed", e);
-        showToast("Copy failed", Toasts.Type.FAILURE);
+        showToast("Copy failed", "failure");
     }
 }
 
@@ -112,7 +112,7 @@ export function insertFormat(entry: SavedFormat) {
         return true;
     } catch (e) {
         logger.error("Insert failed", e);
-        showToast("Insert failed – no chat input found", Toasts.Type.FAILURE);
+        showToast("Insert failed – no chat input found", "failure");
         return false;
     }
 }

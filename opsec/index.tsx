@@ -13,7 +13,7 @@ import { getUserSettingLazy } from "@api/UserSettings";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, PluginNative, PluginSettingBooleanDef } from "@utils/types";
 import { CloudUpload } from "@vencord/discord-types";
-import { FluxDispatcher, showToast, Toasts } from "@webpack/common";
+import { FluxDispatcher, showToast } from "@webpack/common";
 
 import { setBlocklistEnabled } from "./blocklist";
 import { configureCurtain, CurtainAnimation, CurtainIconName, CurtainOptions, CurtainStyle, hideCurtain, showCurtain, toggleCurtain } from "./curtain";
@@ -337,7 +337,7 @@ async function editUpload(upload: CloudUpload) {
         return true;
     } catch (e) {
         logger.error(`Failed to edit "${name}"`, e);
-        showToast(`OpSec: Failed to edit "${name}" – sending unchanged`, Toasts.Type.FAILURE);
+        showToast(`OpSec: Failed to edit "${name}" – sending unchanged`, "failure");
         return false;
     }
 }
@@ -357,7 +357,7 @@ async function stripUpload(upload: CloudUpload, found: Set<string>) {
 function toastFound(found: Set<string>, files: number) {
     if (!files || !settings.store.showUploadToast) return;
     const what = [...found].filter(f => f !== "Video metadata").slice(0, 3).join(", ") || "metadata";
-    showToast(`OpSec: Removed ${what} from ${files === 1 ? "1 file" : `${files} files`}`, Toasts.Type.SUCCESS);
+    showToast(`OpSec: Removed ${what} from ${files === 1 ? "1 file" : `${files} files`}`, "success");
 }
 
 /** Edit (redact, crop …) first, then strip metadata */

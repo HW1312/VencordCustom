@@ -15,7 +15,7 @@ import { showNotification } from "@api/Notifications";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { findByPropsLazy } from "@webpack";
-import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, showToast, UserStore } from "@webpack/common";
 
 import { decodeText, deriveSharedKey, encodeText, fromB64, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
@@ -182,10 +182,10 @@ export async function letIn(msg: RoomMessage, manual: boolean) {
         const sealed = seal(shared, nonce, concat(key, encodeText(name)), keyAad(joinId, msg.authorId));
         answered.add(joinId);
         sendMessage(msg.channelId, { content: `🔑 SC1K.${joinId}.${msg.authorId}.${publicKey}.${toB64(concat(nonce, sealed))}` }, false);
-        if (manual) showToast(`Let ${userName(msg.authorId)} in`, Toasts.Type.SUCCESS);
+        if (manual) showToast(`Let ${userName(msg.authorId)} in`, "success");
     } catch (e) {
         logger.error("Letting someone into the room failed", e);
-        if (manual) showToast("Could not hand out the room key", Toasts.Type.FAILURE);
+        if (manual) showToast("Could not hand out the room key", "failure");
     } finally {
         busy.delete(joinId);
         emit();
@@ -214,10 +214,10 @@ async function completeJoin(msg: RoomMessage) {
         delete state.joins[joinId];
         await addRoom(pending.channelId, record.id, name);
         retryLocked();
-        showToast(`You joined the secret room “${name}”`, Toasts.Type.SUCCESS);
+        showToast(`You joined the secret room “${name}”`, "success");
     } catch (e) {
         logger.error("Joining the room failed", e);
-        showToast("Could not join the secret room", Toasts.Type.FAILURE);
+        showToast("Could not join the secret room", "failure");
     } finally {
         busy.delete(joinId);
         emit();
@@ -228,7 +228,7 @@ export async function joinRoom(channelId: string, keyId: string) {
     if (!ChannelStore.getChannel(channelId)) {
         // The group was deleted (or you were removed) while the invite waited
         await dropRoom(channelId, false);
-        showToast("This chat doesn't exist anymore", Toasts.Type.FAILURE);
+        showToast("This chat doesn't exist anymore", "failure");
         return;
     }
     if (Object.values(state.joins).some(j => j.channelId === channelId && j.keyId === keyId)) return;
@@ -239,7 +239,7 @@ export async function joinRoom(channelId: string, keyId: string) {
     sendMessage(channelId, { content: `🔑 SC1J.${keyId}.${joinId}.${publicKey}` }, false);
     showToast(isPrivateChat(channelId)
         ? "Asked to join – a member who is online lets you in automatically"
-        : "Asked to join – a member has to let you in", Toasts.Type.MESSAGE);
+        : "Asked to join – a member has to let you in", "message");
 }
 
 export const isJoining = (channelId: string) => Object.values(state.joins).some(j => j.channelId === channelId);
@@ -276,10 +276,10 @@ export async function deleteRoomForEveryone(channelId: string) {
         }
         await RestAPI.del({ url: `/channels/${channelId}` });
         await dropRoom(channelId, true);
-        showToast("Group deleted", Toasts.Type.SUCCESS);
+        showToast("Group deleted", "success");
     } catch (e) {
         logger.error("Deleting the group failed", e);
-        showToast("Could not delete the group completely – try again", Toasts.Type.FAILURE);
+        showToast("Could not delete the group completely – try again", "failure");
     }
 }
 
@@ -334,7 +334,7 @@ export async function createRoom(name: string, userIds: string[], icon?: string 
             await RestAPI.patch({ url: `/channels/${channelId}`, body: { name: randomGroupName(), ...(icon ? { icon } : {}) } });
         } catch (e) {
             logger.error("Setting the group name / picture failed", e);
-            showToast("Room created, but its Discord name / picture couldn't be set", Toasts.Type.FAILURE);
+            showToast("Room created, but its Discord name / picture couldn't be set", "failure");
         }
     }
     return channelId;

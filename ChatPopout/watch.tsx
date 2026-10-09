@@ -8,7 +8,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import {
     ApplicationStreamingStore, ApplicationStreamPreviewStore, ChannelRTCStore, ChannelStore, FluxDispatcher, MediaEngineStore, PopoutActions, PopoutWindowStore,
-    SelectedChannelStore, showToast, Toasts, useEffect, useRef, UserStore, useState, useStateFromStores
+    SelectedChannelStore, showToast, useEffect, useRef, UserStore, useState, useStateFromStores
 } from "@webpack/common";
 
 import { ContextMenu, MenuItem, MenuState } from "./menu";
@@ -48,7 +48,7 @@ export function streamTargetFor(userId: string, channelId: string): StreamTarget
 export function startWatching(t: StreamTarget) {
     // Only possible while connected to the call (Discord's rule)
     if (SelectedChannelStore.getVoiceChannelId() !== t.channelId) {
-        showToast("Join the call to watch the stream", Toasts.Type.MESSAGE);
+        showToast("Join the call to watch the stream", "message");
         return false;
     }
     try {
@@ -56,7 +56,7 @@ export function startWatching(t: StreamTarget) {
         return true;
     } catch (e) {
         log.error("Couldn't watch stream", e);
-        showToast("Couldn't open the stream", Toasts.Type.FAILURE);
+        showToast("Couldn't open the stream", "failure");
         return false;
     }
 }
@@ -295,7 +295,7 @@ export function openStreamWindow(t: StreamTarget, onDock?: () => void) {
     } catch (e) {
         inWindow.delete(t.streamKey);
         log.error("Couldn't open stream window", e);
-        showToast("Couldn't open stream window", Toasts.Type.FAILURE);
+        showToast("Couldn't open stream window", "failure");
     }
 }
 

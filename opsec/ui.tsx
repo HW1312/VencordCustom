@@ -12,7 +12,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { useForceUpdater } from "@utils/react";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, ConnectedAccountsStore, GuildChannelStore, GuildStore, IconUtils, Popout, React, showToast, Toasts, Tooltip, useEffect, useLayoutEffect, useMemo, useRef, UserSettingsProtoStore, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { Alerts, ConnectedAccountsStore, GuildChannelStore, GuildStore, IconUtils, Popout, React, showToast, Tooltip, useEffect, useLayoutEffect, useMemo, useRef, UserSettingsProtoStore, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { Check, CHECKS, CheckStatus, getAuditSummary, loadConsents, onConsentsChange, runFix } from "./audit";
@@ -392,7 +392,7 @@ function CheckRow({ check, index, onDone }: { check: Check; index: number; onDon
         try {
             await runFix(check);
         } catch {
-            showToast(`OpSec: Failed to change "${check.title}"`, Toasts.Type.FAILURE);
+            showToast(`OpSec: Failed to change "${check.title}"`, "failure");
         } finally {
             setBusy(false);
             onDone();
@@ -441,7 +441,7 @@ function CheckTab() {
         refresh();
         showToast(
             failed ? `OpSec: ${fixable.length - failed} fixed, ${failed} failed` : `OpSec: ${fixable.length} ${fixable.length === 1 ? "setting" : "settings"} secured`,
-            failed ? Toasts.Type.FAILURE : Toasts.Type.SUCCESS
+            failed ? "failure" : "success"
         );
     };
 
@@ -640,7 +640,7 @@ function BlocklistStatus({ enabled }: { enabled: boolean; }) {
     const st = useBlocklist();
     const update = async () => {
         const ok = await refreshBlocklist(true);
-        showToast(ok ? `OpSec: Blocklist updated (${getBlocklistStatus().count.toLocaleString("en-US")} domains)` : "OpSec: Failed to load blocklist", ok ? Toasts.Type.SUCCESS : Toasts.Type.FAILURE);
+        showToast(ok ? `OpSec: Blocklist updated (${getBlocklistStatus().count.toLocaleString("en-US")} domains)` : "OpSec: Failed to load blocklist", ok ? "success" : "failure");
     };
 
     return (

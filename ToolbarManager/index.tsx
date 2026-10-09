@@ -6,7 +6,7 @@
 
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import { hitTest, startDom, stopDom } from "./dom";
 import { flush, loadData, logger, runtime } from "./store";
@@ -89,7 +89,7 @@ export default definePlugin({
             startDom();
         } catch (e) {
             logger.error("Failed to start", e);
-            showToast("ToolbarManager: Failed to start - see console for details", Toasts.Type.FAILURE);
+            showToast("ToolbarManager: Failed to start - see console for details", "failure");
         }
         document.addEventListener("contextmenu", onContextMenu, true);
     },

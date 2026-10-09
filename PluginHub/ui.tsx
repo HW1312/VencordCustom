@@ -1,5 +1,5 @@
 /*
- * PluginHub – list, title bar button, popout & window
+ * PluginHub – list, title bar button & window
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -14,9 +14,10 @@ import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { OptionType, Plugin } from "@utils/types";
 import { findComponentByCodeLazy } from "@webpack";
-import { Modal, openModal, Popout, useMemo, useRef, useState } from "@webpack/common";
+import { Modal, openModal, useMemo, useState } from "@webpack/common";
 
 import { getOwnPlugins, isEnabled, isNew, markTried, needsRestart, setEnabled, settings } from "./index";
+import { hubThemes, ThemesTab } from "./themes";
 
 const cl = classNameFactory("vc-pluginhub-");
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
@@ -166,9 +167,9 @@ export function openInfoModal(plugin: Plugin) {
 
 // ---------------------------------------------------------------- Hub
 
-function Hub({ compact }: { compact?: boolean; }) {
+function Hub() {
     useSettings(["plugins.*"] as any);
-    const { sort } = settings.use(["sort"]);
+    const { sort, tab } = settings.use(["sort", "tab"]);
     const [query, setQuery] = useState("");
 
     const all = useMemo(getOwnPlugins, [sort]);
@@ -179,50 +180,68 @@ function Hub({ compact }: { compact?: boolean; }) {
 
     const onCount = all.filter(isEnabled).length;
     const restartCount = all.filter(needsRestart).length;
+    const themes = tab === "themes";
 
     return (
-        <div className={classes(cl("hub"), compact && cl("compact"))}>
+        <div className={cl("hub")}>
+            <div className={cl("tabs")} role="tablist">
+                <button role="tab" aria-selected={!themes} className={classes(cl("tab"), !themes && cl("tab-on"))} onClick={() => settings.store.tab = "plugins"}>
+                    Plugins <span className={cl("tab-count")}>{all.length}</span>
+                </button>
+                <button role="tab" aria-selected={themes} className={classes(cl("tab"), themes && cl("tab-on"))} onClick={() => settings.store.tab = "themes"}>
+                    Themes <span className={cl("tab-count")}>{hubThemes.length}</span>
+                </button>
+            </div>
+
             <div className={cl("toolbar")}>
                 <input
                     className={cl("search")}
-                    placeholder="Search plugins…"
+                    placeholder={themes ? "Search themes…" : "Search plugins…"}
                     value={query}
                     onChange={e => setQuery(e.currentTarget.value)}
                 />
-                <button
-                    className={cl("btn")}
-                    title="Change sort order"
-                    onClick={() => settings.store.sort = sort === "new" ? "az" : "new"}
-                >
-                    {sort === "new" ? "Newest first" : "A–Z"}
-                </button>
-                <span className={cl("count")}>{onCount} of {all.length} on</span>
+                {!themes && (
+                    <>
+                        <button
+                            className={cl("btn")}
+                            title="Change sort order"
+                            onClick={() => settings.store.sort = sort === "new" ? "az" : "new"}
+                        >
+                            {sort === "new" ? "Newest first" : "A–Z"}
+                        </button>
+                        <span className={cl("count")}>{onCount} of {all.length} on</span>
+                    </>
+                )}
             </div>
 
-            <div className={cl("actions")}>
-                <button className={cl("btn")} onClick={() => shown.forEach(p => setEnabled(p, true))}>
-                    {q ? "Matches on" : "All on"}
-                </button>
-                <button className={cl("btn")} onClick={() => shown.forEach(p => setEnabled(p, false))}>
-                    {q ? "Matches off" : "All off"}
-                </button>
-            </div>
+            {themes ? <ThemesTab query={query} /> : (
+                <>
+                    <div className={cl("actions")}>
+                        <button className={cl("btn")} onClick={() => shown.forEach(p => setEnabled(p, true))}>
+                            {q ? "Matches on" : "All on"}
+                        </button>
+                        <button className={cl("btn")} onClick={() => shown.forEach(p => setEnabled(p, false))}>
+                            {q ? "Matches off" : "All off"}
+                        </button>
+                    </div>
 
-            {restartCount > 0 && (
-                <div className={cl("restart")}>
-                    <span>
-                        {restartCount === 1 ? "1 change takes" : `${restartCount} changes take`} effect after a restart.
-                    </span>
-                    <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => location.reload()}>
-                        Restart now
-                    </button>
-                </div>
+                    {restartCount > 0 && (
+                        <div className={cl("restart")}>
+                            <span>
+                                {restartCount === 1 ? "1 change takes" : `${restartCount} changes take`} effect after a restart.
+                            </span>
+                            <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => location.reload()}>
+                                Restart now
+                            </button>
+                        </div>
+                    )}
+
+                    <div className={cl("list")}>
+                        {shown.map(p => <PluginRow key={p.name} plugin={p} />)}
+                        {!shown.length && <div className={cl("empty")}>No plugins found.</div>}
+                    </div>
+                </>
             )}
-
-            <div className={cl("list")}>
-                {shown.map(p => <PluginRow key={p.name} plugin={p} />)}
-                {!shown.length && <div className={cl("empty")}>No plugins found.</div>}
-            </div>
         </div>
     );
 }
@@ -245,7 +264,7 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
 
 export function openHubModal() {
     openModal(props => (
-        <Modal {...props} size="lg" title="My Plugins" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
+        <Modal {...props} size="lg" title="Plugin Hub" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
             <ErrorBoundary noop>
                 <Hub />
             </ErrorBoundary>
@@ -255,51 +274,17 @@ export function openHubModal() {
 
 // ---------------------------------------------------------------- Title bar
 
-function PopoutPanel({ close }: { close(): void; }) {
-    return (
-        <div className={cl("popout")}>
-            <div className={cl("header")}>
-                <Icon path={GRID_PATH} size={20} />
-                <span className={cl("title")}>My Plugins</span>
-                <button className={cl("link")} onClick={() => { close(); openHubModal(); }}>Open larger</button>
-            </div>
-            <Hub compact />
-        </div>
-    );
-}
-
 function TitleBarButton() {
     const { showTitleBarButton } = settings.use(["showTitleBarButton"]);
-    const buttonRef = useRef(null);
-    const [show, setShow] = useState(false);
-
     if (!showTitleBarButton) return null;
 
     return (
-        <Popout
-            position="bottom"
-            align="left"
-            animation={Popout.Animation.NONE}
-            shouldShow={show}
-            onRequestClose={() => setShow(false)}
-            targetElementRef={buttonRef}
-            renderPopout={() => (
-                <ErrorBoundary noop>
-                    <PopoutPanel close={() => setShow(false)} />
-                </ErrorBoundary>
-            )}
-        >
-            {(_, { isShown }) => (
-                <HeaderBarIcon
-                    ref={buttonRef}
-                    className={cl("btn-titlebar")}
-                    onClick={() => setShow(v => !v)}
-                    tooltip={isShown ? null : "My Plugins"}
-                    icon={() => <Icon path={GRID_PATH} />}
-                    selected={isShown}
-                />
-            )}
-        </Popout>
+        <HeaderBarIcon
+            className={cl("btn-titlebar")}
+            onClick={openHubModal}
+            tooltip="Plugins & Themes"
+            icon={() => <Icon path={GRID_PATH} />}
+        />
     );
 }
 

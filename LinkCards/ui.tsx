@@ -13,7 +13,7 @@ import { Link } from "@components/Link";
 import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { useForceUpdater, useIntersection } from "@utils/react";
-import { showToast, Toasts, useEffect, useState } from "@webpack/common";
+import { showToast, useEffect, useState } from "@webpack/common";
 
 import { clearCache, getEntry, isFresh, isLoading, load, subscribe } from "./cache";
 import { ICONS } from "./icons";
@@ -327,7 +327,7 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
     const clear = async () => {
         await clearCache();
         resetBackoffs();
-        showToast("LinkCards cache cleared", Toasts.Type.SUCCESS);
+        showToast("LinkCards cache cleared", "success");
     };
 
     return (

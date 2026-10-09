@@ -12,7 +12,7 @@ import { getCurrentChannel } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { findComponentByCodeLazy } from "@webpack";
-import { ChannelStore, FluxDispatcher, Menu, PopoutActions, PopoutWindowStore, SelectedChannelStore, showToast, Toasts, Tooltip } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, Menu, PopoutActions, PopoutWindowStore, SelectedChannelStore, showToast, Tooltip } from "@webpack/common";
 
 import { ChatWindow, Icon, POPOUT_PATH } from "./chat";
 import { emitChannelEvent } from "./messages";
@@ -82,7 +82,7 @@ export function isInCall(channelId: string) {
 export function openChatPopout(channelId: string | null | undefined) {
     const channel = channelId ? ChannelStore.getChannel(channelId) : null;
     if (!channel) {
-        showToast("This chat can't be opened", Toasts.Type.FAILURE);
+        showToast("This chat can't be opened", "failure");
         return;
     }
 
@@ -97,7 +97,7 @@ export function openChatPopout(channelId: string | null | undefined) {
         });
     } catch (e) {
         logger.error("Couldn't open window", e);
-        showToast("Couldn't open window", Toasts.Type.FAILURE);
+        showToast("Couldn't open window", "failure");
         return;
     }
 
@@ -112,7 +112,7 @@ export function openCallPopout(channelId: string) {
     const channel = ChannelStore.getChannel(channelId);
     if (!channel) return;
     if (!isInCall(channelId)) {
-        showToast("You're not in a call in this channel", Toasts.Type.FAILURE);
+        showToast("You're not in a call in this channel", "failure");
         return;
     }
     FluxDispatcher.dispatch({ type: "CHANNEL_CALL_POPOUT_WINDOW_OPEN", channel } as any);

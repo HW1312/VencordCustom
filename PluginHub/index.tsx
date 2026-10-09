@@ -1,6 +1,7 @@
 /*
  * PluginHub – Vencord Userplugin
- * Toggle all your own plugins on and off in one place instead of hunting for them in the Vencord list.
+ * Toggle all your own plugins on and off in one place instead of hunting for them in the Vencord list,
+ * and install / apply the themes from the Themes folder (Theme Hub tab).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -9,7 +10,7 @@ import { isPluginEnabled, pluginRequiresRestart, plugins, startDependenciesRecur
 import { definePluginSettings, Settings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, Plugin } from "@utils/types";
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import added from "./added.json";
 import { openHubModal, renderTitleBarButton, SettingsPanel } from "./ui";
@@ -43,6 +44,16 @@ export const settings = definePluginSettings({
         options: [
             { label: "Newest first", value: "new", default: true },
             { label: "A–Z", value: "az" }
+        ],
+        hidden: true
+    },
+    /** Last open tab of the hub */
+    tab: {
+        type: OptionType.SELECT,
+        description: "Open tab",
+        options: [
+            { label: "Plugins", value: "plugins", default: true },
+            { label: "Themes", value: "themes" }
         ],
         hidden: true
     },
@@ -110,7 +121,7 @@ export function setEnabled(p: Plugin, enable: boolean) {
     const ok = enable ? startPlugin(p) : stopPlugin(p);
     if (!ok) {
         pluginSettings.enabled = false;
-        showToast(`Failed to ${enable ? "start" : "stop"} ${p.name}`, Toasts.Type.FAILURE);
+        showToast(`Failed to ${enable ? "start" : "stop"} ${p.name}`, "failure");
         return;
     }
 
@@ -121,7 +132,7 @@ export function setEnabled(p: Plugin, enable: boolean) {
 
 export default definePlugin({
     name: "PluginHub",
-    description: "Toggle all your own plugins on and off in one place – via the title bar or the settings",
+    description: "Toggle all your own plugins and install or apply themes in one place – via the title bar or the settings",
     authors: [{ name: "5406", id: 1062070744558870548n }],
     tags: ["Utility"],
     settings,
@@ -141,6 +152,6 @@ export default definePlugin({
     renderTitleBarButton,
 
     toolboxActions: {
-        "My Plugins": () => openHubModal()
+        "Plugin Hub": () => openHubModal()
     }
 });

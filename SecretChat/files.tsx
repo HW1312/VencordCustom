@@ -15,7 +15,7 @@ import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
 import { PluginNative } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
-import { Constants, RestAPI, showToast, SnowflakeUtils, Toasts, useEffect, UserStore, useState } from "@webpack/common";
+import { Constants, RestAPI, showToast, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
 
 import { askGofile, attachmentOf, formatBytes, sendFiles as sendPlainFiles, sendViaGofile, uploadLimit, uploadOne } from "../ChatPopout/upload";
 import { decryptFile, encryptFile, encryptMessage, randomBytes, toHex } from "./crypto";
@@ -149,7 +149,7 @@ export async function sendEncryptedFiles(channel: Channel, list: File[], message
             messageReference = undefined;
         } catch (e) {
             logger.error("Sending an encrypted file failed", e);
-            showToast(`Couldn't send ${file.name} encrypted`, Toasts.Type.FAILURE);
+            showToast(`Couldn't send ${file.name} encrypted`, "failure");
         }
     }
 }

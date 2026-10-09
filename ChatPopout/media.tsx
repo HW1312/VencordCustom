@@ -5,7 +5,7 @@
 
 import { copyToClipboard } from "@utils/clipboard";
 import { classes } from "@utils/misc";
-import { showToast, Toasts, useEffect, useRef, useState } from "@webpack/common";
+import { showToast, useEffect, useRef, useState } from "@webpack/common";
 
 import { cl, CLOSE_PATH, COPY_PATH, DOWNLOAD_PATH, Icon, LEFT_PATH, log, POPOUT_PATH, RIGHT_PATH, tip, ZOOM_PATH } from "./shared";
 
@@ -64,10 +64,10 @@ export function mediaFromElement(el: Element | null): MediaItem | null {
 export async function copyText(text: string, label = "Copied to clipboard") {
     try {
         await copyToClipboard(text);
-        showToast(label, Toasts.Type.SUCCESS);
+        showToast(label, "success");
     } catch (e) {
         log.error("Couldn't copy", e);
-        showToast("Couldn't copy", Toasts.Type.FAILURE);
+        showToast("Couldn't copy", "failure");
     }
 }
 
@@ -98,10 +98,10 @@ export async function copyImage(item: MediaItem, win: Window) {
             const Item = (win as any).ClipboardItem ?? ClipboardItem;
             await win.navigator.clipboard.write([new Item({ "image/png": png })]);
         }
-        showToast("Image copied", Toasts.Type.SUCCESS);
+        showToast("Image copied", "success");
     } catch (e) {
         log.error("Couldn't copy image", e);
-        showToast("Couldn't copy image", Toasts.Type.FAILURE);
+        showToast("Couldn't copy image", "failure");
     }
 }
 
@@ -125,7 +125,7 @@ export async function saveMedia(item: MediaItem, win: Window) {
         }, 0);
     } catch (e) {
         log.error("Couldn't save file", e);
-        showToast("Couldn't save file", Toasts.Type.FAILURE);
+        showToast("Couldn't save file", "failure");
     }
 }
 

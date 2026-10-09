@@ -7,7 +7,7 @@ import { copyToClipboard } from "@utils/clipboard";
 import { insertTextIntoChatInputBox, sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import type { Channel, Message } from "@vencord/discord-types";
-import { ChannelStore, MessageActions, RestAPI, SelectedChannelStore, showToast, Toasts } from "@webpack/common";
+import { ChannelStore, MessageActions, RestAPI, SelectedChannelStore, showToast } from "@webpack/common";
 
 import { canDelete, clear, displayName, formatFullDate, getChannel, getSelectedMessages, messageDate, messagesToQuote, messagesToText, readableContent, remove, setBusy, state } from "./store";
 
@@ -27,7 +27,7 @@ export function quoteSelected() {
     const guildId = getChannel()?.guild_id;
 
     if (SelectedChannelStore.getChannelId() !== state.channelId) {
-        showToast("Open the channel to quote into its chat box", Toasts.Type.FAILURE);
+        showToast("Open the channel to quote into its chat box", "failure");
         return;
     }
     insertTextIntoChatInputBox(messagesToQuote(messages, guildId));
@@ -39,10 +39,10 @@ export async function copySelected() {
     if (!messages.length) return;
     try {
         await copyToClipboard(messagesToText(messages, getChannel()?.guild_id));
-        showToast(`Copied ${messages.length} message${messages.length === 1 ? "" : "s"}`, Toasts.Type.SUCCESS);
+        showToast(`Copied ${messages.length} message${messages.length === 1 ? "" : "s"}`, "success");
     } catch (e) {
         logger.error("Couldn't copy", e);
-        showToast("Couldn't copy", Toasts.Type.FAILURE);
+        showToast("Couldn't copy", "failure");
     }
 }
 
@@ -78,8 +78,8 @@ export async function deleteSelected(messages: Message[], delay: number) {
 
     const deleted = busy.done - failed;
     if (state.busy === busy) setBusy(null);
-    if (failed) showToast(`Deleted ${deleted} of ${targets.length} messages, ${failed} failed`, Toasts.Type.FAILURE);
-    else showToast(`Deleted ${deleted} message${deleted === 1 ? "" : "s"}`, Toasts.Type.SUCCESS);
+    if (failed) showToast(`Deleted ${deleted} of ${targets.length} messages, ${failed} failed`, "failure");
+    else showToast(`Deleted ${deleted} message${deleted === 1 ? "" : "s"}`, "success");
     if (state.channelId === channelId && !state.ids.size) clear();
 }
 
@@ -143,9 +143,9 @@ export async function forwardSelected(target: Channel, mode: ForwardMode, delay:
     }
 
     const where = target.name ? `#${target.name}` : "the conversation";
-    if (failed) showToast(`Forwarding to ${where}: ${failed} failed`, Toasts.Type.FAILURE);
-    else if (fallbacks) showToast(`Forwarded to ${where} (${fallbacks} as text)`, Toasts.Type.SUCCESS);
-    else showToast(`Forwarded to ${where}`, Toasts.Type.SUCCESS);
+    if (failed) showToast(`Forwarding to ${where}: ${failed} failed`, "failure");
+    else if (fallbacks) showToast(`Forwarded to ${where} (${fallbacks} as text)`, "success");
+    else showToast(`Forwarded to ${where}`, "success");
     clear();
 }
 
@@ -230,7 +230,7 @@ export async function copyPng(png: Blob) {
         } else {
             throw new Error("ClipboardItem not available");
         }
-        showToast("Image copied", Toasts.Type.SUCCESS);
+        showToast("Image copied", "success");
         return;
     } catch (e) {
         logger.warn("navigator.clipboard.write failed, trying DiscordNative", e);
@@ -240,10 +240,10 @@ export async function copyPng(png: Blob) {
         const clip = nativeApi()?.clipboard;
         if (typeof clip?.copyImage !== "function") throw new Error("No native clipboard");
         await clip.copyImage(new Uint8Array(await png.arrayBuffer()), "messages.png");
-        showToast("Image copied", Toasts.Type.SUCCESS);
+        showToast("Image copied", "success");
     } catch (e) {
         logger.error("Couldn't copy image", e);
-        showToast("Couldn't copy image", Toasts.Type.FAILURE);
+        showToast("Couldn't copy image", "failure");
     }
 }
 
@@ -265,6 +265,6 @@ export async function savePng(png: Blob, name: string) {
         }, 0);
     } catch (e) {
         logger.error("Couldn't save image", e);
-        showToast("Couldn't save image", Toasts.Type.FAILURE);
+        showToast("Couldn't save image", "failure");
     }
 }

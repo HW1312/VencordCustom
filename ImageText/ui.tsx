@@ -7,7 +7,7 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyToClipboard } from "@utils/clipboard";
 import { IS_WINDOWS } from "@utils/constants";
-import { Modal, openModal, showToast, Toasts, useEffect, useRef, useState } from "@webpack/common";
+import { Modal, openModal, showToast, useEffect, useRef, useState } from "@webpack/common";
 import type { RefObject } from "react";
 
 import { joinText, Native, recognize } from "./index";
@@ -78,12 +78,12 @@ function TextModal({ src, modalProps }: { src: string; modalProps: { transitionS
             ? el.value.slice(el.selectionStart, el.selectionEnd)
             : text;
         if (!selected.trim()) {
-            showToast("Nothing to copy", Toasts.Type.MESSAGE);
+            showToast("Nothing to copy", "message");
             return;
         }
         void copyToClipboard(selected).then(
-            () => showToast(selected === text ? "Copied text" : "Copied selection", Toasts.Type.SUCCESS),
-            () => showToast("Could not copy the text", Toasts.Type.FAILURE)
+            () => showToast(selected === text ? "Copied text" : "Copied selection", "success"),
+            () => showToast("Could not copy the text", "failure")
         );
     }
 

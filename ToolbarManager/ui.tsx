@@ -11,7 +11,7 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, ContextMenuApi, Menu, Modal, openModal, showToast, Toasts, Tooltip, useEffect, useRef, useState } from "@webpack/common";
+import { Alerts, ContextMenuApi, Menu, Modal, openModal, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 import { activate, ATTR_ANCHOR, collapsedItemsNear, ItemHit, positionUnderDock, sanitizeSvg, stripUnsafe } from "./dom";
@@ -104,7 +104,7 @@ function openMenuAt(e: AnyMouseEvent | undefined, anchor: Element, render: () =>
         ContextMenuApi.openContextMenu(event, render as any);
     } catch (err) {
         logger.error("Failed to open menu", err);
-        showToast("ToolbarManager: Failed to open menu", Toasts.Type.FAILURE);
+        showToast("ToolbarManager: Failed to open menu", "failure");
     }
 }
 
@@ -128,7 +128,7 @@ export function openDockMenu(e: AnyMouseEvent | undefined, bar: Bar, dock: Eleme
                                 // Trigger only after the menu has closed, otherwise Discord immediately closes the new popout again
                                 setTimeout(() => {
                                     if (!item.el.isConnected) {
-                                        showToast("ToolbarManager: Button no longer exists", Toasts.Type.FAILURE);
+                                        showToast("ToolbarManager: Button no longer exists", "failure");
                                         return;
                                     }
                                     positionUnderDock(dock);
@@ -477,7 +477,7 @@ function Profiles() {
         const p = snapshotProfile(n);
         update(dd => { dd.profiles = [...dd.profiles.filter(x => x.name !== n), p]; });
         setName("");
-        showToast(`Profile “${n}” saved`, Toasts.Type.SUCCESS);
+        showToast(`Profile “${n}” saved`, "success");
     };
 
     const reset = () => Alerts.show({

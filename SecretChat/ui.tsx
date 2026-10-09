@@ -12,7 +12,7 @@ import { copyWithToast } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
 import { Channel, Message, RenderModalProps } from "@vencord/discord-types";
-import { Alerts, Modal, openModal, showToast, Toasts, Tooltip, UserStore, useState } from "@webpack/common";
+import { Alerts, Modal, openModal, showToast, Tooltip, UserStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { RoomCard } from "./area";
@@ -257,7 +257,7 @@ function GroupTab({ channel, current }: { channel: Channel; current: string | nu
             const { record, isNew } = await addKey(key, { name, kind: "group", source: mode });
             await setChannelKey(channel.id, record.id);
             retryLocked();
-            if (!isNew) showToast(`You already have this key as “${record.name}”`, Toasts.Type.MESSAGE);
+            if (!isNew) showToast(`You already have this key as “${record.name}”`, "message");
             else if (mode === "random") copyWithToast(inviteCode(record), "Key created – code copied");
             setName("");
             setPassword("");
@@ -435,7 +435,7 @@ export async function importCode(text: string, channelId?: string) {
     const result = await addKey(parsed.key, { name: parsed.name || "Group key", kind: "group", source: "code" });
     if (channelId) await setChannelKey(channelId, result.record.id);
     retryLocked();
-    showToast(result.isNew ? `Key “${result.record.name}” added` : `You already have this key as “${result.record.name}”`, Toasts.Type.SUCCESS);
+    showToast(result.isNew ? `Key “${result.record.name}” added` : `You already have this key as “${result.record.name}”`, "success");
     return result;
 }
 

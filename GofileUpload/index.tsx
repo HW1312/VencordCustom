@@ -14,7 +14,7 @@ import { insertTextIntoChatInputBox, sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Channel } from "@vencord/discord-types";
-import { showToast, Toasts, UserStore } from "@webpack/common";
+import { showToast, UserStore } from "@webpack/common";
 
 import { randomFilename, stripMetadata } from "../opsec/metadata";
 import type { Provider } from "./native";
@@ -270,7 +270,7 @@ function deliverLink(channel: Channel, text: string) {
     const mode = settings.store.sendMode;
     if (mode === "copy" || NO_CHAT_TYPES.has(channel.type)) {
         copyToClipboard(text);
-        showToast("Download link copied to clipboard", Toasts.Type.SUCCESS);
+        showToast("Download link copied to clipboard", "success");
     } else if (mode === "insert") {
         insertTextIntoChatInputBox(text);
     } else {
@@ -366,7 +366,7 @@ async function uploadFiles(files: File[], channel: Channel) {
         }
         logger.error("Upload failed", e);
         card.finish("error", `Failed – ${e instanceof Error ? e.message : e}`);
-        showToast(`Upload failed: ${title}`, Toasts.Type.FAILURE);
+        showToast(`Upload failed: ${title}`, "failure");
     }
 }
 
@@ -545,11 +545,11 @@ async function compressOversized(list: File[], limit: number) {
 
     if (done.length === 1) {
         const [d] = done;
-        showToast(`Compressed ${d.name} (${formatSize(d.from)} → ${formatSize(d.to)})`, Toasts.Type.SUCCESS);
+        showToast(`Compressed ${d.name} (${formatSize(d.from)} → ${formatSize(d.to)})`, "success");
     } else if (done.length > 1) {
         const from = done.reduce((n, d) => n + d.from, 0);
         const to = done.reduce((n, d) => n + d.to, 0);
-        showToast(`Compressed ${done.length} images (${formatSize(from)} → ${formatSize(to)})`, Toasts.Type.SUCCESS);
+        showToast(`Compressed ${done.length} images (${formatSize(from)} → ${formatSize(to)})`, "success");
     }
 }
 
@@ -570,7 +570,7 @@ function splitOff(list: File[], limit: number, channel: Channel, options?: { fil
     });
     if (options?.filesMetadata) options.filesMetadata = keepMeta;
 
-    showToast(`${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord – uploading to a file host`, Toasts.Type.MESSAGE);
+    showToast(`${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord – uploading to a file host`, "message");
     void uploadFiles(big, channel);
     return keep;
 }

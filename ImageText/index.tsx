@@ -13,7 +13,7 @@ import { copyToClipboard } from "@utils/clipboard";
 import { IS_WINDOWS } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
-import { Menu, showToast, Toasts } from "@webpack/common";
+import { Menu, showToast } from "@webpack/common";
 
 import type { OcrResult } from "./native";
 import { LanguageList, openTextModal } from "./ui";
@@ -182,26 +182,26 @@ let busy = false;
 async function copyText(src: string) {
     if (busy) return;
     busy = true;
-    showToast("Reading text from image …", Toasts.Type.MESSAGE);
+    showToast("Reading text from image …", "message");
 
     try {
         const result = await recognize(src);
         if (!result.ok) {
-            showToast(`Could not read text: ${result.error}`, Toasts.Type.FAILURE);
+            showToast(`Could not read text: ${result.error}`, "failure");
             return;
         }
 
         const lines = result.lines.filter(l => l.trim());
         if (!lines.length) {
-            showToast("No text found", Toasts.Type.MESSAGE);
+            showToast("No text found", "message");
             return;
         }
 
         await copyToClipboard(joinText(lines));
-        showToast(`Copied ${lines.length} ${lines.length === 1 ? "line" : "lines"}`, Toasts.Type.SUCCESS);
+        showToast(`Copied ${lines.length} ${lines.length === 1 ? "line" : "lines"}`, "success");
     } catch (e) {
         logger.error("Copying text failed", e);
-        showToast("Could not copy the text", Toasts.Type.FAILURE);
+        showToast("Could not copy the text", "failure");
     } finally {
         busy = false;
     }

@@ -10,7 +10,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
 import { copyToClipboard } from "@utils/clipboard";
 import { classes } from "@utils/misc";
-import { showToast, Toasts, useEffect, useState } from "@webpack/common";
+import { showToast, useEffect, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { buildQuery, DEFAULT_PORT, DEFAULTS, isHexColor, OverlayConfig, RANGES } from "./config";
@@ -160,7 +160,7 @@ function ServerCard() {
             if (n !== port) set("port", n);
         } else {
             setPortText(String(port));
-            showToast("Invalid port – allowed range is 1024 to 65535.", Toasts.Type.FAILURE);
+            showToast("Invalid port – allowed range is 1024 to 65535.", "failure");
         }
     };
 
@@ -289,8 +289,8 @@ function UrlCard({ cfg }: { cfg: OverlayConfig; }) {
     const demoUrl = url + (url.includes("?") ? "&" : "?") + "demo=1";
 
     const copy = () => copyToClipboard(url)
-        .then(() => showToast("URL copied", Toasts.Type.SUCCESS))
-        .catch(() => showToast("Copy failed", Toasts.Type.FAILURE));
+        .then(() => showToast("URL copied", "success"))
+        .catch(() => showToast("Copy failed", "failure"));
 
     const isDefault = (Object.keys(DEFAULTS) as (keyof OverlayConfig)[]).every(k => cfg[k] === DEFAULTS[k]);
 

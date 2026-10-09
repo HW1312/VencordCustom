@@ -4,7 +4,7 @@
  */
 
 import { Logger } from "@utils/Logger";
-import { ChannelStore, GuildMemberStore, GuildRoleStore, GuildStore, PermissionsBits, PermissionStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, GuildMemberStore, GuildRoleStore, GuildStore, PermissionsBits, PermissionStore, showToast, UserStore } from "@webpack/common";
 
 import { settings } from "./index";
 import { canWriteNotes, describeError, formatDuration, NOTE_LABELS, NoteType, rest, sleep, writeNote } from "./notes";
@@ -351,9 +351,9 @@ export async function runMacro(
         if (i < macro.steps.length - 1) await sleep(350);
     }
 
-    if (failed) showToast(`ModKit: ${macro.name} – ${errors[0]}${failed > 1 ? ` (+${failed - 1} more ${failed - 1 === 1 ? "error" : "errors"})` : ""}`, Toasts.Type.FAILURE);
-    else if (done) showToast(`ModKit: ${macro.name} executed (${done}/${macro.steps.length}${skipped ? `, ${skipped} skipped` : ""})`, Toasts.Type.SUCCESS);
-    else showToast(`ModKit: ${macro.name} - nothing executed`, Toasts.Type.MESSAGE);
+    if (failed) showToast(`ModKit: ${macro.name} – ${errors[0]}${failed > 1 ? ` (+${failed - 1} more ${failed - 1 === 1 ? "error" : "errors"})` : ""}`, "failure");
+    else if (done) showToast(`ModKit: ${macro.name} executed (${done}/${macro.steps.length}${skipped ? `, ${skipped} skipped` : ""})`, "success");
+    else showToast(`ModKit: ${macro.name} - nothing executed`, "message");
 
     return { done, failed, skipped };
 }

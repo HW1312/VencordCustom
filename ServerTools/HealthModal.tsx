@@ -6,7 +6,7 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { saveFile } from "@utils/web";
-import { GuildStore, Modal, openModal, showToast, Toasts, useEffect, useMemo, useState } from "@webpack/common";
+import { GuildStore, Modal, openModal, showToast, useEffect, useMemo, useState } from "@webpack/common";
 
 import { formatDuration, GuildIcon, GuildSelect } from "./BackupModal";
 import { Button, Card, cl, LogList, Notice, NumberField, ProgressBar, QueueBadge, Segmented, Stat, useJob } from "./components";
@@ -210,7 +210,7 @@ function HealthPanel({ initialGuildId }: { initialGuildId: string | null; }) {
                 setFromCache(false);
                 saveCachedHealth(res);
             })
-            .catch(e => !isCancelled(e) && showToast(`Analysis failed: ${describeError(e)}`, Toasts.Type.FAILURE));
+            .catch(e => !isCancelled(e) && showToast(`Analysis failed: ${describeError(e)}`, "failure"));
     };
 
     // Rough upper bound on requests: up to max/100 per channel

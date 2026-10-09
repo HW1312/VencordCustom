@@ -11,7 +11,7 @@ import { sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
     ChannelStore, FluxDispatcher, GuildChannelStore, GuildMemberStore, GuildStore, IconUtils, MessageActions, NavigationRouter, PendingReplyStore, PermissionsBits, PermissionStore, PopoutActions, PopoutWindowStore,
-    PrivateChannelSortStore, ReadStateStore, RestAPI, showToast, Toasts, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
+    PrivateChannelSortStore, ReadStateStore, RestAPI, showToast, TypingStore, useCallback, useEffect, useLayoutEffect, useMemo, useRef, UserGuildSettingsStore, UserStore,
     useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
 import type { ComponentType, ReactNode } from "react";
@@ -766,7 +766,7 @@ function editMessage(channelId: string, messageId: string, content: string) {
 export function deleteMessage(channelId: string, messageId: string) {
     const fail = (e: any) => {
         logger.error("Couldn't delete message", e);
-        showToast("Couldn't delete message", Toasts.Type.FAILURE);
+        showToast("Couldn't delete message", "failure");
     };
     try {
         Promise.resolve(MessageActions.deleteMessage(channelId, messageId)).catch(fail);
@@ -905,7 +905,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
             if (content && content !== m.content) {
                 editMessage(channelId, m.id, content).catch((e: any) => {
                     logger.error("Couldn't edit message", e);
-                    showToast("Couldn't edit message", Toasts.Type.FAILURE);
+                    showToast("Couldn't edit message", "failure");
                 });
             }
             cancelMode();
@@ -914,7 +914,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
 
         if ((!content && !files.length) || !canSend) return;
         if (content.length > 2000) {
-            showToast("Message is too long (max. 2000 characters)", Toasts.Type.FAILURE);
+            showToast("Message is too long (max. 2000 characters)", "failure");
             return;
         }
 
@@ -925,7 +925,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
         if (slow > 0 && !bypass) {
             const left = Math.ceil(((lastSent.get(channelId) ?? 0) + slow * 1000 - Date.now()) / 1000);
             if (left > 0) {
-                showToast(`Slowmode: wait ${left}s`, Toasts.Type.FAILURE);
+                showToast(`Slowmode: wait ${left}s`, "failure");
                 return;
             }
         }
@@ -945,7 +945,7 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
             const sent = ctx.sendFiles ? ctx.sendFiles(channel, attached, reference) : sendFiles(channel, attached, reference, ctx.doc().defaultView);
             sent.catch((e: any) => {
                 logger.error("Couldn't upload files", e);
-                showToast("Couldn't upload the file", Toasts.Type.FAILURE);
+                showToast("Couldn't upload the file", "failure");
             });
         }
         if (!content) return;
@@ -953,11 +953,11 @@ function Composer({ channel, name, ctx }: { channel: any; name: string; ctx: Win
             Promise.resolve(sendMessage(channelId, { content }, false, options as any)).catch((e: any) => {
                 logger.error("Couldn't send message", e);
                 const slowmode = e?.body?.code === 20016 || e?.status === 429;
-                showToast(slowmode ? "Slowmode is active – please wait a moment" : "Couldn't send message", Toasts.Type.FAILURE);
+                showToast(slowmode ? "Slowmode is active – please wait a moment" : "Couldn't send message", "failure");
             });
         } catch (e) {
             logger.error("Couldn't send message", e);
-            showToast("Couldn't send message", Toasts.Type.FAILURE);
+            showToast("Couldn't send message", "failure");
             update(content);
         }
     };
@@ -1488,7 +1488,7 @@ async function dmChannelId(userId: string): Promise<string | null> {
         return body?.id ?? null;
     } catch (e) {
         logger.error("Couldn't open DM", e);
-        showToast("Couldn't open DM", Toasts.Type.FAILURE);
+        showToast("Couldn't open DM", "failure");
         return null;
     }
 }
@@ -1582,7 +1582,7 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: Cust
         watchStream(userId) {
             const target = streamTargetFor(userId, channelRef.current);
             if (!target) {
-                showToast("This stream isn't available here", Toasts.Type.FAILURE);
+                showToast("This stream isn't available here", "failure");
                 return;
             }
             if (!startWatching(target)) return;

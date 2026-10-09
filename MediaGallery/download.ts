@@ -5,7 +5,7 @@
 
 import { PluginNative } from "@utils/types";
 import { saveFile } from "@utils/web";
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 import { Zippable, zipSync } from "fflate";
 
 import type { Author, MediaItem } from "./store";
@@ -76,7 +76,7 @@ export async function downloadSingle(item: MediaItem, author?: Author) {
         const data = await fetchItem(item);
         saveFile(new File([data as BlobPart], zipName(item, author)));
     } catch (e) {
-        showToast(`Download failed: ${item.filename}`, Toasts.Type.FAILURE);
+        showToast(`Download failed: ${item.filename}`, "failure");
     }
 }
 
@@ -146,7 +146,7 @@ export function downloadZip(
             files["_failed.txt"] = new TextEncoder().encode(failed.join("\r\n"));
         }
         if (Object.keys(files).length === (failed.length ? 1 : 0)) {
-            showToast("No file could be downloaded", Toasts.Type.FAILURE);
+            showToast("No file could be downloaded", "failure");
             return;
         }
 
@@ -158,8 +158,8 @@ export function downloadZip(
         if (cancelled) return;
         saveFile(new File([zipped as BlobPart], `${sanitize(archiveName)}.zip`, { type: "application/zip" }));
 
-        if (failed.length) showToast(`${failed.length} file(s) could not be downloaded`, Toasts.Type.FAILURE);
-        else showToast(`${items.length} files saved as ZIP`, Toasts.Type.SUCCESS);
+        if (failed.length) showToast(`${failed.length} file(s) could not be downloaded`, "failure");
+        else showToast(`${items.length} files saved as ZIP`, "success");
     })();
 
     return {

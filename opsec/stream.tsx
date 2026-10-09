@@ -13,7 +13,7 @@
  */
 
 import { Logger } from "@utils/Logger";
-import { ApplicationStreamingStore, FluxDispatcher, showToast, SortedGuildStore, StreamerModeStore, Toasts } from "@webpack/common";
+import { ApplicationStreamingStore, FluxDispatcher, showToast, SortedGuildStore, StreamerModeStore } from "@webpack/common";
 
 const logger = new Logger("OpSec");
 
@@ -216,7 +216,7 @@ function applyStreamerMode(on: boolean) {
         }
     } catch (e) {
         logger.error("Failed to toggle Streamer Mode", e);
-        showToast("OpSec: Failed to toggle Streamer Mode", Toasts.Type.FAILURE);
+        showToast("OpSec: Failed to toggle Streamer Mode", "failure");
     }
 }
 

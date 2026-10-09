@@ -6,7 +6,7 @@
 import { openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
-    GuildStore, RelationshipStore, showToast, Toasts, useMemo, UserProfileStore,
+    GuildStore, RelationshipStore, showToast, useMemo, UserProfileStore,
     UserStore, useState, useStateFromStores
 } from "@webpack/common";
 
@@ -94,7 +94,7 @@ function RequestRow({ r, selected, onSelect, onAccept, onRemove, onLoad, busy }:
             <div className={cl("item-actions")} onClick={e => e.stopPropagation()}>
                 {r.incoming && <Button small variant="success" icon="check" disabled={busy} onClick={onAccept}>Accept</Button>}
                 <Button small variant="ghost" icon="close" disabled={busy} onClick={onRemove}>{r.incoming ? "Ignore" : "Withdraw"}</Button>
-                <button className={cl("icon-btn")} title="Open profile" onClick={() => openUserProfile(r.id).catch(() => showToast("Could not open profile", Toasts.Type.FAILURE))}>
+                <button className={cl("icon-btn")} title="Open profile" onClick={() => openUserProfile(r.id).catch(() => showToast("Could not open profile", "failure"))}>
                     <Icon name="person" size={16} />
                 </button>
             </div>
@@ -154,9 +154,9 @@ export function RequestsTab() {
         return n;
     });
     const addSel = (list: RequestEntry[], label: string) => {
-        if (!list.length) return showToast(`No matches for “${label}”`, Toasts.Type.MESSAGE);
+        if (!list.length) return showToast(`No matches for “${label}”`, "message");
         setSelected(s => new Set([...s, ...list.map(r => r.id)]));
-        showToast(`${list.length} selected (${label})`, Toasts.Type.SUCCESS);
+        showToast(`${list.length} selected (${label})`, "success");
     };
 
     const switchDir = (d: Dir) => {
@@ -169,7 +169,7 @@ export function RequestsTab() {
     const loadOne = (r: RequestEntry) => {
         mutualCache.delete(r.id);
         loadMutual(r.id)
-            .then(res => res === "error" && showToast("Could not load profile", Toasts.Type.FAILURE))
+            .then(res => res === "error" && showToast("Could not load profile", "failure"))
             .finally(() => setMutualVersion(v => v + 1));
     };
 
@@ -192,8 +192,8 @@ export function RequestsTab() {
         const p = accept ? acceptRequest(r.id) : removeRequest(r.id);
         p.then(() => {
             setSel(r.id, false);
-            showToast(accept ? `Accepted ${r.name}` : r.incoming ? `Ignored request from ${r.name}` : `Withdrew request to ${r.name}`, Toasts.Type.SUCCESS);
-        }).catch(e => showToast(`Action failed: ${describeError(e)}`, Toasts.Type.FAILURE));
+            showToast(accept ? `Accepted ${r.name}` : r.incoming ? `Ignored request from ${r.name}` : `Withdrew request to ${r.name}`, "success");
+        }).catch(e => showToast(`Action failed: ${describeError(e)}`, "failure"));
     };
 
     const bulk = (accept: boolean) => {
@@ -229,7 +229,7 @@ export function RequestsTab() {
                     }
                 }
                 progress(list.length, list.length, "Done");
-                if (failed) showToast(`${failed} requests failed`, Toasts.Type.FAILURE);
+                if (failed) showToast(`${failed} requests failed`, "failure");
                 return `${ok} requests ${accept ? "accepted" : dir === "in" ? "ignored" : "withdrawn"}${failed ? `, ${failed} failed` : ""}.`;
             })
         });

@@ -11,7 +11,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { RenderModalProps } from "@vencord/discord-types";
-import { ChannelStore, GuildMemberStore, GuildStore, Modal, NavigationRouter, openModal, PermissionsBits, PermissionStore, SelectedGuildStore, showToast, Toasts, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, GuildMemberStore, GuildStore, Modal, NavigationRouter, openModal, PermissionsBits, PermissionStore, SelectedGuildStore, showToast, useEffect, useMemo, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { BadgeMode, settings, unsetNotesChannel } from "./index";
@@ -331,9 +331,9 @@ function AddNoteForm({ guildId, userId, target }: { guildId: string; userId: str
                 excerpt: r && r === targetLink ? target?.excerpt : undefined
             });
             setReason("");
-            showToast("ModKit: Note saved", Toasts.Type.SUCCESS);
+            showToast("ModKit: Note saved", "success");
         } catch (e) {
-            showToast(`ModKit: Could not save note - ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`ModKit: Could not save note - ${describeError(e)}`, "failure");
         } finally {
             setSaving(false);
         }
@@ -404,9 +404,9 @@ function NoteItem({ note, guildId, onNavigate }: { note: Note; guildId: string; 
         setBusy(true);
         try {
             await deleteNote(note);
-            showToast("ModKit: Note deleted", Toasts.Type.SUCCESS);
+            showToast("ModKit: Note deleted", "success");
         } catch (e) {
-            showToast(`ModKit: Could not delete note - ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`ModKit: Could not delete note - ${describeError(e)}`, "failure");
             setBusy(false);
         }
     }
@@ -816,9 +816,9 @@ function MacroEditor() {
     function restorePresets() {
         const have = new Set(macros.map(m => m.id));
         const missing = makePresets().filter(p => !have.has(p.id));
-        if (!missing.length) return showToast("ModKit: All presets already exist", Toasts.Type.MESSAGE);
+        if (!missing.length) return showToast("ModKit: All presets already exist", "message");
         saveMacros([...macros, ...missing]);
-        showToast(`ModKit: ${plural(missing.length, "preset", "presets")} restored`, Toasts.Type.SUCCESS);
+        showToast(`ModKit: ${plural(missing.length, "preset", "presets")} restored`, "success");
     }
 
     return (

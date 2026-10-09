@@ -6,7 +6,7 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast, sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
-import { ChannelStore, GuildRoleStore, Modal, openModal, showToast, Toasts, useEffect, useMemo, useRef, useState } from "@webpack/common";
+import { ChannelStore, GuildRoleStore, Modal, openModal, showToast, useEffect, useMemo, useRef, useState } from "@webpack/common";
 
 import { Button, Card, cl, Icon, LogList, Notice, NumberField, ProgressBar, QueueBadge, Stat, ToggleRow, useJob } from "./components";
 import { applyFilters, draw, DrawResult, emojiKey, emojiLabel, emojiUrl, ensureMembers, fetchReactors, formatResult, GiveawayFilters, Participant, ReactionEmoji, verifyScript } from "./giveaway";
@@ -92,7 +92,7 @@ function GiveawayPanel({ message }: { message: any; }) {
                 setLoadedKey(emojiKey(emoji));
                 setMembersMissing(res.missing);
             })
-            .catch(e => !isCancelled(e) && showToast(`Failed to load reactions: ${describeError(e)}`, Toasts.Type.FAILURE));
+            .catch(e => !isCancelled(e) && showToast(`Failed to load reactions: ${describeError(e)}`, "failure"));
     };
 
     // ---- Drawing & animation
@@ -140,7 +140,7 @@ function GiveawayPanel({ message }: { message: any; }) {
     const doDraw = async (reroll: boolean) => {
         const candidates = (reroll ? pool : filtered?.eligible ?? []).map(p => p.id);
         if (!candidates.length) {
-            showToast("No valid participants left", Toasts.Type.FAILURE);
+            showToast("No valid participants left", "failure");
             return;
         }
         try {
@@ -148,7 +148,7 @@ function GiveawayPanel({ message }: { message: any; }) {
             setRounds(r => reroll ? [...r, result] : [result]);
             animate(result, candidates);
         } catch (e) {
-            showToast(`Draw failed: ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`Draw failed: ${describeError(e)}`, "failure");
         }
     };
 
@@ -161,12 +161,12 @@ function GiveawayPanel({ message }: { message: any; }) {
         }
         setConfirmPost(false);
         if (resultText.length > 2000) {
-            showToast("Result is longer than 2000 characters - please copy it instead", Toasts.Type.FAILURE);
+            showToast("Result is longer than 2000 characters - please copy it instead", "failure");
             return;
         }
         Promise.resolve(sendMessage(message.channel_id, { content: resultText }))
-            .then(() => showToast("Result posted", Toasts.Type.SUCCESS))
-            .catch(e => showToast(`Failed to send: ${describeError(e)}`, Toasts.Type.FAILURE));
+            .then(() => showToast("Result posted", "success"))
+            .catch(e => showToast(`Failed to send: ${describeError(e)}`, "failure"));
     };
 
     const locked = rounds.length > 0 || job.state.running || phase === "rolling";

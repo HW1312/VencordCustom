@@ -12,7 +12,7 @@ import { addServerListElement, removeServerListElement, ServerListRenderPosition
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 import { User } from "@vencord/discord-types";
-import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, showToast, UserStore } from "@webpack/common";
 
 import { loadedMessageHooks } from "../ChatPopout/messages";
 import { onLockContextMenu, renderTitleBarButton, ServerListIcon } from "./area";
@@ -37,7 +37,7 @@ const userContext: NavContextMenuPatchCallback = (children, { user }: { user?: U
             action={() => {
                 // Prefer the DM with them – otherwise the request goes into the chat that is open
                 const channelId = ChannelStore.getDMFromUserId(user.id) ?? SelectedChannelStore.getChannelId();
-                if (!channelId) return showToast("Open a chat with them first", Toasts.Type.FAILURE);
+                if (!channelId) return showToast("Open a chat with them first", "failure");
                 startHandshake(user, channelId);
             }}
         />

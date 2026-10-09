@@ -5,7 +5,7 @@
  */
 
 import type { Message } from "@vencord/discord-types";
-import { ChannelStore, IconUtils, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, IconUtils, showToast, UserStore } from "@webpack/common";
 
 import { channelName, displayName, formatFullDate, messageDate, resolveRoleName, roleColor } from "./store";
 
@@ -905,7 +905,7 @@ const MAX_SHOT_MESSAGES = 200;
 export function canRenderShot(count: number) {
     if (!count) return false;
     if (count > MAX_SHOT_MESSAGES) {
-        showToast(`Select at most ${MAX_SHOT_MESSAGES} messages for a screenshot`, Toasts.Type.FAILURE);
+        showToast(`Select at most ${MAX_SHOT_MESSAGES} messages for a screenshot`, "failure");
         return false;
     }
     return true;

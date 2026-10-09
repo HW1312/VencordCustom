@@ -6,7 +6,7 @@
 
 import * as DataStore from "@api/DataStore";
 import { Logger } from "@utils/Logger";
-import { ChannelStore, PermissionsBits, PermissionStore, RestAPI, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, PermissionsBits, PermissionStore, RestAPI, showToast, UserStore } from "@webpack/common";
 
 import { settings } from "./index";
 
@@ -285,7 +285,7 @@ export function ensureLoaded(guildId: string | null | undefined, force = false):
         .catch(e => {
             c.error = describeError(e);
             logger.error("Could not load ModNotes", e);
-            showToast(`ModKit: Could not load ModNotes - ${c.error}`, Toasts.Type.FAILURE);
+            showToast(`ModKit: Could not load ModNotes - ${c.error}`, "failure");
         })
         .finally(() => {
             c.loading = null;
@@ -330,7 +330,7 @@ async function fetchAll(channelId: string, c: ChannelCache) {
         before = msgs.reduce((min, m) => compareIds(m.id, min) < 0 ? m.id : min, msgs[0].id);
         await sleep(PAGE_DELAY);
     }
-    showToast("ModKit: Very long history - only the latest 20,000 messages were loaded", Toasts.Type.MESSAGE);
+    showToast("ModKit: Very long history - only the latest 20,000 messages were loaded", "message");
 }
 
 async function fetchNewer(channelId: string, c: ChannelCache) {

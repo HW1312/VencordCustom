@@ -6,7 +6,7 @@
 import { classes } from "@utils/misc";
 import {
     ChannelStore, NavigationRouter, PrivateChannelSortStore, ReadStateStore, showToast,
-    Toasts, useMemo, UserStore, useState, useStateFromStores
+    useMemo, UserStore, useState, useStateFromStores
 } from "@webpack/common";
 
 import { Avatar, Button, Checkbox, Chip, cl, ConfirmItem, Icon, JobBar, Notice, openConfirm, QueueBadge, Segmented, useJob } from "./components";
@@ -41,8 +41,8 @@ function DmRow({ dm, selected, onSelect, onOpen }: { dm: DmEntry; selected: bool
         items: [toItem(dm)],
         confirmText: "Leave group",
         onConfirm: () => leaveGroup(dm.id)
-            .then(() => showToast(`Left “${dm.name}”`, Toasts.Type.SUCCESS))
-            .catch(e => showToast(`Failed to leave: ${describeError(e)}`, Toasts.Type.FAILURE))
+            .then(() => showToast(`Left “${dm.name}”`, "success"))
+            .catch(e => showToast(`Failed to leave: ${describeError(e)}`, "failure"))
     });
 
     return (
@@ -135,7 +135,7 @@ export function DmTab({ onClose }: { onClose(): void; }) {
 
     function runClose(entries: DmEntry[], what: string) {
         const list = entries.filter(d => !d.isGroup && !d.protected);
-        if (!list.length) return showToast("Nothing to close", Toasts.Type.MESSAGE);
+        if (!list.length) return showToast("Nothing to close", "message");
 
         openConfirm({
             title: `Close ${list.length} DMs?`,
@@ -161,7 +161,7 @@ export function DmTab({ onClose }: { onClose(): void; }) {
                     }
                 }
                 progress(list.length, list.length, "Done");
-                if (failed) showToast(`${failed} DMs could not be closed`, Toasts.Type.FAILURE);
+                if (failed) showToast(`${failed} DMs could not be closed`, "failure");
                 return `Closed ${ok} DMs${failed ? `, ${failed} failed` : ""}.`;
             })
         });

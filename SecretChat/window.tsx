@@ -9,7 +9,7 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Toasts, Tooltip, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Tooltip, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 import type { Root } from "react-dom/client";
 
@@ -55,7 +55,7 @@ let root: Root | null = null;
 /** Opens the rooms window over Discord (or switches the room if it's open already) */
 export function openRoomsWindow(channelId?: string) {
     if (settings.store.emergency) {
-        showToast("Emergency stop is on – right-click the lock to turn it off", Toasts.Type.FAILURE);
+        showToast("Emergency stop is on – right-click the lock to turn it off", "failure");
         return;
     }
     if (channelId) select(channelId);
@@ -73,7 +73,7 @@ export function openRoomsWindow(channelId?: string) {
         );
     } catch (e) {
         closeRoomsWindow();
-        showToast("Couldn't open the SecretChat window", Toasts.Type.FAILURE);
+        showToast("Couldn't open the SecretChat window", "failure");
     }
 }
 
@@ -454,7 +454,7 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
             select(channelId);
             onDone();
         } catch (e) {
-            showToast("Could not create the group – Discord may want a captcha, create it by hand and use the lock there", Toasts.Type.FAILURE);
+            showToast("Could not create the group – Discord may want a captcha, create it by hand and use the lock there", "failure");
             setBusy(false);
         }
     };
@@ -491,7 +491,7 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
                         if (!file) return;
                         const data = await toIconDataUrl(file);
                         if (data) setIcon(data);
-                        else showToast("That image couldn't be read", Toasts.Type.FAILURE);
+                        else showToast("That image couldn't be read", "failure");
                     }}
                 />
             </div>

@@ -13,7 +13,7 @@ import type { Channel, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
 import {
     AuthenticationStore, ChannelStore, GuildStore, Menu, PermissionsBits, PermissionStore, RelationshipStore,
-    SelectedChannelStore, showToast, Toasts, UserStore, VoiceStateStore
+    SelectedChannelStore, showToast, UserStore, VoiceStateStore
 } from "@webpack/common";
 
 import { renderTitleBarButton, SettingsPanel } from "./ui";
@@ -151,7 +151,7 @@ export function joinVoice(channelId: string, quiet = false): boolean {
 
     const blocker = getJoinBlocker(channelId);
     if (blocker) {
-        showToast(blocker, Toasts.Type.FAILURE);
+        showToast(blocker, "failure");
         return false;
     }
 
@@ -160,13 +160,13 @@ export function joinVoice(channelId: string, quiet = false): boolean {
         ChannelActions.selectVoiceChannel(channelId);
         if (!quiet) {
             const info = getVoiceInfo(channelId);
-            if (info) showToast(`Joining ${info.isPrivate ? info.place : "#" + info.channelName}`, Toasts.Type.SUCCESS);
+            if (info) showToast(`Joining ${info.isPrivate ? info.place : "#" + info.channelName}`, "success");
         }
         return true;
     } catch (e) {
         expectedChannelId = undefined;
         logger.error("Failed to join voice channel", e);
-        showToast("Failed to join the voice channel.", Toasts.Type.FAILURE);
+        showToast("Failed to join the voice channel.", "failure");
         return false;
     }
 }
@@ -202,14 +202,14 @@ export function startFollowing(id: string) {
     const channelId = VoiceStateStore.getVoiceStateForUser(id)?.channelId;
 
     if (!channelId) {
-        showToast(`Following ${name} - you'll join when they join voice.`, Toasts.Type.MESSAGE);
+        showToast(`Following ${name} - you'll join when they join voice.`, "message");
         return;
     }
     if (channelId === getMyVoiceChannelId()) {
-        showToast(`Following ${name}.`, Toasts.Type.SUCCESS);
+        showToast(`Following ${name}.`, "success");
         return;
     }
-    if (joinVoice(channelId, true)) showToast(`Following ${name}.`, Toasts.Type.SUCCESS);
+    if (joinVoice(channelId, true)) showToast(`Following ${name}.`, "success");
     else stopFollowing(true);
 }
 
@@ -219,7 +219,7 @@ export function stopFollowing(quiet = false, reason?: string) {
     expectedChannelId = undefined;
     if (!settings.store.following) return;
     settings.store.following = null;
-    if (!quiet) showToast(reason ?? `Stopped following ${name}.`, Toasts.Type.MESSAGE);
+    if (!quiet) showToast(reason ?? `Stopped following ${name}.`, "message");
 }
 
 export function toggleFollow(id: string) {
@@ -242,9 +242,9 @@ function syncWithFollowed() {
             return;
         }
         const info = getVoiceInfo(channelId);
-        showToast(`Following ${followedName()} to ${info ? (info.isPrivate ? info.place : "#" + info.channelName) : "their channel"}`, Toasts.Type.MESSAGE);
+        showToast(`Following ${followedName()} to ${info ? (info.isPrivate ? info.place : "#" + info.channelName) : "their channel"}`, "message");
     } else if (mine && settings.store.leaveWithFriend) {
-        showToast(`${followedName()} left voice - leaving too.`, Toasts.Type.MESSAGE);
+        showToast(`${followedName()} left voice - leaving too.`, "message");
         leaveVoice();
     }
 }

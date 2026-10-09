@@ -10,7 +10,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { Message } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { ContextMenuApi, Menu, ReadStateStore, showToast, Toasts, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, Menu, ReadStateStore, showToast, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
 import { hitTest } from "../ToolbarManager/dom";
@@ -48,7 +48,7 @@ export function toggleEmergency() {
     settings.store.emergency = on;
     applyEmergency(on);
     if (on) closeRoomsWindow();
-    showToast(on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", on ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS);
+    showToast(on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", on ? "message" : "success");
 }
 
 /**
@@ -74,7 +74,7 @@ function pickServerListPicture() {
         if (!file) return;
         const data = await toIconDataUrl(file, 128);
         if (data) settings.store.serverListPicture = data;
-        else showToast("That image couldn't be read", Toasts.Type.FAILURE);
+        else showToast("That image couldn't be read", "failure");
     };
     input.click();
 }

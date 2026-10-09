@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { showToast, Toasts } from "@webpack/common";
+import { showToast } from "@webpack/common";
 
 import { fireRule, snapshotMessage } from "./engine";
 import { settings } from "./index";
@@ -87,7 +87,7 @@ export function addReminder(dueAt: number, note: string, message?: any) {
     };
     remindersStore.update(list => [...list, reminder]);
     scheduleReminders();
-    showToast(`Reminder set for ${formatWhen(dueAt)}`, Toasts.Type.SUCCESS);
+    showToast(`Reminder set for ${formatWhen(dueAt)}`, "success");
 }
 
 export function deleteReminder(id: string) {
@@ -197,12 +197,12 @@ export function addBookmark(message: any, tags: string[], note: string) {
     const existing = findBookmark(message.id);
     if (existing) {
         bookmarksStore.update(list => list.map(b => b.id === existing.id ? { ...b, tags, note: note.trim() } : b));
-        showToast("Bookmark updated", Toasts.Type.SUCCESS);
+        showToast("Bookmark updated", "success");
         return;
     }
     const bookmark: Bookmark = { id: uid(), createdAt: Date.now(), tags, note: note.trim(), message: snapshotMessage(message) };
     bookmarksStore.update(list => [bookmark, ...list]);
-    showToast("Bookmark saved", Toasts.Type.SUCCESS);
+    showToast("Bookmark saved", "success");
 }
 
 export function deleteBookmark(id: string) {

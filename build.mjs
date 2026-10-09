@@ -84,7 +84,39 @@ for (const dir of plugins) {
 }
 writeFileSync(join(USERPLUGINS, "PluginHub", "added.json"), JSON.stringify(added));
 
+// Themes für den Theme Hub im PluginHub: jeder Unterordner von Themes/ mit einer *.theme.css.
+// themes.json = Metadaten für die Oberfläche, themes-data.json = CSS, das nur native.ts kennt
+// (so schreibt native.ts ausschließlich eigene Themes in den Theme-Ordner).
+const THEMES = join(ROOT, "Themes");
+const themeMeta = [];
+const themeData = {};
+if (existsSync(THEMES)) {
+    for (const d of readdirSync(THEMES, { withFileTypes: true })) {
+        if (!d.isDirectory()) continue;
+        const dir = join(THEMES, d.name);
+        const fileName = readdirSync(dir).find(f => f.endsWith(".theme.css"));
+        if (!fileName) continue;
+        const css = readFileSync(join(dir, fileName), "utf-8");
+        const header = css.match(/^\s*\/\*\*([\s\S]*?)\*\//)?.[1] ?? "";
+        const meta = Object.fromEntries([...header.matchAll(/@(\w+)[ \t]+([^\r\n]+)/g)].map(m => [m[1], m[2].trim()]));
+        const extra = existsSync(join(dir, "theme.json")) ? JSON.parse(readFileSync(join(dir, "theme.json"), "utf-8")) : {};
+        themeMeta.push({
+            id: d.name,
+            fileName,
+            name: meta.name ?? d.name,
+            author: meta.author ?? "",
+            version: meta.version ?? "1.0.0",
+            description: meta.description ?? "",
+            colors: extra.colors ?? []
+        });
+        themeData[d.name] = { fileName, css };
+    }
+}
+writeFileSync(join(USERPLUGINS, "PluginHub", "themes.json"), JSON.stringify(themeMeta));
+writeFileSync(join(USERPLUGINS, "PluginHub", "themes-data.json"), JSON.stringify(themeData));
+
 console.log(`Plugins: ${plugins.join(", ") || "(keine)"}`);
+console.log(`Themes: ${themeMeta.map(t => t.name).join(", ") || "(keine)"}`);
 
 // ---- Bauen
 run("pnpm build");

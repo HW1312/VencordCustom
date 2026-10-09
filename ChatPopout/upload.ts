@@ -9,7 +9,7 @@ import { Settings } from "@api/Settings";
 import { Channel, CloudUpload as TCloudUpload } from "@vencord/discord-types";
 import { CloudUploadPlatform } from "@vencord/discord-types/enums";
 import { findLazy } from "@webpack";
-import { Alerts, Constants, DraftType, RestAPI, showToast, SnowflakeUtils, Toasts, UploadHandler, UserStore } from "@webpack/common";
+import { Alerts, Constants, DraftType, RestAPI, showToast, SnowflakeUtils, UploadHandler, UserStore } from "@webpack/common";
 
 const CloudUpload: typeof TCloudUpload = findLazy(m => m.prototype?.trackUploadFinished);
 
@@ -50,7 +50,7 @@ export function attachmentOf(upload: TCloudUpload, index: number) {
 export function askGofile(file: File, note: string, win?: Window | null): Promise<boolean> {
     const limit = formatBytes(uploadLimit());
     if (!Settings.plugins.GofileUpload?.enabled) {
-        showToast(`${file.name} is larger than your upload limit (${limit}) – turn on GofileUpload to send big files`, Toasts.Type.FAILURE);
+        showToast(`${file.name} is larger than your upload limit (${limit}) – turn on GofileUpload to send big files`, "failure");
         return Promise.resolve(false);
     }
     const text = `“${file.name}” (${formatBytes(file.size)}) is larger than your upload limit (${limit}). Upload it to Gofile and send the link instead? ${note}`;

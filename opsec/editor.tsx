@@ -10,7 +10,7 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { Alerts, Modal, openModal, showToast, Toasts, useEffect, useLayoutEffect, useRef, useState } from "@webpack/common";
+import { Alerts, Modal, openModal, showToast, useEffect, useLayoutEffect, useRef, useState } from "@webpack/common";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { Tip } from "./ui";
@@ -444,7 +444,7 @@ export async function editImage(file: File, name = file.name): Promise<File | nu
                 if (!blob) {
                     // Don't silently send the unredacted original
                     setBusy(false);
-                    showToast("OpSec: Failed to save image. Try again or \"Send original\".", Toasts.Type.FAILURE);
+                    showToast("OpSec: Failed to save image. Try again or \"Send original\".", "failure");
                     return;
                 }
                 finish(new File([blob], name, { type: blob.type || type, lastModified: Date.now() }));

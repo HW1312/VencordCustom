@@ -5,7 +5,7 @@
 
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
-import { ConfirmModal, GuildStore, openModal, showToast, Toasts, useEffect, useState } from "@webpack/common";
+import { ConfirmModal, GuildStore, openModal, showToast, useEffect, useState } from "@webpack/common";
 
 import { cancelAll } from "./actions";
 import { Button, cl, Icon, Notice, NumberField, Stat } from "./components";
@@ -36,8 +36,8 @@ function confirmReset() {
             variant="critical-primary"
             onConfirm={() => {
                 resetActivity()
-                    .then(() => showToast("Tracking data reset", Toasts.Type.SUCCESS))
-                    .catch(() => showToast("Reset failed", Toasts.Type.FAILURE));
+                    .then(() => showToast("Tracking data reset", "success"))
+                    .catch(() => showToast("Reset failed", "failure"));
             }}
         />
     ));

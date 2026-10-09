@@ -10,7 +10,7 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
-import { createRoot, Popout, showToast, Toasts, Tooltip, useEffect, useRef, useState } from "@webpack/common";
+import { createRoot, Popout, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
 import { closeFeed, DoomState, getState, HANDLE_WIDTH, MIN_CHAT_WIDTH, MIN_SIDE_WIDTH, openFeed, refresh, sideAreaWidth, STRIP_HEIGHT, subscribe } from "./controller";
@@ -468,7 +468,7 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
                     className={cl("small-btn")}
                     onClick={async () => {
                         await Native?.clearData();
-                        showToast("Logged out of all feeds", Toasts.Type.SUCCESS);
+                        showToast("Logged out of all feeds", "success");
                     }}
                 >
                     Log out everywhere

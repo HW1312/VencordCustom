@@ -16,7 +16,7 @@ import type { Channel } from "@vencord/discord-types";
 import { findCssClassesLazy } from "@webpack";
 import {
     ChannelStore, DraftStore, EmojiStore, GuildMemberStore, GuildRoleStore, GuildScheduledEventStore, GuildStore,
-    Modal, openModal, Parser, SelectedChannelStore, showToast, Toasts, useMemo, UserStore, UserUtils, useState
+    Modal, openModal, Parser, SelectedChannelStore, showToast, useMemo, UserStore, UserUtils, useState
 } from "@webpack/common";
 import type { ReactNode } from "react";
 
@@ -817,7 +817,7 @@ function TokenRow({ token, onFetched }: { token: DecodedToken; onFetched(): void
             await UserUtils.getUser(id);
             onFetched();
         } catch {
-            showToast("Could not load user – invalid or deleted ID", Toasts.Type.FAILURE);
+            showToast("Could not load user – invalid or deleted ID", "failure");
         } finally {
             setLoading(false);
         }
@@ -855,7 +855,7 @@ function DecoderTab({ ctx }: { ctx: HubContext; }) {
         if (!ctx.channel) return;
         const draft = DraftStore.getDraft(ctx.channel.id, 0);
         if (draft) setText(draft);
-        else showToast("No draft in the chat input", Toasts.Type.MESSAGE);
+        else showToast("No draft in the chat input", "message");
     }
 
     return (

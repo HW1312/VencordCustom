@@ -6,7 +6,7 @@
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { chooseFile, saveFile } from "@utils/web";
-import { ChannelStore, GuildRoleStore, GuildStore, Modal, openModal, showToast, Toasts, useMemo, UserStore, useState } from "@webpack/common";
+import { ChannelStore, GuildRoleStore, GuildStore, Modal, openModal, showToast, useMemo, UserStore, useState } from "@webpack/common";
 
 import { BackupBundle, backupFileName, buildZip, collectBackup, estimateRequests, getOwnedGuilds, readBackupZip, RestoreSections, runRestore, summarize } from "./backup";
 import { Button, Card, cl, Icon, LogList, Notice, ProgressBar, QueueBadge, Segmented, Stat, ToggleRow, useJob } from "./components";
@@ -61,7 +61,7 @@ function ExportTab({ initialGuildId }: { initialGuildId: string | null; }) {
         setBundle(null);
         job.run(hooks => collectBackup(guildId, hooks))
             .then(res => res && setBundle(res))
-            .catch(e => !isCancelled(e) && showToast(`Backup failed: ${describeError(e)}`, Toasts.Type.FAILURE));
+            .catch(e => !isCancelled(e) && showToast(`Backup failed: ${describeError(e)}`, "failure"));
     };
 
     const save = () => {
@@ -69,9 +69,9 @@ function ExportTab({ initialGuildId }: { initialGuildId: string | null; }) {
         try {
             const zip = buildZip(bundle);
             saveFile(new File([zip as BlobPart], backupFileName(bundle.backup), { type: "application/zip" }));
-            showToast("Backup saved", Toasts.Type.SUCCESS);
+            showToast("Backup saved", "success");
         } catch (e) {
-            showToast(`Saving failed: ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`Saving failed: ${describeError(e)}`, "failure");
         }
     };
 
@@ -159,7 +159,7 @@ function RestoreTab() {
             setBundle(await readBackupZip(file));
             setResult(null);
         } catch (e) {
-            showToast(`Failed to read backup: ${describeError(e)}`, Toasts.Type.FAILURE);
+            showToast(`Failed to read backup: ${describeError(e)}`, "failure");
         }
     };
 
@@ -179,7 +179,7 @@ function RestoreTab() {
         if (!bundle || !targetId) return;
         // Safety net: check ownership again
         if (GuildStore.getGuild(targetId)?.ownerId !== UserStore.getCurrentUser()?.id) {
-            showToast("You are not the owner of this server", Toasts.Type.FAILURE);
+            showToast("You are not the owner of this server", "failure");
             return;
         }
         setResult(null);
@@ -188,9 +188,9 @@ function RestoreTab() {
                 if (!res) return;
                 setResult(res);
                 setDeleteConfirmed(false);
-                showToast(res.failed ? `Restore finished with ${res.failed} errors` : "Restore completed", res.failed ? Toasts.Type.MESSAGE : Toasts.Type.SUCCESS);
+                showToast(res.failed ? `Restore finished with ${res.failed} errors` : "Restore completed", res.failed ? "message" : "success");
             })
-            .catch(e => !isCancelled(e) && showToast(`Restore failed: ${describeError(e)}`, Toasts.Type.FAILURE));
+            .catch(e => !isCancelled(e) && showToast(`Restore failed: ${describeError(e)}`, "failure"));
     };
 
     const sum = bundle ? summarize(bundle.backup) : null;

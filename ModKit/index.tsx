@@ -7,7 +7,7 @@
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
-import { ChannelStore, GuildRoleStore, Menu, PermissionsBits, PermissionStore, SelectedGuildStore, showToast, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, GuildRoleStore, Menu, PermissionsBits, PermissionStore, SelectedGuildStore, showToast, UserStore } from "@webpack/common";
 import type { ReactElement } from "react";
 
 import { getMacros, hasAnyModPermission, Macro, makePresets, stepProblem, targetFromMessage } from "./macros";
@@ -93,10 +93,10 @@ export function setNotesChannel(guildId: string, channel: any) {
     const old = getNotesChannelId(guildId);
     if (old && old !== channel.id) void clearStored(old);
     settings.store.notesChannels = { ...settings.store.notesChannels, [guildId]: channel.id };
-    showToast(`ModKit: #${channel.name} is now the ModNotes channel`, Toasts.Type.SUCCESS);
+    showToast(`ModKit: #${channel.name} is now the ModNotes channel`, "success");
 
     if (isPubliclyVisible(guildId, channel))
-        setTimeout(() => showToast("ModKit: Warning - this channel appears to be visible to @everyone!", Toasts.Type.FAILURE), 1200);
+        setTimeout(() => showToast("ModKit: Warning - this channel appears to be visible to @everyone!", "failure"), 1200);
 }
 
 export function unsetNotesChannel(guildId: string) {
@@ -105,7 +105,7 @@ export function unsetNotesChannel(guildId: string) {
     const next = { ...settings.store.notesChannels };
     delete next[guildId];
     settings.store.notesChannels = next;
-    showToast("ModKit: ModNotes channel removed", Toasts.Type.MESSAGE);
+    showToast("ModKit: ModNotes channel removed", "message");
 }
 
 /** Rough check: can @everyone see the channel? */
