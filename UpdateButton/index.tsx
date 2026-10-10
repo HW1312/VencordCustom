@@ -168,6 +168,32 @@ async function check() {
         return;
     }
 
+    // Without GitHub's API (60 requests per hour, shared by everyone on the same internet connection):
+    // newest version from the releases page, files from the normal download links
+    let latest: string | null = null;
+    try {
+        latest = await Native.latestTag();
+    } catch (e) {
+        logger.warn("Couldn't read the newest version from the releases page, using Vencord's updater", e);
+    }
+    if (latest) {
+        try {
+            if (latest === gitHash) {
+                set({ status: "latest", lastCheck: Date.now() });
+                loadNotes();
+                return;
+            }
+            set({ status: "downloading" });
+            loadNotes(true);
+            await Native.installRelease(latest);
+            set({ status: "ready", lastCheck: Date.now() });
+        } catch (e: any) {
+            logger.error("Update failed", e);
+            set({ status: "error", error: String(e?.message ?? e ?? "Unknown error"), lastCheck: Date.now() });
+        }
+        return;
+    }
+
     try {
         let outdated: boolean;
         try {
@@ -197,22 +223,9 @@ async function check() {
     }
 }
 
-/**
- * Automatic check: only the newest version from the releases page (no API limit). Only if it differs from the
- * installed one, the real check runs and downloads it.
- */
+/** Automatic check: same as the button (no API limit), plus a notification once an update is ready */
 async function autoCheck() {
     if (busy() || state.status === "ready") return;
-    let latest: string | null | undefined;
-    try {
-        latest = await Native.latestTag();
-    } catch (e) {
-        logger.warn("Quick update check failed, using the normal one", e);
-    }
-    if (latest === gitHash) {
-        set({ status: "latest", lastCheck: Date.now(), error: "" });
-        return;
-    }
     await check();
     // check() changed it – TypeScript still thinks it can't be "ready"
     if ((state.status as Status) === "ready") {
