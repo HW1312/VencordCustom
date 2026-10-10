@@ -1,7 +1,7 @@
 /**
  * @name Apple Liquid Glass
  * @author 5406
- * @version 1.2.0
+ * @version 1.4.0
  * @description Frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window – follows Discord's Light, Ash, Dark and Onyx appearance.
  */
 
@@ -657,9 +657,80 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
    6. SERVER SIDEBAR
    ========================================================================== */
 
-:is([class^="guilds_"], [class*=" guilds_"]),
 [data-list-id="guildsnav"] {
     background: transparent;
+}
+
+/* The server list is its own floating glass dock: inset from the window edge, rounded, and ending just above
+   the user panel. Discord's own margin-bottom tucks the list 16px under the panel behind a fade mask. Both
+   are replaced here. Margins widen the grid column, so the channel list keeps its width. */
+:is([class^="guilds_"], [class*=" guilds_"]) {
+    margin: 6px 8px calc(var(--custom-app-panels-height, 0px) + var(--space-xs, 8px) * 2) 8px;
+    border: 1px solid var(--alg-glass-border);
+    border-radius: 24px;
+    background-color: var(--alg-glass-tint);
+    background-image: var(--alg-specular);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+    box-shadow: var(--alg-edge), var(--alg-panel-shadow);
+    -webkit-mask: none;
+    mask: none;
+}
+
+/* Vencord's BetterFolders: open folders get a second server list in a wrapper that is animated to the first
+   list's width (without margins). The second dock sits flush in it, the wrapper adds the gap to the channel list. */
+.vc-betterFolders-sidebar {
+    box-sizing: content-box;
+    padding-inline-end: 8px;
+}
+
+/* That list only holds open folders, so it isn't one dock: every folder becomes its own glass panel */
+.vc-betterFolders-sidebar :is([class^="guilds_"], [class*=" guilds_"]) {
+    margin-inline: 0;
+    border-color: transparent;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+.vc-betterFolders-sidebar [data-list-id="guildsnav"] :is([class^="folderGroupBackground_"], [class*=" folderGroupBackground_"]) {
+    inset-inline: 0;
+    width: auto;
+    border: 1px solid var(--alg-glass-border);
+    border-radius: 24px;
+    background-color: var(--alg-glass-tint);
+    background-image: var(--alg-specular);
+    -webkit-backdrop-filter: var(--alg-glass-filter);
+    backdrop-filter: var(--alg-glass-filter);
+    box-shadow: var(--alg-edge), var(--alg-panel-shadow);
+}
+
+.vc-betterFolders-sidebar [data-list-id="guildsnav"] :is([class^="folderGroup_"], [class*=" folderGroup_"]) {
+    margin-bottom: 10px;
+}
+
+/* Without the channel list (e.g. fullscreen views) there is no panel to end above */
+:is([class^="channelListHidden_"], [class*=" channelListHidden_"]) :is([class^="guilds_"], [class*=" guilds_"]) {
+    margin-bottom: 8px;
+}
+
+:is([class^="guilds_"], [class*=" guilds_"]) :is([class^="tree_"], [class*=" tree_"]),
+html.custom-theme-background :is([class^="guilds_"], [class*=" guilds_"]) :is([class^="tree_"], [class*=" tree_"]) {
+    background: transparent;
+}
+
+/* The scroller's extra bottom space only fed the removed fade */
+:is([class^="guilds_"], [class*=" guilds_"]) :is([class^="scroller_"], [class*=" scroller_"]) {
+    padding-bottom: 8px !important;
+}
+
+:is([class^="guilds_"], [class*=" guilds_"]) :is([class^="unreadMentionsIndicatorBottom_"], [class*=" unreadMentionsIndicatorBottom_"]) {
+    padding-bottom: 8px;
+}
+
+:is([class^="guilds_"], [class*=" guilds_"]) :is([class^="bottomRailNotifCenterButton_"], [class*=" bottomRailNotifCenterButton_"])::before {
+    display: none;
 }
 
 /* Server icons: soft lift on hover. Discord's squircle masks stay intact. */
@@ -1994,6 +2065,84 @@ section[role="dialog"] [role="tablist"] [role="tab"] {
 :is([class^="tabBar_"], [class*=" tabBar_"]) [role="tab"][aria-selected="true"] {
     background-color: var(--alg-fill-3);
     color: var(--alg-text-primary);
+}
+
+/* Friends header (Online / All / Pending / Add Friend): macOS toolbar capsules. The tab bar is Discord's
+   "topPill" TabBar; the friends page adds its own tabBar_ class next to it. */
+:is([class^="topPill_"], [class*=" topPill_"]) :is([class^="item_"], [class*=" item_"]) {
+    min-height: 28px;
+    margin: 0 2px;
+    padding: 3px 12px;
+    border-radius: var(--alg-radius-pill);
+    color: var(--alg-text-secondary);
+    font-weight: 500;
+    transition: background-color var(--alg-dur-fast) var(--alg-ease), color var(--alg-dur-fast) var(--alg-ease), box-shadow var(--alg-dur-fast) var(--alg-ease), scale var(--alg-dur-fast) var(--alg-ease-spring);
+}
+
+/* :not(#alg) lifts these above Discord's four-class themed / selected rules */
+:is([class^="topPill_"], [class*=" topPill_"]) :is([class^="item_"], [class*=" item_"]):hover:not([class*="disabled_"], [class*="addFriend_"], #alg) {
+    background-color: var(--alg-fill-2);
+    color: var(--alg-text-primary);
+}
+
+:is([class^="topPill_"], [class*=" topPill_"]) :is([class^="item_"], [class*=" item_"]):is([aria-selected="true"], [class*=" selected_"]):not([class*="addFriend_"], #alg) {
+    background-color: var(--alg-fill-4);
+    box-shadow: var(--alg-edge), 0 1px 3px rgba(0, 0, 0, 0.18);
+    color: var(--alg-text-strong);
+}
+
+:is([class^="topPill_"], [class*=" topPill_"]) :is([class^="item_"], [class*=" item_"]):active:not([class*="disabled_"]) {
+    scale: 0.96;
+}
+
+/* "Add Friend": filled accent capsule, like a prominent macOS toolbar button */
+:is([class^="tabBar_"], [class*=" tabBar_"]) :is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"]) {
+    margin-inline-start: 8px;
+    border: none;
+    background-color: var(--alg-accent-color);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 2px 8px rgba(var(--alg-accent-rgb), 0.35);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+:is([class^="tabBar_"], [class*=" tabBar_"]) :is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"]):hover {
+    background-color: var(--alg-accent-color);
+    filter: brightness(1.1);
+    color: #ffffff;
+}
+
+/* Selected (the Add Friend page is open): tinted instead of filled */
+:is([class^="tabBar_"], [class*=" tabBar_"]) :is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"]):is([class^="addFriend_"], [class*=" addFriend_"])[aria-selected="true"] {
+    background-color: rgba(var(--alg-accent-rgb), 0.16);
+    box-shadow: inset 0 0 0 1px rgba(var(--alg-accent-rgb), 0.35);
+    color: var(--alg-link);
+    filter: none;
+}
+
+/* Friends list search field: same macOS search field as the DM list's */
+:is([class^="peopleColumn_"], [class*=" peopleColumn_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) {
+    border: none !important;
+    border-radius: var(--alg-radius-sm);
+    background: rgba(118, 118, 128, 0.2) !important;
+    box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.06);
+    transition: background-color var(--alg-dur) var(--alg-ease), box-shadow var(--alg-dur) var(--alg-ease);
+}
+
+:is([class^="peopleColumn_"], [class*=" peopleColumn_"]) :is([class^="searchBar_"], [class*=" searchBar_"]):hover {
+    background: rgba(118, 118, 128, 0.28) !important;
+}
+
+:is([class^="peopleColumn_"], [class*=" peopleColumn_"]) :is([class^="searchBar_"], [class*=" searchBar_"]):focus-within {
+    box-shadow: var(--alg-accent-ring);
+}
+
+:is([class^="peopleColumn_"], [class*=" peopleColumn_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) :is(div, input) {
+    border-color: transparent;
+    background: transparent;
+}
+
+:is([class^="peopleColumn_"], [class*=" peopleColumn_"]) :is([class^="searchBar_"], [class*=" searchBar_"]) input::placeholder {
+    color: var(--alg-text-tertiary);
 }
 
 /* Activity and game cards */

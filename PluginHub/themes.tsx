@@ -92,9 +92,12 @@ function ThemeCard({ theme, installedVersion, enabled, refresh }: {
     }
 
     const install = () => run(async () => {
-        await Native.installTheme(theme.id);
+        const written = await Native.installTheme(theme.id);
         apply(theme);
-        showToast(`${theme.name} ${updatable ? "updated" : "installed and applied"}`, "success");
+        if (written && isNewer(theme.version, written))
+            showToast(`Quit Discord completely (tray icon → Quit) and start it again to finish updating ${theme.name}`, "message");
+        else
+            showToast(`${theme.name} ${updatable ? "updated" : "installed and applied"}`, "success");
     }, `Could not install ${theme.name}`);
 
     const remove = () => run(async () => {

@@ -76,12 +76,16 @@ export async function updateTheme(_: IpcMainInvokeEvent, id: string) {
     return version;
 }
 
-/** Writes (or overwrites, for updates) the theme file. Vencord's folder watcher reloads it. */
+/**
+ * Writes (or overwrites, for updates) the theme file. Vencord's folder watcher reloads it.
+ * Returns the version written. This process keeps the themes it started with: after a VoidCord update and only a
+ * reload (Ctrl+R), the page already lists the new version but this still writes the old one until Discord restarts.
+ */
 export async function installTheme(_: IpcMainInvokeEvent, id: string) {
     const { fileName, css } = getTheme(id);
     await fs.mkdir(THEMES_DIR, { recursive: true });
     await fs.writeFile(join(THEMES_DIR, fileName), css, "utf8");
-    return fileName;
+    return headerValue(css, "version");
 }
 
 export async function removeTheme(_: IpcMainInvokeEvent, id: string) {
