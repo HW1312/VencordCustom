@@ -33,8 +33,9 @@ function saveVolume(volume: number, muted: boolean) {
 }
 
 // ---------------------------------------------------------------- Icons (Lucide style, line)
+// A function, not an object of JSX: JSX at module level runs before React is ready and crashes all of Vencord
 
-const I = {
+const icons = () => ({
     play: <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z" fill="currentColor" stroke="none" />,
     pause: <><rect x="6" y="4" width="4" height="16" rx="1.2" fill="currentColor" stroke="none" /><rect x="14" y="4" width="4" height="16" rx="1.2" fill="currentColor" stroke="none" /></>,
     volume: <><path d="M11 5 6 9H3v6h3l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></>,
@@ -45,7 +46,7 @@ const I = {
     expand: <><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="m21 3-7 7" /><path d="m3 21 7-7" /></>,
     fullscreen: <><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" /></>,
     exitFullscreen: <><path d="M8 3v3a2 2 0 0 1-2 2H3" /><path d="M21 8h-3a2 2 0 0 1-2-2V3" /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path d="M16 21v-3a2 2 0 0 1 2-2h3" /></>
-};
+});
 
 const Svg = ({ children, size = 18 }: { children: ReactNode; size?: number; }) => (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -99,6 +100,7 @@ export function VideoPlayer({ src, name, style, big, autoPlay, startAt }: {
     const [idle, setIdle] = useState(false);
     const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+    const I = icons();
     const v = () => video.current;
 
     useEffect(() => {
