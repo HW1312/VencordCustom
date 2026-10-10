@@ -14,11 +14,14 @@ import { findComponentByCodeLazy } from "@webpack";
 import { useMemo, useState } from "@webpack/common";
 
 import { Badge, Button, Empty, Icon, IconButton, ICONS, Note, openWindow, Row, SearchField, Section, Segmented, Sheet, Toggle, ToggleRow } from "../_ui";
+import logo from "file://logo.png?base64";
 import { getOwnPlugins, isEnabled, isNew, markTried, needsRestart, setEnabled, settings } from "./index";
 import { hubThemes, ThemesTab } from "./themes";
 
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
+// VoidCord emblem, embedded into the build
+const LOGO_SRC = `data:image/png;base64,${logo}`;
 const GRID_PATH = "M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z";
 
 // ---------------------------------------------------------------- List
@@ -178,7 +181,7 @@ function Hub({ embedded, onClose }: { embedded?: boolean; onClose?(): void; }) {
     return (
         <Sheet
             embedded={embedded}
-            header={{ title: "Plugin Hub", subtitle: "Your plugins & themes", icon: GRID_PATH, iconColor: "indigo" }}
+            header={{ title: "Plugin Hub", subtitle: "Your plugins & themes", iconNode: <img src={LOGO_SRC} className="vc-pluginhub-logo" alt="" /> }}
             onClose={onClose}
             top={top}
         >
@@ -243,7 +246,7 @@ function TitleBarButton() {
             className="vc-pluginhub-tb"
             onClick={openHubModal}
             tooltip="Plugins & Themes"
-            icon={() => <Icon path={GRID_PATH} size={20} className="vc-ui-tb-icon" />}
+            icon={() => <img src={LOGO_SRC} className="vc-ui-tb-icon vc-pluginhub-tb-logo" alt="" />}
         />
     );
 }

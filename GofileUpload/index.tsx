@@ -371,6 +371,53 @@ async function uploadFiles(files: File[], channel: Channel) {
     }
 }
 
+/**
+ * For SecretChat: uploads an already encrypted file with the progress card and returns the link instead of sending
+ * it. Catbox first (direct link – the chat can load and decrypt it right away), Gofile as fallback.
+ * null = cancelled or failed (the card says why).
+ */
+export async function uploadForLink(file: File, title: string): Promise<{ url: string; host: Host; } | null> {
+    const handle: UploadHandle = { cancelled: false, jobId: null };
+    const card = createCard(title, () => {
+        handle.cancelled = true;
+        if (handle.jobId) void Native.cancelUpload(handle.jobId).catch(() => { });
+    });
+    const part = (n: number) => Math.min(n, file.size) / (file.size || 1);
+    let jobId: string | null = null;
+
+    try {
+        card.update("Preparing upload …", 0);
+        jobId = await copyToMain(file, handle, n => card.update("Preparing upload …", part(n) * 0.1));
+
+        const order: Host[] = catboxSkipReason(file) ? ["gofile"] : ["catbox", "gofile"];
+        const errors: string[] = [];
+        for (const host of order) {
+            if (handle.cancelled) throw new CancelledError("Cancelled");
+            const name = HOST_NAMES[host];
+            try {
+                const { url } = await sendToHost(jobId, host, file, null, handle, n =>
+                    card.update(`Uploading to ${name} … ${formatSize(part(n) * file.size)} / ${formatSize(file.size)}`, 0.1 + part(n) * 0.9));
+                card.finish("done", "Uploaded – the link is sent encrypted");
+                return { url, host };
+            } catch (e) {
+                if (handle.cancelled || e instanceof CancelledError) throw new CancelledError("Cancelled");
+                logger.warn(`${name} upload failed`, e);
+                errors.push(`${name}: ${e instanceof Error ? e.message : e}`);
+            }
+        }
+        throw new Error(errors.join(" · "));
+    } catch (e) {
+        if (!(e instanceof CancelledError)) logger.error("Upload failed", e);
+        card.finish("error", e instanceof CancelledError ? "Cancelled" : `Failed – ${e instanceof Error ? e.message : e}`);
+        return null;
+    } finally {
+        if (jobId) {
+            active.delete(jobId);
+            void Native.discardUpload(jobId).catch(() => { });
+        }
+    }
+}
+
 // ---------------------------------------------------------------- Auto-compress (images)
 
 const COMPRESSIBLE = /^image\/(jpeg|png|webp|bmp)$/;
@@ -592,7 +639,8 @@ export default definePlugin({
             // The function is async, so we can await the compression before Discord sees (and uploads) the files.
             find: "Unexpected mismatch between files and file metadata",
             replacement: {
-                match: /async function \i\((\i),(\i),(\i)\){(?=let\{filesMetadata:)/,
+                // SecretChat's block (/*vcSC*/…/*vcSC*/) may already sit there – it stays first
+                match: /async function \i\((\i),(\i),(\i)\){(?:\/\*vcSC\*\/.*?\/\*vcSC\*\/)?(?=let\{filesMetadata:)/,
                 replace: "$&{let vcKeep=$self.interceptFiles($1,$2,arguments[3]);if(vcKeep instanceof Promise)vcKeep=await vcKeep;if(vcKeep!=null){if(!vcKeep.length)return;$1=vcKeep}}"
             }
         }

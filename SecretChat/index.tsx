@@ -16,8 +16,9 @@ import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, UserStore } f
 
 import { notify } from "../_ui";
 import { loadedMessageHooks } from "../ChatPopout/messages";
+import { sendFilesOverrides } from "../ChatPopout/upload";
 import { onLockContextMenu, renderTitleBarButton, ServerListIcon } from "./area";
-import { EncryptedFile } from "./files";
+import { EncryptedFile, interceptUpload, sendFilesOverride } from "./files";
 import { decryptLoaded, intercept, onBeforeEdit, onBeforeSend, retryHandshakes, retryLocked, startHandshake, unwrapMessageActions, wrapMessageActions } from "./messages";
 import { isRoomMessage, onChannelDelete, retryRooms } from "./rooms";
 import { settings } from "./settings";
@@ -70,10 +71,21 @@ export default definePlugin({
                 match: /if\(null!=(\i)\.flags&&\(0,\i\.\i\)\(\i\.flags,\i\.\i\.SUPPRESS_NOTIFICATIONS\)\)return!1;/,
                 replace: "if($self.isRoomMessage($1))return!1;$&"
             }
+        },
+        {
+            // UploadHandler.promptToUpload (drop, paste, + button) – in encrypted chats the files are sent encrypted
+            // instead of going into the draft. GofileUpload patches the same spot: this runs before its part, in
+            // either patch order (its match allows this block, marked /*vcSC*/).
+            find: "Unexpected mismatch between files and file metadata",
+            replacement: {
+                match: /(?<=async function \i\((\i),(\i),\i\)\{)(?=\{let vcKeep=|let\{filesMetadata:)/,
+                replace: "/*vcSC*/if($self.interceptUpload($1,$2))return;/*vcSC*/"
+            }
         }
     ],
 
     isRoomMessage,
+    interceptUpload,
     renderTitleBarButton,
 
     contextMenus: {
@@ -108,6 +120,7 @@ export default definePlugin({
             logger.error("Could not wrap sendMessage – the rooms window won't send", e);
         }
         loadedMessageHooks.add(decryptLoaded);
+        sendFilesOverrides.add(sendFilesOverride);
         addServerListElement(ServerListRenderPosition.Above, ServerListIcon);
         window.addEventListener("contextmenu", onLockContextMenu, true);
         try {
@@ -124,6 +137,7 @@ export default definePlugin({
         closeRoomsWindow();
         unwrapMessageActions();
         loadedMessageHooks.delete(decryptLoaded);
+        sendFilesOverrides.delete(sendFilesOverride);
         removeServerListElement(ServerListRenderPosition.Above, ServerListIcon);
         window.removeEventListener("contextmenu", onLockContextMenu, true);
         const list = (FluxDispatcher as any)._interceptors as unknown[] | undefined;

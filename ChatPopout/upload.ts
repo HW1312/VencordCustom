@@ -72,8 +72,12 @@ export function sendViaGofile(channel: Channel, file: File) {
     UploadHandler.promptToUpload([file], channel, DraftType.ChannelMessage);
 }
 
+/** Other plugins can send a window's files themselves (SecretChat encrypts them) – true = handled */
+export const sendFilesOverrides = new Set<(channel: Channel, files: File[], messageReference?: unknown) => boolean>();
+
 /** Sends the files as one message (without text – the text goes as its own message) */
 export async function sendFiles(channel: Channel, files: File[], messageReference?: unknown, win?: Window | null) {
+    for (const override of sendFilesOverrides) if (override(channel, files, messageReference)) return;
     const limit = uploadLimit();
     const small: File[] = [];
     for (const f of files) {

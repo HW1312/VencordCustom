@@ -21,6 +21,9 @@ const VENCORD = join(ROOT, "Vencord");
 const USERPLUGINS = join(VENCORD, "src", "userplugins");
 const MANAGED_FILE = join(USERPLUGINS, ".managed.json");
 const RELEASE = join(ROOT, "release");
+// What friends get: one standalone exe; files/ is only the staging folder for what gets embedded into it
+const FILES = join(RELEASE, "files");
+const INSTALLER = join(RELEASE, "VoidCord-Installer.exe");
 const IGNORED = new Set(["Vencord", "release", "node_modules", "dist"]);
 // GitHub-Repo, aus dessen Releases der Vencord-Updater der Freunde lädt (muss öffentlich sein)
 const REPO = "HW1312/VencordCustom";
@@ -134,23 +137,30 @@ if (args.has("--package")) {
     run("pnpm build --standalone", VENCORD, { VENCORD_REMOTE: REPO, VENCORD_HASH: hash });
 
     rmSync(RELEASE, { recursive: true, force: true });
-    mkdirSync(join(RELEASE, "dist"), { recursive: true });
+    mkdirSync(join(FILES, "dist"), { recursive: true });
 
     for (const f of readdirSync(join(VENCORD, "dist"))) {
         if (/^(patcher|preload|renderer)\.(js|css)$/.test(f))
-            cpSync(join(VENCORD, "dist", f), join(RELEASE, "dist", f));
+            cpSync(join(VENCORD, "dist", f), join(FILES, "dist", f));
     }
 
     // dist/ wieder auf den normalen Build für dein eigenes Discord zurücksetzen
     run("pnpm build");
-    cpSync(join(ROOT, "share", "install.bat"), join(RELEASE, "install.bat"));
-    cpSync(join(ROOT, "share", "uninstall.bat"), join(RELEASE, "uninstall.bat"));
-    cpSync(join(ROOT, "share", "README.txt"), join(RELEASE, "README.txt"));
+    for (const f of ["Installer.ps1", "logo.png", "icon.png"])
+        cpSync(join(ROOT, "share", f), join(FILES, f));
+    // Shown in the installer window
+    writeFileSync(join(FILES, "version.txt"), hash);
 
-    const zip = join(ROOT, "VencordCustom.zip");
-    rmSync(zip, { force: true });
-    execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${RELEASE}\\*' -DestinationPath '${zip}'"`, { stdio: "inherit" });
-    console.log(`\nPaket erstellt: ${zip} (Version ${hash})`);
+    // Everything in files/ goes into the exe as resources "files/<path>"; the exe unpacks them and
+    // starts the installer window without a console. Compiled with the C# compiler that ships with Windows.
+    const resources = readdirSync(FILES, { recursive: true, withFileTypes: true })
+        .filter(d => d.isFile())
+        .map(d => join(d.parentPath, d.name))
+        .map(p => `/resource:"${p}",files/${p.slice(FILES.length + 1).replaceAll("\\", "/")}`);
+    const csc = join(process.env.WINDIR, "Microsoft.NET", "Framework64", "v4.0.30319", "csc.exe");
+    const sma = join(process.env.WINDIR, "Microsoft.NET", "assembly", "GAC_MSIL", "System.Management.Automation", "v4.0_3.0.0.0__31bf3856ad364e35", "System.Management.Automation.dll");
+    execSync(`"${csc}" /nologo /target:winexe /optimize+ /win32icon:"${join(ROOT, "share", "icon.ico")}" /r:System.Windows.Forms.dll /r:"${sma}" ${resources.join(" ")} /out:"${INSTALLER}" "${join(ROOT, "share", "Launcher.cs")}"`, { stdio: "inherit" });
+    console.log(`\nInstaller erstellt: ${INSTALLER} (Version ${hash})`);
 }
 
 // ---- GitHub-Release
@@ -159,8 +169,9 @@ if (args.has("--release")) {
     run("git push", ROOT);
 
     const assets = ["patcher.js", "preload.js", "renderer.js", "renderer.css"]
-        .map(f => `"${join(RELEASE, "dist", f)}"`)
-        .concat(`"${join(ROOT, "VencordCustom.zip")}"`);
+        .map(f => `"${join(FILES, "dist", f)}"`)
+        // Older installers fetch the new exe from here to update themselves
+        .concat(`"${INSTALLER}"`);
     // Release notes = commit body, shown as changelog in the UpdateButton plugin. One line per change:
     //   - Added: Plugin X in the Plugin Hub
     //   - Fixed: Popout shows GIFs again

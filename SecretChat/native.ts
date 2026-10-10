@@ -1,13 +1,14 @@
 /*
  * SecretChat – runs in the Electron main process
- * Downloads encrypted attachments when the page itself isn't allowed to (CORS). Only Discord's CDN hosts.
+ * Downloads encrypted attachments when the page itself isn't allowed to (CORS). Only Discord's CDN hosts and
+ * Catbox (where files over the upload limit go).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { IpcMainInvokeEvent } from "electron";
 import { request } from "https";
 
-const HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net"]);
+const HOSTS = new Set(["cdn.discordapp.com", "media.discordapp.net", "files.catbox.moe"]);
 /** Encrypted files are at most the Nitro upload limit */
 const MAX_BYTES = 520 * 1024 * 1024;
 
@@ -19,7 +20,7 @@ function get(url: string, redirects: number): Promise<Uint8Array> {
         } catch {
             return reject(new Error("Bad URL"));
         }
-        if (u.protocol !== "https:" || !HOSTS.has(u.hostname)) return reject(new Error("Not a Discord attachment"));
+        if (u.protocol !== "https:" || !HOSTS.has(u.hostname)) return reject(new Error("Not a Discord or Catbox file"));
 
         const req = request(u, { method: "GET" }, res => {
             const status = res.statusCode ?? 0;

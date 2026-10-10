@@ -119,3 +119,18 @@
     width: 10px;
     height: 5px;
 }
+
+/* VoidCord emblem in the window header and the title bar */
+.vc-pluginhub-logo {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgb(47 107 255 / 45%));
+}
+
+.vc-pluginhub-tb-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
