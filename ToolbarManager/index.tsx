@@ -8,6 +8,7 @@ import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { showToast } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { hitTest, startDom, stopDom } from "./dom";
 import { flush, loadData, logger, runtime } from "./store";
 import { ChatDockButton, ChatDockIcon, openItemMenu, openManagerModal, renderTitleBarButton, SettingsPanel } from "./ui";
@@ -70,7 +71,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("ToolbarManager", renderTitleBarButton),
 
     chatBarButton: {
         icon: ChatDockIcon,

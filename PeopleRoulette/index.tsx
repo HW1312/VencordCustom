@@ -11,6 +11,7 @@ import {
     ChannelStore, GuildMemberStore, RelationshipStore, SnowflakeUtils, UserStore
 } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { openRouletteModal, renderTitleBarButton, SettingsPanel } from "./ui";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -159,7 +160,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("PeopleRoulette", renderTitleBarButton),
 
     toolboxActions: {
         "People Roulette": () => openRouletteModal()

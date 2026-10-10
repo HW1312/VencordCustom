@@ -1464,3 +1464,93 @@
         transition: none;
     }
 }
+
+/* ---------------------------------------------------------------- Title bar: arrangeable slots (titlebar.tsx) */
+
+.vc-ui-tb-slot {
+    display: flex;
+    flex: none;
+    align-items: center;
+    -webkit-app-region: no-drag;
+}
+
+/* Discord's centered title, hidden when the icons would run into it */
+[data-vc-tb-squeezed] {
+    visibility: hidden !important;
+}
+
+/* Arranging: the icons jiggle (iOS home screen) and can be grabbed */
+.vc-ui-tb-arranging .vc-ui-tb-slot {
+    position: relative;
+    border-radius: 8px;
+    outline: 1.5px dashed color-mix(in srgb, var(--vc-ui-blue) 70%, transparent);
+    outline-offset: -1px;
+    background: color-mix(in srgb, var(--vc-ui-blue) 10%, transparent);
+    cursor: grab;
+    animation: vc-ui-tb-jiggle 0.32s ease-in-out infinite alternate;
+    touch-action: none;
+    user-select: none;
+}
+
+.vc-ui-tb-arranging .vc-ui-tb-slot:nth-child(2n) {
+    animation-delay: -0.16s;
+    animation-direction: alternate-reverse;
+}
+
+.vc-ui-tb-arranging .vc-ui-tb-slot * {
+    pointer-events: none;
+}
+
+.vc-ui-tb-arranging .vc-ui-tb-slot.vc-ui-tb-dragging {
+    z-index: 10;
+    background: color-mix(in srgb, var(--vc-ui-blue) 22%, transparent);
+    cursor: grabbing;
+    animation: none;
+    scale: 1.15;
+    filter: drop-shadow(0 4px 10px rgb(0 0 0 / 40%));
+    transition: scale 0.15s;
+}
+
+@keyframes vc-ui-tb-jiggle {
+    from { rotate: -3deg; }
+    to { rotate: 3deg; }
+}
+
+/* Floating bar with Save position */
+.vc-ui-tb-arrange {
+    position: fixed;
+    top: 46px;
+    left: 50%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 16px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 999px;
+    background: var(--vc-ui-glass-strong);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    font-size: 13px;
+    transform: translateX(-50%);
+    backdrop-filter: blur(20px) saturate(1.6);
+    animation: vc-ui-tb-arrange-in 0.35s var(--vc-ui-spring);
+}
+
+.vc-ui-tb-arrange-text {
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+@keyframes vc-ui-tb-arrange-in {
+    from { opacity: 0; transform: translate(-50%, -12px) scale(0.95); }
+    to { opacity: 1; transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-ui-tb-arranging .vc-ui-tb-slot,
+    .vc-ui-tb-arrange {
+        animation: none;
+    }
+}

@@ -12,6 +12,7 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType, Plugin } from "@utils/types";
 import { showToast } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import added from "./added.json";
 import { openHubModal, renderTitleBarButton, SettingsPanel } from "./ui";
 
@@ -149,7 +150,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("PluginHub", renderTitleBarButton),
 
     toolboxActions: {
         "Plugin Hub": () => openHubModal()

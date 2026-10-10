@@ -8,14 +8,14 @@
  */
 
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
-import { migratePluginSettings } from "@api/Settings";
 import { addServerListElement, removeServerListElement, ServerListRenderPosition } from "@api/ServerList";
+import { migratePluginSettings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
 import { User } from "@vencord/discord-types";
 import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, UserStore } from "@webpack/common";
 
-import { notify } from "../_ui";
+import { notify, titleBarSlot } from "../_ui";
 import { loadedMessageHooks } from "../ChatPopout/messages";
 import { sendFilesOverrides } from "../ChatPopout/upload";
 import { About } from "./about";
@@ -92,7 +92,7 @@ export default definePlugin({
 
     isRoomMessage,
     interceptUpload,
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("SecretChat", renderTitleBarButton),
 
     contextMenus: {
         "user-context": userContext

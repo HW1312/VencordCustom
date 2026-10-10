@@ -1,0 +1,58 @@
+.vc-streamunlock-panel {
+    position: fixed;
+    top: 48px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 240px;
+    padding: 10px 12px 12px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 14px;
+    background: var(--vc-ui-glass-strong);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    font-size: 12.5px;
+    backdrop-filter: blur(20px) saturate(1.6);
+}
+
+.vc-streamunlock-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--vc-ui-title);
+    font-size: 13px;
+}
+
+.vc-streamunlock-title {
+    margin-bottom: 4px;
+    color: var(--vc-ui-dim);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.vc-streamunlock-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+}
+
+.vc-streamunlock-line b {
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-mono);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-streamunlock-line b.vc-streamunlock-strong {
+    color: var(--vc-ui-green);
+    font-size: 14px;
+    font-weight: 700;
+}

@@ -16,6 +16,7 @@ import {
     SelectedChannelStore, showToast, UserStore, VoiceStateStore
 } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { renderTitleBarButton, SettingsPanel } from "./ui";
 
 export const logger = new Logger("FriendDock");
@@ -332,7 +333,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("FriendDock", renderTitleBarButton),
 
     contextMenus: {
         "user-context": UserContext

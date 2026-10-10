@@ -757,3 +757,7 @@ export function useListener(listeners: Set<() => void>) {
         return () => void listeners.delete(l);
     }, [listeners]);
 }
+
+// ---------------------------------------------------------------- Title bar (arrangeable icons)
+
+export { startArranging, titleBarSlot } from "./titlebar";

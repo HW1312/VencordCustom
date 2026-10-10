@@ -8,6 +8,7 @@
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 
+import { titleBarSlot } from "../_ui";
 import { closeFeed, openFeed, reset } from "./controller";
 import { mountRoot, renderTitleBarButton, SettingsPanel, unmountRoot } from "./ui";
 
@@ -100,7 +101,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("DoomScroll", renderTitleBarButton),
 
     toolboxActions: {
         "Open TikTok": () => openFeed("tiktok"),

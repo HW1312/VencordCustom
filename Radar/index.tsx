@@ -10,6 +10,7 @@ import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { ChannelStore, Menu, RunningGameStore, VoiceStateStore } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { processInput, setEngineActive } from "./engine";
 import { addReminder, findBookmark, getQuickPicks, startReminders, stopReminders } from "./reminders";
 import { closeAudio } from "./sounds";
@@ -184,7 +185,7 @@ const plugin = definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("Radar", renderTitleBarButton),
 
     renderMessageAccessory: props => <HighlightChip message={props.message} />,
 

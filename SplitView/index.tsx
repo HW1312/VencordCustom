@@ -11,6 +11,7 @@ import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { ChannelStore, Menu, showToast } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { emitChannelEvent } from "./messages";
 import { activate, mountFallbackRoot, renderTitleBarButton, setDragInfo, SettingsPanel, SPLIT_PATH, unmountAll } from "./ui";
 
@@ -267,7 +268,7 @@ const plugin = definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("SplitView", renderTitleBarButton),
 
     contextMenus: {
         "channel-context": channelContextPatch,

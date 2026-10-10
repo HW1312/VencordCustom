@@ -14,7 +14,7 @@ import { findComponentByCodeLazy } from "@webpack";
 import { ContextMenuApi, Menu, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
-import { Badge, Button, confirm, Empty, IconButton, ICONS, Note, openWindow, Row, Section, Segmented, Sheet, TextField } from "../_ui";
+import { Badge, Button, confirm, Empty, IconButton, ICONS, Note, openWindow, Row, Section, Segmented, Sheet, startArranging, TextField } from "../_ui";
 import { activate, ATTR_ANCHOR, collapsedItemsNear, ItemHit, positionUnderDock, sanitizeSvg, stripUnsafe } from "./dom";
 import { settings } from "./index";
 import {
@@ -162,6 +162,7 @@ export function openItemMenu(e: MouseEvent, hit: ItemHit) {
                 </Menu.MenuGroup>
             )}
             {!isDock && <Menu.MenuSeparator />}
+            {hit.bar === "title" && <Menu.MenuItem id="vc-tbm-arrange" label="Arrange icons" action={startArranging} />}
             <Menu.MenuItem id="vc-tbm-manage" label="Manage toolbar…" action={openManagerModal} />
         </Menu.Menu>
     ));

@@ -11,6 +11,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { findByPropsLazy, findStoreLazy } from "@webpack";
 import { MediaEngineStore, SelectedChannelStore, UserStore } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { renderTitleBarButton, SettingsPanel } from "./ui";
 
 const logger = new Logger("FakeMute");
@@ -163,7 +164,7 @@ const plugin = definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("FakeMute", renderTitleBarButton),
     modifyVoiceState,
 
     flux: {

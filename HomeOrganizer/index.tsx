@@ -9,6 +9,7 @@ import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { Menu, RelationshipStore } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { isProtectedId, toggleProtected } from "./data";
 import { startDividerFix, stopDividerFix } from "./divider";
 import { cancelAll } from "./queue";
@@ -116,7 +117,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("HomeOrganizer", renderTitleBarButton),
 
     contextMenus: {
         "user-context": privateChannelPatch,

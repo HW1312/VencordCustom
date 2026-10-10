@@ -21,7 +21,7 @@ import { findByCodeLazy, findComponentByCodeLazy, findStoreLazy } from "@webpack
 import { ChannelStore, FluxDispatcher, GuildChannelStore, NavigationRouter, RestAPI, Tooltip, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
-import { AppIcon, Button, Empty, Icon, ICONS, notify as showNotification, NotifyKind, openWindow, Progress, RoundButton, Row as UiRow, Section, Segmented, Sheet, State as StateLabel, Stats, Toggle, ToggleRow, UiColor, useListener } from "../_ui";
+import { AppIcon, Button, Empty, Icon, ICONS, notify as showNotification, NotifyKind, openWindow, Progress, RoundButton, Row as UiRow, Section, Segmented, Sheet, State as StateLabel, Stats, titleBarSlot, Toggle, ToggleRow, UiColor, useListener } from "../_ui";
 
 const cl = classNameFactory("vc-autoquest-");
 const logger = new Logger("AutoQuest");
@@ -933,7 +933,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("AutoQuest", renderTitleBarButton),
 
     toolboxActions: {
         "Open AutoQuest": () => openQuestWindow()

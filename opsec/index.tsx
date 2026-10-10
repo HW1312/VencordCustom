@@ -15,6 +15,7 @@ import definePlugin, { OptionType, PluginNative, PluginSettingBooleanDef } from 
 import { CloudUpload } from "@vencord/discord-types";
 import { FluxDispatcher } from "@webpack/common";
 
+import { titleBarSlot } from "../_ui";
 import { setBlocklistEnabled } from "./blocklist";
 import { configureCurtain, CurtainAnimation, CurtainIconName, CurtainOptions, CurtainStyle, hideCurtain, showCurtain, toggleCurtain } from "./curtain";
 import { askEdit, editImage, isEditableImage } from "./editor";
@@ -556,7 +557,7 @@ const plugin = definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("opsec", renderTitleBarButton),
 
     shouldHideTyping() {
         return running && getConfig().silentTyping;

@@ -8,6 +8,7 @@
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 
+import { titleBarSlot } from "../_ui";
 import { cancelBackfill, loadAllTime } from "./backfill";
 import { onMessageCreate, startTracking, stopTracking } from "./tracker";
 import { openWrappedModal, renderTitleBarButton, SettingsPanel } from "./ui";
@@ -77,7 +78,7 @@ export default definePlugin({
         }
     ],
 
-    renderTitleBarButton,
+    renderTitleBarButton: titleBarSlot("Wrapped", renderTitleBarButton),
 
     toolboxActions: {
         "My Wrapped": () => openWrappedModal()
