@@ -6,9 +6,9 @@
  */
 
 import { classNameFactory } from "@api/Styles";
-import { createRoot, FluxDispatcher, useEffect, UserStore, useState } from "@webpack/common";
+import { createRoot, FluxDispatcher, SettingsRouter, useEffect, UserStore, useState } from "@webpack/common";
 
-import { ICONS, RoundButton } from "../_ui";
+import { Button, ICONS, RoundButton } from "../_ui";
 
 const cl = classNameFactory("vc-streamunlock-");
 
@@ -70,6 +70,8 @@ function onStats(e: { connectionStats: { context?: string; stats?: any; }[]; }) 
         }
     }
     if (!snap.outbound && !snap.inbound.length) return;
+    // Stats again after a break = a new stream: show the panel again if it was closed
+    if (!latest || now - latest.at > STALE_MS) hidden = false;
     latest = snap;
     listeners.forEach(l => l());
 }
@@ -133,11 +135,24 @@ function Panel() {
                     <Line label="Resolution" value={resOf(stat)} />
                     <Line label="Codec" value={codecOf(stat)} />
                     <Line label="Bitrate" value={mbit(stat.bitrate)} />
+                    {(stat.frameRateNetwork ?? 0) > 0 && !stat.frameRateDecode && <DecodeHint />}
                 </section>
             ))}
         </div>
     );
 }
+
+/** The stream arrives but nothing gets decoded – usually the graphics card's decoder can't do that frame rate */
+function DecodeHint() {
+    return (
+        <div className={cl("hint")}>
+            <span>The stream arrives, but your graphics card can't decode it. Turn off System → Enable Hardware Acceleration (Discord restarts).</span>
+            <Button small variant="tinted" color="orange" onClick={openSystemSettings}>Open System settings</Button>
+        </div>
+    );
+}
+
+export const openSystemSettings = () => SettingsRouter.openUserSettings("system_panel");
 
 // ---------------------------------------------------------------- Start / stop
 
@@ -145,8 +160,6 @@ let root: ReturnType<typeof createRoot> | null = null;
 
 export function startDebug() {
     FluxDispatcher.subscribe("MEDIA_ENGINE_CONNECTION_STATS", onStats);
-    // A new stream shows the panel again
-    FluxDispatcher.subscribe("STREAM_START", showAgain);
     const host = document.createElement("div");
     host.id = "vc-streamunlock-debug";
     document.body.appendChild(host);
@@ -154,16 +167,12 @@ export function startDebug() {
     root.render(<Panel />);
 }
 
-function showAgain() {
-    hidden = false;
-}
-
 export function stopDebug() {
     FluxDispatcher.unsubscribe("MEDIA_ENGINE_CONNECTION_STATS", onStats);
-    FluxDispatcher.unsubscribe("STREAM_START", showAgain);
     root?.unmount();
     root = null;
     document.getElementById("vc-streamunlock-debug")?.remove();
     latest = null;
+    hidden = false;
     lastBytes.clear();
 }

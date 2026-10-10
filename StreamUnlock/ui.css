@@ -56,3 +56,17 @@
     font-size: 14px;
     font-weight: 700;
 }
+
+.vc-streamunlock-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 8px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--vc-ui-orange) 14%, transparent);
+    color: var(--vc-ui-title);
+    font-size: 12px;
+    line-height: 1.35;
+}

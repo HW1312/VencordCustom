@@ -13,12 +13,30 @@ import "./ui.css";
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 
-import { startDebug, stopDebug } from "./debug";
+import { Button, Note } from "../_ui";
+import { openSystemSettings, startDebug, stopDebug } from "./debug";
 
 const EXTRA_FPS = [75, 90, 120, 144, 240, 360];
 const RESOLUTIONS = [0, 1440, 1080, 720, 480];
 
+function ViewerHint() {
+    return (
+        <Note tone="warn">
+            <b>Viewers see nothing / the stream keeps loading at high FPS?</b> Their graphics card can't decode it
+            (often AMD at 1080p and 240 FPS – their debugger then shows "Decoded FPS 0"). Fix on the <b>viewer's</b> PC:
+            Settings → System → turn off <b>Enable Hardware Acceleration</b> (Discord restarts). Or stream with fewer FPS.
+            <div style={{ marginTop: 8 }}>
+                <Button small variant="tinted" color="orange" onClick={openSystemSettings}>Open System settings</Button>
+            </div>
+        </Note>
+    );
+}
+
 const settings = definePluginSettings({
+    viewerHint: {
+        type: OptionType.COMPONENT,
+        component: ViewerHint
+    },
     maxBitrate: {
         type: OptionType.NUMBER,
         description: "Max stream bitrate in Mbit/s – 0 = Discord decides. Stream blurry or blocky when things move? Raise it: "
