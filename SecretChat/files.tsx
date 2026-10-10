@@ -13,8 +13,8 @@
 
 import { Settings } from "@api/Settings";
 import { classNameFactory } from "@api/Styles";
-import { openImageModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
+import { openModal } from "@utils/modal";
 import { PluginNative } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
 import { Constants, MessageActions, PendingReplyStore, RestAPI, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
@@ -70,6 +70,23 @@ const files = new Map<string, FileInfo>();
 const loaded = new Map<string, Promise<string>>();
 
 // ---------------------------------------------------------------- Receiving (called from the interceptor)
+
+/**
+ * Big view of a decrypted image. Discord's own media viewer can't show it: the picture only exists here as a
+ * blob: URL, and Discord's viewer runs every image through its media proxy ("Image failed to load").
+ */
+function openImageViewer(url: string, name: string) {
+    openModal(props => (
+        <div className={cl("viewer")} onClick={props.onClose}>
+            <img src={url} alt={name} onClick={e => e.stopPropagation()} />
+            <div className={cl("viewer-bar")} onClick={e => e.stopPropagation()}>
+                <span className={cl("viewer-name")}>{name}</span>
+                <a className={cl("viewer-btn")} href={url} download={name} title="Save the decrypted image">Save</a>
+                <button className={cl("viewer-btn")} onClick={props.onClose}>Close</button>
+            </div>
+        </div>
+    ));
+}
 
 function parseManifest(text: string): Manifest | null {
     try {
@@ -364,7 +381,7 @@ export function EncryptedFile({ message }: { message: Message; }) {
                         src={url}
                         alt={m.n}
                         style={size}
-                        onClick={() => openImageModal({ url, original: url, width: m.w ?? size.width, height: m.h ?? size.height })}
+                        onClick={() => openImageViewer(url, m.n)}
                     />
                 ) : kind === "video" ? (
                     <video className={cl("file-media")} src={url} controls style={size} />

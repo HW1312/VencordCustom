@@ -39,7 +39,7 @@
     place-items: center;
     border-radius: 28%;
     background: linear-gradient(145deg, #5ee3f0 0%, #1fb5d6 45%, #2a7fff 100%);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%), inset 0 -2px 6px rgb(0 40 90 / 25%), 0 4px 14px rgb(31 181 214 / 35%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 40%), 0 2px 8px rgb(31 181 214 / 22%);
 }
 
 .vc-frienddock-logo svg {
@@ -68,7 +68,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    border: 2px solid var(--vc-ui-teal);
+    border: 1.5px solid var(--vc-ui-teal);
     opacity: 0;
     pointer-events: none;
 }
@@ -96,7 +96,7 @@
 
 @keyframes vc-frienddock-radar {
     0% { opacity: 0.8; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.45); }
+    100% { opacity: 0; transform: scale(1.3); }
 }
 
 @keyframes vc-frienddock-ping {
@@ -113,10 +113,10 @@
     gap: 12px;
     padding: 10px 12px;
     overflow: hidden;
-    border: 0.5px solid color-mix(in srgb, var(--vc-ui-teal) 45%, transparent);
+    border: 0.5px solid color-mix(in srgb, var(--vc-ui-teal) 30%, transparent);
     border-radius: 16px;
     background:
-        radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--vc-ui-teal) 26%, transparent), transparent 70%),
+        radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--vc-ui-teal) 14%, transparent), transparent 70%),
         var(--vc-ui-group);
     animation: vc-frienddock-in 0.35s var(--vc-ui-spring);
 }
@@ -147,8 +147,8 @@
 .vc-frienddock-banner-text b {
     overflow: hidden;
     color: var(--vc-ui-title);
-    font-size: 14px;
-    font-weight: 650;
+    font-size: 13.5px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -210,9 +210,9 @@
 }
 
 .vc-frienddock-card-following {
-    border-color: color-mix(in srgb, var(--vc-ui-teal) 55%, transparent);
+    border-color: color-mix(in srgb, var(--vc-ui-teal) 35%, transparent);
     background:
-        linear-gradient(90deg, color-mix(in srgb, var(--vc-ui-teal) 14%, transparent), transparent 60%),
+        linear-gradient(90deg, color-mix(in srgb, var(--vc-ui-teal) 8%, transparent), transparent 60%),
         var(--vc-ui-group);
 }
 
@@ -249,8 +249,8 @@
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid var(--vc-frienddock-status, transparent);
-    opacity: 0.55;
+    border: 1.5px solid var(--vc-frienddock-status, transparent);
+    opacity: 0.35;
 }
 
 .vc-frienddock-avatar-online { --vc-frienddock-status: var(--vc-ui-green); }
@@ -295,8 +295,8 @@
     overflow: hidden;
     color: var(--vc-ui-title);
     font-family: var(--vc-ui-font-display);
-    font-size: 14.5px;
-    font-weight: 650;
+    font-size: 14px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
@@ -337,11 +337,11 @@
 .vc-frienddock-chip {
     display: flex;
     align-items: center;
-    gap: 7px;
-    align-self: flex-start;
+    gap: 8px;
+    align-self: stretch;
     max-width: 100%;
     margin-top: 4px;
-    padding: 4px 6px 4px 8px;
+    padding: 5px 8px 5px 10px;
     box-sizing: border-box;
     border-radius: 10px;
     background: color-mix(in srgb, var(--vc-ui-green) 13%, transparent);
@@ -378,12 +378,14 @@
 
 .vc-frienddock-chip-with {
     flex: none;
-    padding: 1px 7px;
+    margin-left: auto;
+    padding: 0 6px;
     border-radius: 999px;
-    background: var(--vc-ui-green);
-    color: #fff;
-    font-size: 10.5px;
-    font-weight: 700;
+    background: color-mix(in srgb, var(--vc-ui-green) 22%, transparent);
+    color: var(--vc-ui-green);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 16px;
 }
 
 .vc-frienddock-chip-more {
@@ -396,6 +398,7 @@
 .vc-frienddock-faces {
     display: flex;
     flex: none;
+    margin-left: auto;
     padding-left: 4px;
 }
 
@@ -434,66 +437,67 @@
     50% { transform: scaleY(1); }
 }
 
-/* ---------- Card actions ---------- */
+/* ---------- Card actions: bare icons, no box ---------- */
 
 .vc-frienddock-card-actions {
     display: flex;
     flex: none;
-    gap: 6px;
+    gap: 2px;
     align-self: center;
 }
 
 .vc-frienddock-act {
     display: grid;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     place-items: center;
     border: none;
-    border-radius: 50%;
-    background: var(--vc-ui-field);
-    color: var(--vc-ui-text);
+    background: none;
+    color: var(--vc-ui-dim);
     cursor: pointer;
-    transition: background-color 0.2s var(--vc-ui-ease), color 0.2s var(--vc-ui-ease), transform 0.25s var(--vc-ui-spring), box-shadow 0.2s var(--vc-ui-ease);
+    transition: color 0.2s var(--vc-ui-ease), transform 0.25s var(--vc-ui-spring);
 }
 
-.vc-frienddock-act:hover:not(:disabled) {
+.vc-frienddock-act:hover:not([aria-disabled="true"]) {
     color: var(--vc-ui-title);
-    transform: scale(1.08);
+    transform: scale(1.12);
 }
 
-.vc-frienddock-act:active:not(:disabled) {
-    transform: scale(0.9);
+.vc-frienddock-act:active:not([aria-disabled="true"]) {
+    transform: scale(0.88);
 }
 
-.vc-frienddock-act:disabled {
-    opacity: 0.4;
+.vc-frienddock-act[aria-disabled="true"] {
+    opacity: 0.35;
     cursor: not-allowed;
 }
 
-.vc-frienddock-act-join:hover:not(:disabled) {
-    background: var(--vc-ui-green);
-    box-shadow: 0 3px 10px color-mix(in srgb, var(--vc-ui-green) 45%, transparent);
-    color: #fff;
-}
-
-.vc-frienddock-act-follow:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--vc-ui-teal) 30%, transparent);
+.vc-frienddock-act-join:hover:not([aria-disabled="true"]) {
+    color: var(--vc-ui-green);
 }
 
 .vc-frienddock-act-on,
-.vc-frienddock-act-on:hover:not(:disabled) {
-    background: var(--vc-ui-teal);
-    box-shadow: 0 3px 12px color-mix(in srgb, var(--vc-ui-teal) 50%, transparent);
-    color: #fff;
+.vc-frienddock-act-on:hover:not([aria-disabled="true"]) {
+    color: var(--vc-ui-teal);
 }
 
-.vc-frienddock-act-on svg {
-    animation: vc-frienddock-spin 4s linear infinite;
+/* Following: the feet take turns stepping */
+.vc-frienddock-act-on .vc-frienddock-foot {
+    animation: vc-frienddock-step 1.2s ease-in-out infinite;
 }
 
-@keyframes vc-frienddock-spin {
-    to { transform: rotate(360deg); }
+.vc-frienddock-act-on .vc-frienddock-foot-2 {
+    animation-delay: -0.6s;
+}
+
+.vc-frienddock-act-follow:hover:not([aria-disabled="true"], .vc-frienddock-act-on) .vc-frienddock-foot-2 {
+    animation: vc-frienddock-step 0.6s ease-in-out 1;
+}
+
+@keyframes vc-frienddock-step {
+    0%, 100% { opacity: 1; transform: translateY(0); }
+    50% { opacity: 0.35; transform: translateY(-1.5px); }
 }
 
 /* ---------- Settings ---------- */
@@ -509,7 +513,7 @@
     .vc-frienddock-logo *,
     .vc-frienddock-logo-ring,
     .vc-frienddock-bars i,
-    .vc-frienddock-act-on svg,
+    .vc-frienddock-foot,
     .vc-frienddock-banner-pulse,
     .vc-frienddock-card,
     .vc-frienddock-titlebtn-active::after {

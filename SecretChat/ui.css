@@ -1445,3 +1445,68 @@ video.vc-secretchat-file-media {
     }
 }
 
+
+/* Big view of a decrypted image (Discord's media viewer can't load blob: URLs) */
+.vc-secretchat-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100vw;
+    height: 100vh;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.vc-secretchat-viewer img {
+    max-width: 100%;
+    max-height: calc(100vh - 110px);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+    object-fit: contain;
+    animation: vc-secretchat-viewer-in 0.25s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+@keyframes vc-secretchat-viewer-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+
+.vc-secretchat-viewer-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 6px 6px 6px 14px;
+    border-radius: 999px;
+    background: rgb(30 30 34 / 80%);
+    backdrop-filter: blur(20px);
+    color: #fff;
+    font-size: 13px;
+}
+
+.vc-secretchat-viewer-name {
+    overflow: hidden;
+    color: rgb(255 255 255 / 70%);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-viewer-btn {
+    flex: none;
+    padding: 5px 12px;
+    border: none;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 12%);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.vc-secretchat-viewer-btn:hover {
+    background: rgb(255 255 255 / 20%);
+    text-decoration: none;
+}
