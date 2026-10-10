@@ -1,13 +1,9 @@
-/* ---------- Title bar button: normal when nothing is pending, violet when an update is ready ---------- */
+/* UpdateButton – only what's special; popover, rows and buttons come from the shared _ui kit */
 
+/* Title bar button: normal when nothing is pending, purple when an update is ready */
 .vc-updatebtn-ready,
 .vc-updatebtn-ready svg {
-    color: #a66bff !important;
-}
-
-.vc-updatebtn-ready:hover,
-.vc-updatebtn-ready:hover svg {
-    color: #c39bff !important;
+    color: var(--vc-ui-purple) !important;
 }
 
 .vc-updatebtn-ready svg {
@@ -20,130 +16,38 @@
     50% { transform: translateY(2px); }
 }
 
-/* ---------- Panel ---------- */
-
-.vc-updatebtn-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 300px;
-    padding: 14px;
-    box-sizing: border-box;
-    border: 1px solid var(--border-subtle, rgb(255 255 255 / 8%));
-    border-radius: 12px;
-    background: var(--background-surface-higher, var(--background-floating, #111214));
-    box-shadow: var(--shadow-high, 0 12px 32px rgb(0 0 0 / 40%));
-    color: var(--text-default, #dbdee1);
-    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
-    transform-origin: top left;
-    animation: vc-updatebtn-pop 0.15s ease-out;
-}
-
-@keyframes vc-updatebtn-pop {
-    from {
-        opacity: 0;
-        transform: scale(0.96) translateY(-4px);
-    }
-}
-
-.vc-updatebtn-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.vc-updatebtn-title {
-    color: var(--header-primary, #f2f3f5);
-    font-size: 15px;
-    font-weight: 700;
-}
-
-.vc-updatebtn-version {
-    padding: 2px 8px;
-    border: none;
-    border-radius: 6px;
-    background: rgb(166 107 255 / 14%);
-    color: #c39bff;
-    font-family: var(--font-code, monospace);
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.vc-updatebtn-version:hover {
-    background: rgb(166 107 255 / 24%);
-}
-
-.vc-updatebtn-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--background-modifier-hover, rgb(255 255 255 / 4%));
-}
-
+/* Status dot */
 .vc-updatebtn-dot {
     flex: none;
     width: 10px;
     height: 10px;
+    margin: 0 4px;
     border-radius: 50%;
 }
 
-.vc-updatebtn-dot-idle {
-    background: var(--status-positive, #23a55a);
-}
+.vc-updatebtn-dot-green { background: var(--vc-ui-green); }
+.vc-updatebtn-dot-orange { background: var(--vc-ui-orange); }
+.vc-updatebtn-dot-red { background: var(--vc-ui-red); }
+.vc-updatebtn-dot-purple { background: var(--vc-ui-purple); }
 
 .vc-updatebtn-dot-ready {
-    background: #a66bff;
-    box-shadow: 0 0 0 0 rgb(166 107 255 / 60%);
     animation: vc-updatebtn-ping 1.6s ease-out infinite;
 }
 
 .vc-updatebtn-dot-busy {
-    background: var(--status-warning, #f0b232);
     animation: vc-updatebtn-blink 1s ease-in-out infinite;
 }
 
-.vc-updatebtn-dot-error {
-    background: var(--status-danger, #f23f43);
-}
-
 @keyframes vc-updatebtn-ping {
-    to { box-shadow: 0 0 0 8px rgb(166 107 255 / 0%); }
+    from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vc-ui-purple) 60%, transparent); }
+    to { box-shadow: 0 0 0 8px transparent; }
 }
 
 @keyframes vc-updatebtn-blink {
     50% { opacity: 0.35; }
 }
 
-.vc-updatebtn-status-text {
-    min-width: 0;
-}
-
-.vc-updatebtn-status-label {
-    color: var(--header-primary, #f2f3f5);
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.vc-updatebtn-status-sub {
-    overflow: hidden;
-    color: var(--text-muted, #949ba4);
-    font-size: 12px;
-    text-overflow: ellipsis;
-}
-
-.vc-updatebtn-changes-head {
-    margin-bottom: 6px;
-    color: var(--text-muted, #949ba4);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-}
-
-/* One card for the whole changelog, one line per change like a diff */
+/* Changelog: one group, one line per change like a diff */
 .vc-updatebtn-changes-list {
     display: flex;
     flex-direction: column;
@@ -151,18 +55,8 @@
     max-height: 220px;
     padding: 10px 12px;
     overflow-y: auto;
-    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
-    border-radius: 8px;
-    background: var(--background-modifier-hover, rgb(255 255 255 / 3%));
-}
-
-.vc-updatebtn-changes-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.vc-updatebtn-changes-list::-webkit-scrollbar-thumb {
-    border-radius: 3px;
-    background: rgb(255 255 255 / 12%);
+    border-radius: 12px;
+    background: var(--vc-ui-group);
 }
 
 .vc-updatebtn-change {
@@ -174,88 +68,26 @@
 }
 
 .vc-updatebtn-sign {
-    font-family: var(--font-code, monospace);
+    font-family: var(--vc-ui-mono);
     font-size: 15px;
     font-weight: 800;
     text-align: center;
 }
 
-.vc-updatebtn-sign-new {
-    color: #4ade80;
-}
-
-.vc-updatebtn-sign-removed {
-    color: #f87171;
-}
-
+.vc-updatebtn-sign-new { color: var(--vc-ui-green); }
+.vc-updatebtn-sign-removed { color: var(--vc-ui-red); }
 .vc-updatebtn-sign-fix,
-.vc-updatebtn-sign-improved {
-    color: #60a5fa;
-}
-
-.vc-updatebtn-sign-other {
-    color: var(--text-muted, #949ba4);
-}
+.vc-updatebtn-sign-improved { color: var(--vc-ui-blue); }
+.vc-updatebtn-sign-other { color: var(--vc-ui-dim); }
 
 .vc-updatebtn-change-msg {
     min-width: 0;
-    color: var(--text-default, #dbdee1);
+    color: var(--vc-ui-text);
     overflow-wrap: anywhere;
 }
 
 .vc-updatebtn-actions {
     display: flex;
     gap: 8px;
-}
-
-.vc-updatebtn-btn {
-    display: inline-flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 34px;
-    padding: 0 12px;
-    border: none;
-    border-radius: 8px;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-}
-
-.vc-updatebtn-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.vc-updatebtn-btn-secondary {
-    background: var(--button-secondary-background, #4e5058);
-    color: #fff;
-}
-
-.vc-updatebtn-btn-secondary:hover:not(:disabled) {
-    background: var(--button-secondary-background-hover, #6d6f78);
-}
-
-.vc-updatebtn-btn-primary {
-    background: #8a4dff;
-    color: #fff;
-}
-
-.vc-updatebtn-btn-primary:hover {
-    background: #9b66ff;
-}
-
-.vc-updatebtn-btn-icon {
-    display: inline-flex;
-}
-
-.vc-updatebtn-spin {
-    animation: vc-updatebtn-spin 0.9s linear infinite;
-}
-
-@keyframes vc-updatebtn-spin {
-    to { transform: rotate(360deg); }
+    width: 100%;
 }

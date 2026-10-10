@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
-import { Modal, openModal, useEffect, useRef, useState } from "@webpack/common";
+import { useEffect, useRef, useState } from "@webpack/common";
 
-import { Button, cl } from "./components";
+import { Field, openWindow, Sheet } from "../_ui";
+import { cl, ICON_COLOR, ICONS } from "./components";
 
 const CATEGORY = 4;
 
-function NameCopyPanel({ name, onClose }: { name: string; onClose(): void; }) {
+function NameCopyWindow({ name, title, close }: { name: string; title: string; close(): void; }) {
     const [text, setText] = useState(name);
     const ref = useRef<HTMLInputElement>(null);
 
@@ -22,51 +22,50 @@ function NameCopyPanel({ name, onClose }: { name: string; onClose(): void; }) {
     }, []);
 
     // Copies the marked part if there is one, otherwise the whole field
-    function copy(close = false) {
+    function copy(andClose = false) {
         const el = ref.current;
         const start = el?.selectionStart ?? 0;
         const end = el?.selectionEnd ?? 0;
         const part = end > start ? text.slice(start, end) : text;
         if (!part) return;
         copyWithToast(part, end > start && part !== text ? "Selection copied" : "Name copied");
-        if (close) onClose();
+        if (andClose) close();
     }
 
     return (
-        <div className={cl("modal")}>
-            <input
-                ref={ref}
-                className={cl("input")}
-                style={{ width: "100%", boxSizing: "border-box", fontSize: 16 }}
-                value={text}
-                spellCheck={false}
-                onChange={e => setText(e.currentTarget.value)}
-                onKeyDown={e => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        copy(true);
-                    }
-                }}
-            />
-            <div className={cl("hint")} style={{ margin: "8px 0 12px" }}>
-                Mark the part you want, or delete what you don't need - nothing here changes the actual channel.
-                Enter copies and closes.
-            </div>
-            <div className={cl("row-inline")}>
-                <Button icon="copy" onClick={() => copy()}>Copy</Button>
-                <Button variant="ghost" icon="refresh" disabled={text === name} onClick={() => setText(name)}>Reset</Button>
-            </div>
-        </div>
+        <Sheet
+            header={{ title, icon: ICONS.copy, iconColor: ICON_COLOR }}
+            onClose={close}
+            actions={[
+                { label: "Reset", onClick: () => setText(name), disabled: text === name },
+                { label: "Copy", onClick: () => copy() }
+            ]}
+        >
+            <Field
+                label="Name"
+                hint="Mark the part you want, or delete what you don't need - nothing here changes the actual channel. Enter copies and closes."
+            >
+                {/* kit field class; plain input because the selection is read through the ref */}
+                <input
+                    ref={ref}
+                    className={`vc-ui-field ${cl("name-input")}`}
+                    value={text}
+                    spellCheck={false}
+                    onChange={e => setText(e.currentTarget.value)}
+                    onKeyDown={e => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            copy(true);
+                        }
+                    }}
+                />
+            </Field>
+        </Sheet>
     );
 }
 
 export function openNameCopyModal(channel: { name?: string; type?: number; }) {
     const name = channel.name ?? "";
-    openModal(props => (
-        <Modal {...props} size="sm" title={channel.type === CATEGORY ? "Copy category name" : "Copy channel name"}>
-            <ErrorBoundary>
-                <NameCopyPanel name={name} onClose={props.onClose} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    const title = channel.type === CATEGORY ? "Copy category name" : "Copy channel name";
+    openWindow(close => <NameCopyWindow name={name} title={title} close={close} />, { size: "small" });
 }

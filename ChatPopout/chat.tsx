@@ -16,6 +16,7 @@ import {
 } from "@webpack/common";
 import type { ComponentType, ReactNode } from "react";
 
+import { Button, Empty, Spinner } from "../_ui";
 import { getCommands, matchCommands, OptionType, PopoutCommand } from "./commands";
 import { collectComponentMedia, IS_COMPONENTS_V2, MessageComponents } from "./components";
 import { logger, settings } from "./index";
@@ -555,15 +556,16 @@ function MessageList({ channelId, guildId, ctx }: { channelId: string; guildId: 
             <div className={cl("list")} ref={scrollRef} onScroll={onScroll}>
                 <div ref={contentRef} className={cl("list-content")}>
                     {!loading && !error && (hasMore
-                        ? <button className={cl("load-older")} onClick={requestOlder} disabled={loadingOlder}>{loadingOlder ? "Loading…" : "Load older messages"}</button>
+                        ? <div className={cl("load-older")}><Button variant="gray" small onClick={requestOlder} disabled={loadingOlder}>{loadingOlder ? "Loading…" : "Load older messages"}</Button></div>
                         : <div className={cl("list-start")}>Beginning of the chat</div>)}
                     {rows}
                 </div>
-                {loading && <div className={cl("center")}>Loading messages…</div>}
+                {loading && <div className={cl("center")}><Spinner size={20} />Loading messages…</div>}
                 {error && (
                     <div className={cl("center")}>
-                        <div className={cl("error-text")}>{error}</div>
-                        <button className={cl("button")} onClick={reload}>Try again</button>
+                        <Empty title={<span className={cl("error-text")}>{error}</span>}>
+                            <Button small onClick={reload}>Try again</Button>
+                        </Empty>
                     </div>
                 )}
             </div>
@@ -1656,8 +1658,9 @@ function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: Cust
                         // One keyed view per channel, so switching fully replaces list, call bar and input
                         ? <ChannelView key={channelId} channel={channel} name={`${info.prefix}${info.name}`} showVoice={showVoice} ctx={ctx} />
                         : emptyView ?? <div className={cl("center")}>
-                            <div className={cl("muted")}>This chat is no longer available.</div>
-                            <button className={cl("button")} onClick={() => PopoutActions.close(windowKey)}>Close window</button>
+                            <Empty title="This chat is no longer available.">
+                                <Button small variant="gray" onClick={() => PopoutActions.close(windowKey)}>Close window</Button>
+                            </Empty>
                         </div>}
                 </div>
                 {stream && (

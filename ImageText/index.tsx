@@ -16,7 +16,7 @@ import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Menu, showToast } from "@webpack/common";
 
 import type { OcrResult } from "./native";
-import { LanguageList, openTextModal } from "./ui";
+import { LanguageList, openTextModal, TEXT_ICON } from "./ui";
 
 const logger = new Logger("ImageText");
 
@@ -211,7 +211,7 @@ async function copyText(src: string) {
 
 const TextIcon = () => (
     <svg viewBox="0 0 24 24" width={18} height={18}>
-        <path fill="currentColor" d="M4 4h6v2H6v4H4V4Zm10 0h6v6h-2V6h-4V4ZM4 14h2v4h4v2H4v-6Zm14 4v-4h2v6h-6v-2h4ZM8 8h8v2h-3v6h-2v-6H8V8Z" />
+        <path fill="currentColor" d={TEXT_ICON} />
     </svg>
 );
 

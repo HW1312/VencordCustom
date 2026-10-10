@@ -12,11 +12,11 @@
 import { classNameFactory } from "@api/Styles";
 import { openImageModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
-import { classes } from "@utils/misc";
 import { PluginNative } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
-import { Constants, RestAPI, showToast, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
+import { Constants, RestAPI, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
 
+import { Button, notify } from "../_ui";
 import { askGofile, attachmentOf, formatBytes, sendFiles as sendPlainFiles, sendViaGofile, uploadLimit, uploadOne } from "../ChatPopout/upload";
 import { decryptFile, encryptFile, encryptMessage, randomBytes, toHex } from "./crypto";
 import { channelKey, getKeyBytes } from "./store";
@@ -149,7 +149,7 @@ export async function sendEncryptedFiles(channel: Channel, list: File[], message
             messageReference = undefined;
         } catch (e) {
             logger.error("Sending an encrypted file failed", e);
-            showToast(`Couldn't send ${file.name} encrypted`, "failure");
+            notify({ title: `Couldn't send ${file.name} encrypted`, kind: "error", app: "SecretChat" });
         }
     }
 }
@@ -266,9 +266,9 @@ export function EncryptedFile({ message }: { message: Message; }) {
                 <span className={cl("file-size")}>{error ? <span className={cl("file-error")}>{error}</span> : formatBytes(m.s)}</span>
             </div>
             {badge}
-            <button className={classes(cl("btn"), cl("btn-primary"))} disabled={busy} onClick={error ? () => start() : download}>
+            <Button small color="green" disabled={busy} onClick={error ? () => start() : download}>
                 {busy ? "Decrypting …" : error ? "Retry" : "Download"}
-            </button>
+            </Button>
         </div>
     );
 }

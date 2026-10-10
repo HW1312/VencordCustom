@@ -8,9 +8,11 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { openImageModal, openUserProfile, sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
 import {
-    ChannelStore, GuildMemberStore, GuildStore, IconUtils, NavigationRouter, Parser, PermissionsBits, PermissionStore, showToast, 
+    ChannelStore, GuildMemberStore, GuildStore, IconUtils, NavigationRouter, Parser, PermissionsBits, PermissionStore, showToast,
     TypingStore, useEffect, useLayoutEffect, useMemo, useRef, UserStore, useState, useStateFromStores
 } from "@webpack/common";
+
+import { Button, Empty, Icon, IconButton, ICONS, Spinner } from "../_ui";
 
 import { closePanel, logger, movePanel, settings } from "./index";
 import { RawMessage, useChannelMessages } from "./messages";
@@ -19,33 +21,7 @@ const cl = classNameFactory("vc-splitview-");
 
 // ---------------------------------------------------------------- Icons
 
-export const CLOSE_PATH = "M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4Z";
-const LEFT_PATH = "M15.7 5.3a1 1 0 0 1 0 1.4L10.4 12l5.3 5.3a1 1 0 0 1-1.4 1.4l-6-6a1 1 0 0 1 0-1.4l6-6a1 1 0 0 1 1.4 0Z";
-const RIGHT_PATH = "M8.3 5.3a1 1 0 0 0 0 1.4l5.3 5.3-5.3 5.3a1 1 0 1 0 1.4 1.4l6-6a1 1 0 0 0 0-1.4l-6-6a1 1 0 0 0-1.4 0Z";
-const OPEN_PATH = "M14 3a1 1 0 1 0 0 2h3.6l-7.3 7.3a1 1 0 0 0 1.4 1.4L19 6.4V10a1 1 0 1 0 2 0V4a1 1 0 0 0-1-1h-6ZM5 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5a1 1 0 1 0-2 0v5H5V7h5a1 1 0 1 0 0-2H5Z";
 const FILE_PATH = "M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.4a2 2 0 0 0-.6-1.4l-4.4-4.4A2 2 0 0 0 13.6 2H6Zm7 1.8L18.2 9H14a1 1 0 0 1-1-1V3.8Z";
-
-export function Icon({ path, size = 18, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)}>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
-
-function IconButton({ path, label, onClick, disabled, danger }: { path: string; label: string; onClick(): void; disabled?: boolean; danger?: boolean; }) {
-    return (
-        <button
-            className={classes(cl("icon-btn"), danger && cl("icon-btn-danger"))}
-            title={label}
-            aria-label={label}
-            disabled={disabled}
-            onClick={onClick}
-        >
-            <Icon path={path} />
-        </button>
-    );
-}
 
 // ---------------------------------------------------------------- Helpers
 
@@ -214,7 +190,7 @@ function Attachment({ a }: { a: any; }) {
     }
     return (
         <a className={cl("file")} href={a.url} target="_blank" rel="noreferrer noopener">
-            <Icon path={FILE_PATH} size={22} />
+            <Icon path={FILE_PATH} size={22} className={cl("file-icon")} />
             <span className={cl("file-name")}>{a.filename}</span>
             <span className={cl("file-size")}>{formatSize(a.size)}</span>
         </a>
@@ -510,24 +486,27 @@ function MessageList({ channelId, guildId }: { channelId: string; guildId: strin
             <div className={cl("list")} ref={scrollRef} onScroll={onScroll}>
                 <div ref={contentRef} className={cl("list-content")}>
                     {!loading && !error && (hasMore
-                        ? <button className={cl("load-older")} onClick={requestOlder} disabled={loadingOlder}>
-                            {loadingOlder ? "Loading …" : "Load older"}
-                        </button>
+                        ? <div className={cl("load-older")}>
+                            <Button variant="gray" small disabled={loadingOlder} onClick={requestOlder}>
+                                {loadingOlder ? "Loading …" : "Load older"}
+                            </Button>
+                        </div>
                         : <div className={cl("list-start")}>Start of the channel</div>)}
                     {rows}
                 </div>
-                {loading && <div className={cl("center")}>Loading messages …</div>}
+                {loading && <div className={cl("center")}><Spinner size={20} /> Loading messages …</div>}
                 {error && (
-                    <div className={cl("center")}>
-                        <div className={cl("error-text")}>{error}</div>
-                        <button className={cl("button")} onClick={reload}>Try again</button>
-                    </div>
+                    <Empty icon={ICONS.warning} title={error}>
+                        <Button small onClick={reload}>Try again</Button>
+                    </Empty>
                 )}
             </div>
             {unseen > 0 && (
-                <button className={cl("new-pill")} onClick={scrollToBottom}>
-                    {unseen === 1 ? "1 new message" : `${unseen} new messages`} ↓
-                </button>
+                <div className={cl("new-pill")}>
+                    <Button small onClick={scrollToBottom}>
+                        {unseen === 1 ? "1 new message" : `${unseen} new messages`} ↓
+                    </Button>
+                </div>
             )}
         </div>
     );
@@ -640,7 +619,7 @@ function Composer({ channel, name }: { channel: any; name: string; }) {
                         }
                     }}
                 />
-                {canSend && <button className={cl("send")} onClick={send} disabled={!text.trim()}>Send</button>}
+                {canSend && <Button small onClick={send} disabled={!text.trim()}>Send</Button>}
             </div>
             {showTyping && <TypingLine channelId={channelId} guildId={channel.guild_id ?? null} />}
         </div>
@@ -675,10 +654,10 @@ export function Panel({ channelId, index, count, width, onResizeStart }: PanelPr
                     {info.subtitle && <div className={cl("header-sub")}>{info.subtitle}</div>}
                 </div>
                 <div className={cl("header-actions")}>
-                    <IconButton path={LEFT_PATH} label="Move left" disabled={index === 0} onClick={() => movePanel(channelId, -1)} />
-                    <IconButton path={RIGHT_PATH} label="Move right" disabled={index >= count - 1} onClick={() => movePanel(channelId, 1)} />
-                    <IconButton path={OPEN_PATH} label="Open in main window" disabled={!channel} onClick={() => openInMain(channelId, guildId)} />
-                    <IconButton path={CLOSE_PATH} label="Close" danger onClick={() => closePanel(channelId)} />
+                    <IconButton icon={ICONS.back} label="Move left" disabled={index === 0} onClick={() => movePanel(channelId, -1)} />
+                    <IconButton icon={ICONS.chevron} label="Move right" disabled={index >= count - 1} onClick={() => movePanel(channelId, 1)} />
+                    <IconButton icon={ICONS.external} label="Open in main window" disabled={!channel} onClick={() => openInMain(channelId, guildId)} />
+                    <IconButton icon={ICONS.close} label="Close" destructive onClick={() => closePanel(channelId)} />
                 </div>
             </header>
             {channel
@@ -688,10 +667,9 @@ export function Panel({ channelId, index, count, width, onResizeStart }: PanelPr
                     </ErrorBoundary>
                     <Composer key={channelId} channel={channel} name={title} />
                 </>
-                : <div className={cl("center")}>
-                    <div className={cl("muted")}>This channel is no longer available.</div>
-                    <button className={cl("button")} onClick={() => closePanel(channelId)}>Close panel</button>
-                </div>}
+                : <Empty icon={ICONS.warning} title="This channel is no longer available.">
+                    <Button small onClick={() => closePanel(channelId)}>Close panel</Button>
+                </Empty>}
         </section>
     );
 }

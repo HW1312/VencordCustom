@@ -1,5 +1,5 @@
 /*
- * MessageSelect – floating action bar, forward picker & screenshot preview
+ * MessageSelect – floating action bar, forward picker & screenshot preview (built from the shared _ui kit)
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -10,11 +10,12 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import type { Channel } from "@vencord/discord-types";
 import {
-    ChannelStore, ConfirmModal, createRoot, GuildChannelStore, GuildStore, Modal, openModal, PermissionsBits, PermissionStore,
+    ChannelStore, createRoot, GuildChannelStore, GuildStore, PermissionsBits, PermissionStore,
     PrivateChannelSortStore, SelectedChannelStore, useEffect, useMemo, useReducer, useRef, UserStore, useState
 } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
+import { Button, confirm, Empty, Icon, ICONS, openWindow, Pill, Pills, Progress, RoundButton, Row, SearchField, Section, Segmented, Sheet, Spinner, ToggleRow } from "../_ui";
 import { copyPng, copySelected, deleteSelected, forwardSelected, logger, quoteSelected, savePng } from "./actions";
 import { settings } from "./index";
 import { canRenderShot, canvasToPng, renderScreenshot, ShotOptions } from "./screenshot";
@@ -25,22 +26,10 @@ const cl = classNameFactory("vc-msgselect-");
 // ---------------------------------------------------------------- Icons
 
 const QUOTE_PATH = "M4 5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v4a6 6 0 0 1-6 6 1 1 0 1 1 0-2 4 4 0 0 0 4-4H6a2 2 0 0 1-2-2V5Zm9 0a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v4a6 6 0 0 1-6 6 1 1 0 1 1 0-2 4 4 0 0 0 4-4h-3a2 2 0 0 1-2-2V5Z";
-const COPY_PATH = "M3 16a1 1 0 0 1-1-1V5a3 3 0 0 1 3-3h10a1 1 0 1 1 0 2H5a1 1 0 0 0-1 1v10a1 1 0 0 1-1 1Zm6-10h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3Zm0 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H9Z";
 const FORWARD_PATH = "M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z";
 const CAMERA_PATH = "M9.4 3a2 2 0 0 0-1.7.9L6.5 6H5a3 3 0 0 0-3 3v9a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-1.5l-1.2-2.1a2 2 0 0 0-1.7-.9H9.4ZM12 17.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z";
-const TRASH_PATH = "M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5ZM5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07Z";
-const CLOSE_PATH = "M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4Z";
-const CHECK_PATH = "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z";
 const HASH_PATH = "M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z";
 const AT_PATH = "M12 2a10 10 0 1 0 4.6 18.9 1 1 0 1 0-.9-1.8A8 8 0 1 1 20 12v1a2 2 0 0 1-4 0V8a1 1 0 1 0-2 0v.3A5 5 0 1 0 15 15.6 4 4 0 0 0 22 13v-1A10 10 0 0 0 12 2Zm0 13a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z";
-
-export function Icon({ path, size = 18, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)} aria-hidden>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
 
 // ---------------------------------------------------------------- State hook
 
@@ -90,15 +79,9 @@ function useBarPosition(active: boolean, channelId: string | null) {
 
 function BarButton({ path, label, onClick, danger, disabled, title }: { path: string; label: string; onClick(): void; danger?: boolean; disabled?: boolean; title?: string; }) {
     return (
-        <button
-            className={classes(cl("bar-btn"), danger && cl("bar-btn-danger"))}
-            onClick={onClick}
-            disabled={disabled}
-            title={title ?? label}
-        >
-            <Icon path={path} size={16} />
-            <span>{label}</span>
-        </button>
+        <span className={cl("bar-btn")} title={title ?? label}>
+            <Button variant="plain" small icon={path} color={danger ? "red" : "blue"} onClick={onClick} disabled={disabled}>{label}</Button>
+        </span>
     );
 }
 
@@ -114,11 +97,12 @@ function ActionBar() {
     if (busy) {
         return (
             <div className={cl("bar")} style={{ left: pos.left, bottom: pos.bottom }}>
+                <Spinner />
                 <span className={cl("bar-count")}>{busy.cancelled ? "Stopping" : busy.label} {busy.done} / {busy.total}</span>
                 <div className={cl("progress")}>
-                    <div className={cl("progress-fill")} style={{ width: `${Math.round(busy.done / Math.max(1, busy.total) * 100)}%` }} />
+                    <Progress value={Math.round(busy.done / Math.max(1, busy.total) * 100)} />
                 </div>
-                <BarButton path={CLOSE_PATH} label="Stop" onClick={cancelBusy} disabled={busy.cancelled} />
+                <Button variant="gray" small onClick={cancelBusy} disabled={busy.cancelled}>Stop</Button>
             </div>
         );
     }
@@ -133,11 +117,11 @@ function ActionBar() {
             <span className={cl("bar-count")}>{count} selected</span>
             <div className={cl("bar-sep")} />
             <BarButton path={QUOTE_PATH} label="Quote" onClick={quoteSelected} disabled={!inChannel} title={inChannel ? "Quote in the chat box" : "Open the channel to quote"} />
-            <BarButton path={COPY_PATH} label="Copy" onClick={copySelected} title="Copy as text" />
+            <BarButton path={ICONS.copy} label="Copy" onClick={copySelected} title="Copy as text" />
             <BarButton path={FORWARD_PATH} label="Forward" onClick={openForwardModal} />
             <BarButton path={CAMERA_PATH} label="Screenshot" onClick={openScreenshotModal} />
             <BarButton
-                path={TRASH_PATH}
+                path={ICONS.trash}
                 label={deletable && deletable < count ? `Delete (${deletable})` : "Delete"}
                 onClick={openDeleteModal}
                 danger
@@ -145,9 +129,7 @@ function ActionBar() {
                 title={deletable ? `Delete ${deletable} message${deletable === 1 ? "" : "s"}` : "You can't delete any of these messages"}
             />
             <div className={cl("bar-sep")} />
-            <button className={cl("bar-close")} onClick={clear} title="Cancel (Esc)" aria-label="Cancel selection">
-                <Icon path={CLOSE_PATH} size={18} />
-            </button>
+            <RoundButton icon={ICONS.close} label="Cancel (Esc)" onClick={clear} />
         </div>
     );
 }
@@ -177,7 +159,7 @@ export function unmountBar() {
 
 // ---------------------------------------------------------------- Delete
 
-function openDeleteModal() {
+async function openDeleteModal() {
     const messages = getSelectedMessages();
     const channel = getChannel();
     const deletable = messages.filter(m => canDelete(m, channel));
@@ -185,25 +167,20 @@ function openDeleteModal() {
     const skipped = messages.length - deletable.length;
     const n = deletable.length;
 
-    openModal(props => (
-        <ConfirmModal
-            {...props}
-            title={`Delete ${n} message${n === 1 ? "" : "s"}?`}
-            confirmText="Delete"
-            cancelText="Cancel"
-            variant="critical-primary"
-            onConfirm={() => {
-                deleteSelected(deletable, Math.max(300, settings.store.deleteDelay ?? 1000)).catch(e => logger.error("Delete failed", e));
-            }}
-        >
-            <ErrorBoundary noop>
-                <div className={cl("confirm")}>
-                    <p>This can't be undone. The messages are deleted one after another to avoid rate limits.</p>
-                    {skipped > 0 && <p className={cl("muted")}>{skipped} selected message{skipped === 1 ? "" : "s"} can't be deleted by you and will be skipped.</p>}
-                </div>
-            </ErrorBoundary>
-        </ConfirmModal>
-    ));
+    const ok = await confirm({
+        title: `Delete ${n} message${n === 1 ? "" : "s"}?`,
+        icon: ICONS.trash,
+        body: (
+            <div className={cl("confirm")}>
+                <p>This can't be undone. The messages are deleted one after another to avoid rate limits.</p>
+                {skipped > 0 && <p className={cl("muted")}>{skipped} selected message{skipped === 1 ? "" : "s"} can't be deleted by you and will be skipped.</p>}
+            </div>
+        ),
+        confirmText: "Delete",
+        cancelText: "Cancel",
+        destructive: true
+    });
+    if (ok) deleteSelected(deletable, Math.max(300, settings.store.deleteDelay ?? 1000)).catch(e => logger.error("Delete failed", e));
 }
 
 // ---------------------------------------------------------------- Forward picker
@@ -272,12 +249,12 @@ function collectTargets(): { dms: Target[]; guilds: Target[]; } {
     return { dms, guilds };
 }
 
-function ForwardPicker({ onPick }: { onPick(channel: Channel, mode: "native" | "text"): void; }) {
+function ForwardPicker({ count, onPick, onClose }: { count: number; onPick(channel: Channel, mode: "native" | "text"): void; onClose(): void; }) {
     const [query, setQuery] = useState("");
     const [asText, setAsText] = useState(settings.store.forwardMode === "text");
     const [active, setActive] = useState(0);
     const all = useMemo(collectTargets, []);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     const results = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -293,46 +270,63 @@ function ForwardPicker({ onPick }: { onPick(channel: Channel, mode: "native" | "
     }, [query, all]);
 
     useEffect(() => setActive(0), [query]);
-    useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+    useEffect(() => {
+        listRef.current?.querySelector(`.${cl("result-active")}`)?.scrollIntoView({ block: "nearest" });
+    }, [active]);
 
     const pick = (t: Target | undefined) => t && onPick(t.channel, asText ? "text" : "native");
 
     return (
-        <div className={cl("picker")}>
-            <input
-                ref={inputRef}
-                className={cl("search")}
-                placeholder="Search channels, DMs and servers"
-                value={query}
-                onChange={e => setQuery(e.currentTarget.value)}
-                onKeyDown={e => {
-                    if (e.key === "ArrowDown") setActive(a => Math.min(results.length - 1, a + 1));
-                    else if (e.key === "ArrowUp") setActive(a => Math.max(0, a - 1));
-                    else if (e.key === "Enter") pick(results[active]);
-                    else return;
-                    e.preventDefault();
-                }}
-            />
-            <div className={cl("results")}>
-                {results.length === 0 && <div className={cl("empty")}>Nothing found</div>}
-                {results.map((t, i) => (
-                    <button
-                        key={t.channel.id}
-                        className={classes(cl("result"), i === active && cl("result-active"))}
-                        onMouseEnter={() => setActive(i)}
-                        onClick={() => pick(t)}
-                    >
-                        <Icon path={t.dm ? AT_PATH : HASH_PATH} size={18} className={cl("result-icon")} />
-                        <span className={cl("result-name")}>{t.label}</span>
-                        <span className={cl("result-sub")}>{t.sub}</span>
-                    </button>
-                ))}
-            </div>
-            <label className={cl("check")}>
-                <input type="checkbox" checked={asText} onChange={e => setAsText(e.currentTarget.checked)} />
-                <span>Send as quoted text instead of native forwards</span>
-            </label>
-        </div>
+        <Sheet
+            onClose={onClose}
+            header={{
+                title: `Forward ${count} message${count === 1 ? "" : "s"}`,
+                subtitle: "Native forwards are sent one message at a time.",
+                icon: FORWARD_PATH,
+                iconColor: "indigo"
+            }}
+            top={
+                <SearchField
+                    placeholder="Search channels, DMs and servers"
+                    value={query}
+                    autoFocus
+                    onChange={setQuery}
+                    onKeyDown={e => {
+                        if (e.key === "ArrowDown") setActive(a => Math.min(results.length - 1, a + 1));
+                        else if (e.key === "ArrowUp") setActive(a => Math.max(0, a - 1));
+                        else if (e.key === "Enter") pick(results[active]);
+                        else return;
+                        e.preventDefault();
+                    }}
+                />
+            }
+            footer={
+                <Section>
+                    <ToggleRow title="Send as quoted text instead of native forwards" checked={asText} onChange={setAsText} />
+                </Section>
+            }
+            actions={[{ label: "Cancel", onClick: onClose, variant: "gray" }]}
+        >
+            {results.length === 0
+                ? <Empty icon={ICONS.search} title="Nothing found" />
+                : (
+                    <div className={cl("results")} ref={listRef}>
+                        <Section>
+                            {results.map((t, i) => (
+                                <div key={t.channel.id} onMouseEnter={() => setActive(i)}>
+                                    <Row
+                                        className={classes(cl("result"), i === active && cl("result-active"))}
+                                        leading={<span className={cl("result-icon")}><Icon path={t.dm ? AT_PATH : HASH_PATH} size={16} /></span>}
+                                        title={t.label}
+                                        trailing={<span className={cl("result-sub")}>{t.sub}</span>}
+                                        onClick={() => pick(t)}
+                                    />
+                                </div>
+                            ))}
+                        </Section>
+                    </div>
+                )}
+        </Sheet>
     );
 }
 
@@ -340,36 +334,19 @@ function openForwardModal() {
     const count = state.ids.size;
     if (!count) return;
 
-    openModal(props => (
-        <Modal
-            {...props}
-            size="md"
-            title={`Forward ${count} message${count === 1 ? "" : "s"}`}
-            subtitle="Native forwards are sent one message at a time."
-            actions={[{ text: "Cancel", variant: "secondary", onClick: props.onClose }]}
-        >
-            <ErrorBoundary noop>
-                <ForwardPicker
-                    onPick={(channel, mode) => {
-                        props.onClose();
-                        forwardSelected(channel, mode, Math.max(300, settings.store.deleteDelay ?? 1000)).catch(e => logger.error("Forward failed", e));
-                    }}
-                />
-            </ErrorBoundary>
-        </Modal>
+    openWindow(close => (
+        <ForwardPicker
+            count={count}
+            onClose={close}
+            onPick={(channel, mode) => {
+                close();
+                forwardSelected(channel, mode, Math.max(300, settings.store.deleteDelay ?? 1000)).catch(e => logger.error("Forward failed", e));
+            }}
+        />
     ));
 }
 
 // ---------------------------------------------------------------- Screenshot
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange(v: boolean): void; }) {
-    return (
-        <button className={classes(cl("toggle"), checked && cl("toggle-on"))} onClick={() => onChange(!checked)} role="switch" aria-checked={checked}>
-            <span className={cl("toggle-box")}>{checked && <Icon path={CHECK_PATH} size={14} />}</span>
-            <span>{label}</span>
-        </button>
-    );
-}
 
 function ScreenshotPreview({ messages, onReady }: { messages: ReturnType<typeof getSelectedMessages>; onReady(png: Blob | null): void; }) {
     const s = settings.use(["shotTheme", "shotHideNames", "shotHideAvatars", "shotImages"]);
@@ -414,57 +391,57 @@ function ScreenshotPreview({ messages, onReady }: { messages: ReturnType<typeof 
     return (
         <div className={cl("shot")}>
             <div className={cl("shot-options")}>
-                <Toggle label="Hide names" checked={opts.hideNames} onChange={v => settings.store.shotHideNames = v} />
-                <Toggle label="Hide avatars" checked={opts.hideAvatars} onChange={v => settings.store.shotHideAvatars = v} />
-                <Toggle label="Show images" checked={opts.showImages} onChange={v => settings.store.shotImages = v} />
-                <div className={cl("segmented")}>
-                    {(["dark", "light"] as const).map(t => (
-                        <button
-                            key={t}
-                            className={classes(cl("segment"), opts.theme === t && cl("segment-on"))}
-                            onClick={() => settings.store.shotTheme = t}
-                        >
-                            {t === "dark" ? "Dark" : "Light"}
-                        </button>
-                    ))}
-                </div>
+                <Pills>
+                    <Pill selected={opts.hideNames} icon={opts.hideNames ? ICONS.check : undefined} onClick={() => settings.store.shotHideNames = !opts.hideNames}>Hide names</Pill>
+                    <Pill selected={opts.hideAvatars} icon={opts.hideAvatars ? ICONS.check : undefined} onClick={() => settings.store.shotHideAvatars = !opts.hideAvatars}>Hide avatars</Pill>
+                    <Pill selected={opts.showImages} icon={opts.showImages ? ICONS.check : undefined} onClick={() => settings.store.shotImages = !opts.showImages}>Show images</Pill>
+                </Pills>
+                <Segmented<"dark" | "light">
+                    small
+                    value={opts.theme}
+                    options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }]}
+                    onChange={t => settings.store.shotTheme = t}
+                />
             </div>
             <div className={classes(cl("shot-preview"), loading && cl("shot-loading"))}>
                 {error
-                    ? <div className={cl("empty")}>Couldn't render the screenshot.</div>
+                    ? <Empty icon={CAMERA_PATH} title="Couldn't render the screenshot." />
                     : url
                         ? <img src={url} alt="Screenshot preview" draggable={false} />
-                        : <div className={cl("empty")}>Rendering</div>}
+                        : <Empty title="Rendering"><Spinner size={20} /></Empty>}
             </div>
         </div>
     );
 }
 
-function ScreenshotModal({ modalProps }: { modalProps: any; }) {
+function ScreenshotModal({ close }: { close(): void; }) {
     const [messages] = useState(getSelectedMessages);
     const [png, setPng] = useState<Blob | null>(null);
     const name = `messages-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.png`;
 
     return (
-        <Modal
-            {...modalProps}
-            size="lg"
-            title="Message Screenshot"
-            subtitle={`${messages.length} message${messages.length === 1 ? "" : "s"}`}
+        <Sheet
+            onClose={close}
+            header={{
+                title: "Message Screenshot",
+                subtitle: `${messages.length} message${messages.length === 1 ? "" : "s"}`,
+                icon: CAMERA_PATH,
+                iconColor: "indigo"
+            }}
             actions={[
-                { text: "Close", variant: "secondary", onClick: modalProps.onClose },
-                { text: "Save", variant: "secondary", disabled: !png, onClick: () => png && savePng(png, name) },
-                { text: "Copy image", variant: "primary", disabled: !png, onClick: () => png && copyPng(png) }
+                { label: "Close", onClick: close },
+                { label: "Save", variant: "gray", disabled: !png, onClick: () => png && savePng(png, name) },
+                { label: "Copy image", variant: "filled", disabled: !png, onClick: () => png && copyPng(png) }
             ]}
         >
             <ErrorBoundary noop>
                 <ScreenshotPreview messages={messages} onReady={setPng} />
             </ErrorBoundary>
-        </Modal>
+        </Sheet>
     );
 }
 
 function openScreenshotModal() {
     if (!canRenderShot(state.ids.size)) return;
-    openModal(props => <ScreenshotModal modalProps={props} />);
+    openWindow(close => <ScreenshotModal close={close} />, { size: "large" });
 }

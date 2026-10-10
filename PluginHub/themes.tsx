@@ -4,16 +4,13 @@
  */
 
 import { Settings, useSettings } from "@api/Settings";
-import { classNameFactory } from "@api/Styles";
-import { Switch } from "@components/Switch";
-import { classes } from "@utils/misc";
 import { PluginNative } from "@utils/types";
 import { showToast, useEffect, useState } from "@webpack/common";
 
+import { Badge, Button, Empty, Group, IconButton, ICONS, Note, Row, Section, Toggle } from "../_ui";
 import { logger } from "./index";
 import catalog from "./themes.json";
 
-const cl = classNameFactory("vc-pluginhub-");
 const Native = VencordNative.pluginHelpers.PluginHub as PluginNative<typeof import("./native")>;
 
 export interface HubTheme {
@@ -27,8 +24,6 @@ export interface HubTheme {
 }
 
 export const hubThemes = catalog as HubTheme[];
-
-const TRASH_PATH = "M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h2v-8h-2Zm4 0v8h-2v-8h2Z";
 
 /** true if version a is newer than b ("1.2.0" > "1.1.9") */
 function isNewer(a: string, b: string) {
@@ -54,17 +49,17 @@ function unapply(theme: HubTheme) {
 function Preview({ colors }: { colors: string[]; }) {
     const [bg = "#111", panel = "#1c1c1e", card = "#2c2c2e", accent = "#0a84ff"] = colors;
     return (
-        <div className={cl("theme-preview")} style={{ background: bg }}>
-            <div className={cl("theme-preview-side")} style={{ background: panel }}>
+        <div className="vc-pluginhub-preview" style={{ background: bg }}>
+            <div className="vc-pluginhub-preview-side" style={{ background: panel }}>
                 <span style={{ background: accent }} />
                 <span style={{ background: card }} />
                 <span style={{ background: card }} />
             </div>
-            <div className={cl("theme-preview-main")}>
+            <div className="vc-pluginhub-preview-main">
                 <span style={{ background: card, width: "70%" }} />
                 <span style={{ background: card, width: "45%" }} />
                 <span style={{ background: card, width: "60%" }} />
-                <div className={cl("theme-preview-input")} style={{ background: panel }}>
+                <div className="vc-pluginhub-preview-input" style={{ background: panel }}>
                     <span style={{ background: accent }} />
                 </div>
             </div>
@@ -108,40 +103,32 @@ function ThemeCard({ theme, installedVersion, enabled, refresh }: {
     }, `Could not remove ${theme.name}`);
 
     return (
-        <div className={classes(cl("theme"), enabled && cl("theme-on"))}>
-            <Preview colors={theme.colors} />
-            <div className={cl("theme-body")}>
-                <div className={cl("row-name")}>
-                    <span className={cl("row-title")}>{theme.name}</span>
-                    <span className={cl("theme-version")}>v{theme.version}</span>
-                </div>
-                {theme.author && <div className={cl("theme-author")}>by {theme.author}</div>}
-                <div className={cl("row-desc")}>{theme.description}</div>
-            </div>
-            <div className={cl("theme-actions")}>
-                {!installed && (
-                    <button className={classes(cl("btn"), cl("btn-brand"))} disabled={busy} onClick={install}>
-                        {busy ? "Installing…" : "Install"}
-                    </button>
-                )}
-                {updatable && (
-                    <button className={classes(cl("btn"), cl("btn-brand"))} disabled={busy} onClick={install}>
-                        {busy ? "Updating…" : `Update to v${theme.version}`}
-                    </button>
-                )}
-                {installed && (
+        <Group>
+            <Row
+                align="top"
+                leading={<Preview colors={theme.colors} />}
+                title={<span className="vc-pluginhub-name">{theme.name}<Badge>v{theme.version}</Badge></span>}
+                subtitle={theme.author && `by ${theme.author}`}
+                note={theme.description}
+                trailing={
                     <>
-                        <label className={cl("theme-toggle")}>
-                            <span>{enabled ? "Applied" : "Apply"}</span>
-                            <Switch checked={enabled} disabled={busy} onChange={v => v ? apply(theme) : unapply(theme)} />
-                        </label>
-                        <button className={cl("cog")} title="Remove" disabled={busy} onClick={remove}>
-                            <svg viewBox="0 0 24 24" width={18} height={18}><path fill="currentColor" d={TRASH_PATH} /></svg>
-                        </button>
+                        {!installed && (
+                            <Button small disabled={busy} onClick={install}>{busy ? "Installing…" : "Install"}</Button>
+                        )}
+                        {updatable && (
+                            <Button small disabled={busy} onClick={install}>{busy ? "Updating…" : `Update to v${theme.version}`}</Button>
+                        )}
+                        {installed && (
+                            <>
+                                <span className="vc-pluginhub-apply">{enabled ? "Applied" : "Apply"}</span>
+                                <Toggle checked={enabled} disabled={busy} label="Apply" onChange={v => v ? apply(theme) : unapply(theme)} />
+                                <IconButton icon={ICONS.trash} label="Remove" destructive disabled={busy} onClick={remove} />
+                            </>
+                        )}
                     </>
-                )}
-            </div>
-        </div>
+                }
+            />
+        </Group>
     );
 }
 
@@ -163,21 +150,25 @@ export function ThemesTab({ query }: { query: string; }) {
         : hubThemes;
 
     return (
-        <div className={cl("themes")}>
-            <div className={cl("themes-note")}>
-                Applying a theme here turns off the other Theme Hub themes. Your own themes stay as they are.
-                <button className={cl("link")} onClick={() => VencordNative.themes.openFolder()}>Open themes folder</button>
-            </div>
-            {installed && shown.map(t => (
-                <ThemeCard
-                    key={t.id}
-                    theme={t}
-                    installedVersion={installed[t.fileName]}
-                    enabled={enabledThemes.includes(t.fileName)}
-                    refresh={refresh}
-                />
-            ))}
-            {installed && !shown.length && <div className={cl("empty")}>No themes found.</div>}
-        </div>
+        <>
+            <Note>
+                <span className="vc-pluginhub-restart">
+                    <span>Applying a theme here turns off the other Theme Hub themes. Your own themes stay as they are.</span>
+                    <Button variant="plain" small icon={ICONS.folder} onClick={() => VencordNative.themes.openFolder()}>Open themes folder</Button>
+                </span>
+            </Note>
+            <Section plain>
+                {installed && shown.map(t => (
+                    <ThemeCard
+                        key={t.id}
+                        theme={t}
+                        installedVersion={installed[t.fileName]}
+                        enabled={enabledThemes.includes(t.fileName)}
+                        refresh={refresh}
+                    />
+                ))}
+                {installed && !shown.length && <Empty icon={ICONS.search} title="No themes found." />}
+            </Section>
+        </>
     );
 }

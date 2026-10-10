@@ -5,8 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { showToast } from "@webpack/common";
-
+import { notify } from "../_ui";
 import { Native, settings } from "./index";
 import type { Bounds } from "./native";
 import { PlatformId, PLATFORMS } from "./platforms";
@@ -46,7 +45,7 @@ function update(patch: Partial<DoomState>) {
 
 export async function openFeed(id: PlatformId) {
     if (!Native) {
-        showToast("DoomScroll only works in the Discord desktop app", "failure");
+        notify({ app: "DoomScroll", kind: "error", title: "DoomScroll only works in the Discord desktop app" });
         return;
     }
 
@@ -55,7 +54,7 @@ export async function openFeed(id: PlatformId) {
         const { zoom, muted, volume, pauseWhenHidden } = settings.store;
         const ok = await Native.load(PLATFORMS[id].url, zoom / 100, muted, volume / 100, pauseWhenHidden);
         if (!ok) {
-            showToast("Couldn't open the feed", "failure");
+            notify({ app: "DoomScroll", kind: "error", title: "Couldn't open the feed" });
             return;
         }
     }

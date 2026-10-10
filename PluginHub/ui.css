@@ -1,394 +1,101 @@
-.vc-pluginhub-btn-titlebar,
-.vc-pluginhub-icon {
+/* PluginHub – only what's special to the hub; window, lists, switches etc. come from the shared _ui kit */
+
+.vc-pluginhub-tb {
     -webkit-app-region: no-drag;
 }
 
-.vc-pluginhub-btn-titlebar .vc-pluginhub-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-}
-
-.vc-pluginhub-btn-titlebar:hover .vc-pluginhub-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-}
-
-/* ---------- Links ---------- */
-
-.vc-pluginhub-link {
-    border: none;
-    background: none;
-    padding: 0;
-    color: var(--text-link, #00a8fc);
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.vc-pluginhub-link:hover {
-    text-decoration: underline;
-}
-
-/* ---------- Hub ---------- */
-
-.vc-pluginhub-hub {
+.vc-pluginhub-top {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    color: var(--text-default, var(--text-normal));
 }
 
 .vc-pluginhub-toolbar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
-.vc-pluginhub-search {
+.vc-pluginhub-toolbar > :first-child {
     flex: 1;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 7px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--input-background, var(--background-tertiary));
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-    outline: none;
-}
-
-.vc-pluginhub-search:focus {
-    border-color: var(--brand-500, #5865f2);
 }
 
 .vc-pluginhub-count {
+    flex: none;
+    color: var(--vc-ui-dim);
     font-size: 12px;
-    color: var(--text-muted);
-    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
-.vc-pluginhub-actions {
-    display: flex;
+.vc-pluginhub-name {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
 }
 
-.vc-pluginhub-btn {
-    padding: 5px 12px;
-    border: none;
-    border-radius: 6px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-    color: var(--text-default, var(--text-normal));
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.vc-pluginhub-btn:hover {
-    filter: brightness(1.15);
-}
-
-.vc-pluginhub-btn-brand {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
+.vc-pluginhub-bulk {
+    display: inline-flex;
+    gap: 2px;
 }
 
 .vc-pluginhub-restart {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    background: rgb(240 178 50 / 15%);
-    border: 1px solid rgb(240 178 50 / 40%);
+    gap: 12px;
 }
 
-.vc-pluginhub-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 6px;
+/* Spacing between notes and the list below them */
+.vc-pluginhub-top ~ .vc-ui-body .vc-ui-note + .vc-ui-section,
+.vc-pluginhub-top ~ .vc-ui-body .vc-ui-note + .vc-ui-note {
+    margin-top: 14px;
 }
 
-.vc-pluginhub-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-    border-left: 3px solid var(--interactive-muted, rgb(128 128 128 / 40%));
-}
-
-.vc-pluginhub-row-on {
-    border-left-color: var(--status-positive, #23a55a);
-}
-
-.vc-pluginhub-row-text {
-    flex: 1;
-    min-width: 0;
-}
-
-.vc-pluginhub-row-name {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    font-size: 14px;
-}
-
-.vc-pluginhub-row-title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.vc-pluginhub-row-desc {
-    margin-top: 2px;
+.vc-pluginhub-apply {
+    color: var(--vc-ui-dim);
     font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-pluginhub-badge {
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    background: var(--status-warning, #f0b232);
-    color: #000;
-    flex-shrink: 0;
-}
-
-.vc-pluginhub-badge-new {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-}
-
-.vc-pluginhub-cog {
-    display: flex;
-    padding: 4px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--interactive-normal);
-    cursor: pointer;
-}
-
-.vc-pluginhub-cog:hover:not(:disabled) {
-    color: var(--interactive-hover);
-    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
-}
-
-.vc-pluginhub-empty {
-    grid-column: 1 / -1;
-    padding: 12px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-/* ---------- Info ---------- */
-
-.vc-pluginhub-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-    line-height: 1.4;
 }
 
 .vc-pluginhub-info-desc {
-    margin: 0;
-    font-size: 15px;
+    margin: 0 0 16px;
+    color: var(--vc-ui-text);
+    font-size: 14px;
+    line-height: 1.45;
 }
 
-.vc-pluginhub-info-h {
-    margin-top: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
+/* Theme preview: tiny window mock-up in the theme's own colors */
 
-.vc-pluginhub-info-list {
-    margin: 0;
-    padding-left: 18px;
-    list-style: disc;
-}
-
-.vc-pluginhub-info-list li + li {
-    margin-top: 3px;
-}
-
-.vc-pluginhub-info-note {
-    margin: 4px 0 0;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-/* ---------- Settings ---------- */
-
-.vc-pluginhub-settings {
+.vc-pluginhub-preview {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-pluginhub-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-}
-
-/* ---------- Tabs ---------- */
-
-.vc-pluginhub-tabs {
-    display: flex;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 9px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
-    align-self: flex-start;
-}
-
-.vc-pluginhub-tab {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 14px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.vc-pluginhub-tab:hover {
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-pluginhub-tab-on {
-    background: var(--background-surface-highest, var(--background-floating));
-    color: var(--text-default, var(--text-normal));
-    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
-}
-
-.vc-pluginhub-tab-count {
-    font-size: 11px;
-    font-weight: 600;
-    opacity: 0.6;
-}
-
-/* ---------- Themes ---------- */
-
-.vc-pluginhub-themes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.vc-pluginhub-themes-note {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 10px;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-pluginhub-theme {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-}
-
-.vc-pluginhub-theme-on {
-    border-color: var(--brand-500, #5865f2);
-}
-
-.vc-pluginhub-theme-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.vc-pluginhub-theme-version,
-.vc-pluginhub-theme-author {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-}
-
-.vc-pluginhub-theme-version {
     flex-shrink: 0;
-    white-space: nowrap;
-}
-
-.vc-pluginhub-theme-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.vc-pluginhub-theme-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-pluginhub-btn:disabled,
-.vc-pluginhub-cog:disabled {
-    opacity: 0.5;
-    cursor: default;
-    filter: none;
-}
-
-/* Mini window preview in the theme's colors */
-.vc-pluginhub-theme-preview {
-    display: flex;
     gap: 4px;
     width: 120px;
     height: 72px;
     padding: 4px;
     box-sizing: border-box;
-    border-radius: 8px;
-    border: 1px solid rgb(255 255 255 / 8%);
-    flex-shrink: 0;
     overflow: hidden;
+    border-radius: 10px;
+    box-shadow: 0 0 0 0.5px var(--vc-ui-edge);
 }
 
-.vc-pluginhub-theme-preview span {
+.vc-pluginhub-preview span {
     display: block;
     height: 5px;
     border-radius: 3px;
 }
 
-.vc-pluginhub-theme-preview-side {
+.vc-pluginhub-preview-side {
     display: flex;
     flex-direction: column;
     gap: 4px;
     width: 30%;
     padding: 4px;
     box-sizing: border-box;
-    border-radius: 5px;
+    border-radius: 6px;
 }
 
-.vc-pluginhub-theme-preview-main {
+.vc-pluginhub-preview-main {
     position: relative;
     display: flex;
     flex: 1;
@@ -397,7 +104,7 @@
     padding: 4px 2px;
 }
 
-.vc-pluginhub-theme-preview-input {
+.vc-pluginhub-preview-input {
     position: absolute;
     inset: auto 2px 2px;
     display: flex;
@@ -408,8 +115,7 @@
     border-radius: 6px;
 }
 
-.vc-pluginhub-theme-preview-input span {
+.vc-pluginhub-preview-input span {
     width: 10px;
     height: 5px;
 }
-

@@ -6,8 +6,6 @@
 import "./ui.css";
 
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
-import { classes } from "@utils/misc";
 import { findByPropsLazy } from "@webpack";
 import {
     ApplicationStreamingStore, ApplicationStreamPreviewStore, ChannelRTCStore, ChannelStore, createRoot, GuildMemberStore, GuildStore, IconUtils,
@@ -15,6 +13,7 @@ import {
 } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
+import { Button, classes, Icon, IconButton, Row, Section, Segmented, Sheet, Spinner, TextField, ToggleRow } from "../_ui";
 import { ChatPreview } from "./chat";
 import { closePeek, getState, PeekState, setCallIndex, subscribe, switchTo } from "./controller";
 import { cl, logger, settings } from "./index";
@@ -34,20 +33,11 @@ const DEAF_PATH = "M3.3 3.3a1 1 0 0 1 1.4 0l16 16a1 1 0 0 1-1.4 1.4l-1.5-1.5A3 3
 const VIDEO_PATH = "M4 5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1.4l3.4 2.3A1 1 0 0 0 22 16V8a1 1 0 0 0-1.6-.8L17 9.4V8a3 3 0 0 0-3-3H4Z";
 const HASH_PATH = "M10.9 3.1a1 1 0 0 0-2 .3L9.5 7H6a1 1 0 0 0 0 2h3.2l-.7 6H5a1 1 0 1 0 0 2h3.3l-.5 3.9a1 1 0 0 0 2 .2l.5-4.1h6l-.5 3.9a1 1 0 0 0 2 .2l.5-4.1H21a1 1 0 1 0 0-2h-2.5l.7-6H22a1 1 0 1 0 0-2h-3.1l.5-3.9a1 1 0 0 0-2-.2l-.5 4.1h-6l.5-3.9ZM16.5 15h-6l.7-6h6l-.7 6Z";
 
-function Icon({ path, size = 14, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)} aria-hidden>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
+export const ICON_COLOR = "indigo";
+const EYE_PATH = "M12 5C6.5 5 2.7 8.7 1.2 11.4a1.3 1.3 0 0 0 0 1.2C2.7 15.3 6.5 19 12 19s9.3-3.7 10.8-6.4a1.3 1.3 0 0 0 0-1.2C21.3 8.7 17.5 5 12 5Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z";
 
 function HeadButton({ path, label, onClick, active }: { path: string; label: string; onClick(): void; active?: boolean; }) {
-    return (
-        <button className={classes(cl("head-btn"), active && cl("head-btn-active"))} title={label} aria-label={label} onClick={onClick}>
-            <Icon path={path} />
-        </button>
-    );
+    return <IconButton icon={path} label={label} onClick={onClick} active={active} />;
 }
 
 // ---------------------------------------------------------------- Helpers
@@ -154,10 +144,10 @@ function StreamView({ stream }: { stream: StreamRef; }) {
                     <Video streamId={streamId} fit="contain" paused={false} mirror={false} className={cl("media")} />
                 </ErrorBoundary>
             )}
-            {inVc && !streamId && <div className={cl("overlay")}><span className={cl("spinner")} /></div>}
+            {inVc && !streamId && <div className={cl("overlay")}><Spinner size={18} /></div>}
             {!inVc && (
                 <div className={cl("overlay")}>
-                    <button className={cl("btn")} onClick={() => joinVoice(stream.channelId)}>Join &amp; watch</button>
+                    <Button small onClick={() => joinVoice(stream.channelId)}>Join &amp; watch</Button>
                 </div>
             )}
         </div>
@@ -265,7 +255,7 @@ function VoiceCard({ channelId, pinned }: { channelId: string; pinned: boolean; 
                 <span className={cl("head-name")}>{channel?.name ?? "Voice channel"}</span>
                 <span className={cl("head-sub")}>{people.length}</span>
                 <PinMark pinned={pinned} />
-                {!inVc && <button className={cl("btn")} onClick={() => joinVoice(channelId)}>Join</button>}
+                {!inVc && <span className={cl("head-end")}><Button small onClick={() => joinVoice(channelId)}>Join</Button></span>}
             </header>
             <div className={cl("voice-list")}>
                 {!people.length && <div className={cl("muted-line")}>Nobody is here.</div>}
@@ -451,12 +441,12 @@ export function unmountRoot() {
 
 // ---------------------------------------------------------------- Settings
 
-const KEY_OPTIONS = [
-    ["alt", "Alt"],
-    ["ctrl", "Ctrl"],
-    ["shift", "Shift"],
-    ["custom", "Custom"]
-] as const;
+const KEY_OPTIONS: { value: "alt" | "ctrl" | "shift" | "custom"; label: string; }[] = [
+    { value: "alt", label: "Alt" },
+    { value: "ctrl", label: "Ctrl" },
+    { value: "shift", label: "Shift" },
+    { value: "custom", label: "Custom" }
+];
 
 const TARGETS = [
     ["channels", "Channels, threads & DMs in the sidebar"],
@@ -483,77 +473,66 @@ function KeyRecorder() {
     }, [recording]);
 
     return (
-        <button className={classes(cl("btn"), recording && cl("btn-active"))} onClick={() => setRecording(r => !r)}>
+        <Button small variant={recording ? "filled" : "gray"} color={recording ? "orange" : "blue"} onClick={() => setRecording(r => !r)}>
             {recording ? "Press a key …" : customKey || "Record key"}
-        </button>
+        </Button>
+    );
+}
+
+function NumberField({ value, min, max, onChange }: { value: number; min: number; max: number; onChange(v: number): void; }) {
+    return (
+        <TextField
+            className={cl("number")}
+            type="number"
+            min={min}
+            max={max}
+            value={value}
+            onChange={v => onChange(Math.max(min, Math.min(max, Math.round(Number(v) || 0))))}
+        />
     );
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
     const s = settings.use(["key", "holdDelay", "keepStreamSeconds", "muteStream", "callBox", ...TARGETS.map(([k]) => k)]);
 
-    const number = (key: "holdDelay" | "keepStreamSeconds", min: number, max: number) => (
-        <input
-            className={cl("number")}
-            type="number"
-            min={min}
-            max={max}
-            value={s[key]}
-            onChange={e => settings.store[key] = Math.max(min, Math.min(max, Math.round(Number(e.currentTarget.value) || 0)))}
-        />
-    );
-
     return (
-        <div className={cl("settings")}>
-            <div className={cl("option")}>
-                <span>Hold this key to peek</span>
-                <span className={cl("option-right")}>
-                    <span className={cl("segmented")} role="radiogroup" aria-label="Hold key">
-                        {KEY_OPTIONS.map(([v, label]) => (
-                            <button
-                                key={v}
-                                role="radio"
-                                aria-checked={s.key === v}
-                                className={classes(cl("segment"), s.key === v && cl("segment-active"))}
-                                onClick={() => settings.store.key = v}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </span>
-                    {s.key === "custom" && <KeyRecorder />}
-                </span>
-            </div>
-            <div className={cl("option")}>
-                <span>Hold delay (ms)</span>
-                {number("holdDelay", 0, 2000)}
-            </div>
-            <div className={cl("option")}>
-                <span>Keep stream connected after a peek (seconds)</span>
-                {number("keepStreamSeconds", 0, 600)}
-            </div>
-            <label className={cl("option")}>
-                <span>Mute the audio of peeked streams</span>
-                <Switch checked={s.muteStream} onChange={v => settings.store.muteStream = v} />
-            </label>
-            <div className={cl("option")}>
-                <span>Call stream preview position & size</span>
-                <button className={cl("small-btn")} disabled={!s.callBox} onClick={() => settings.store.callBox = null}>
-                    {s.callBox ? "Reset" : "Default"}
-                </button>
-            </div>
+        <Sheet
+            embedded
+            header={{
+                title: "PeekAnything",
+                subtitle: "Click into a preview to pin it, Esc or a click outside closes it. Peeking never marks anything as read.",
+                icon: EYE_PATH,
+                iconColor: ICON_COLOR
+            }}
+        >
+            <Section>
+                <Row
+                    title="Hold this key to peek"
+                    trailing={
+                        <span className={cl("option-right")}>
+                            <Segmented small value={s.key} options={KEY_OPTIONS} onChange={v => settings.store.key = v} />
+                            {s.key === "custom" && <KeyRecorder />}
+                        </span>
+                    }
+                />
+                <Row title="Hold delay (ms)" trailing={<NumberField value={s.holdDelay} min={0} max={2000} onChange={v => settings.store.holdDelay = v} />} />
+                <Row title="Keep stream connected after a peek (seconds)" trailing={<NumberField value={s.keepStreamSeconds} min={0} max={600} onChange={v => settings.store.keepStreamSeconds = v} />} />
+                <ToggleRow title="Mute the audio of peeked streams" checked={s.muteStream} onChange={v => settings.store.muteStream = v} />
+                <Row
+                    title="Call stream preview position & size"
+                    trailing={
+                        <Button small variant="gray" disabled={!s.callBox} onClick={() => settings.store.callBox = null}>
+                            {s.callBox ? "Reset" : "Default"}
+                        </Button>
+                    }
+                />
+            </Section>
 
-            <div className={cl("label")}>Peek at</div>
-            {TARGETS.map(([key, label]) => (
-                <label key={key} className={cl("option")}>
-                    <span>{label}</span>
-                    <Switch checked={s[key]} onChange={v => settings.store[key] = v} />
-                </label>
-            ))}
-
-            <div className={cl("hint")}>
-                Click into a preview to pin it, Esc or a click outside closes it. Peeking never marks anything as read.
-            </div>
-        </div>
+            <Section title="Peek at">
+                {TARGETS.map(([key, label]) => (
+                    <ToggleRow key={key} title={label} checked={s[key]} onChange={v => settings.store[key] = v} />
+                ))}
+            </Section>
+        </Sheet>
     );
 }, { noop: true });

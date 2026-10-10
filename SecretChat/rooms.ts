@@ -15,8 +15,9 @@ import { showNotification } from "@api/Notifications";
 import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { findByPropsLazy } from "@webpack";
-import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, showToast, UserStore } from "@webpack/common";
+import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, UserStore } from "@webpack/common";
 
+import { notify } from "../_ui";
 import { decodeText, deriveSharedKey, encodeText, fromB64, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
 import { settings } from "./settings";
@@ -182,10 +183,10 @@ export async function letIn(msg: RoomMessage, manual: boolean) {
         const sealed = seal(shared, nonce, concat(key, encodeText(name)), keyAad(joinId, msg.authorId));
         answered.add(joinId);
         sendMessage(msg.channelId, { content: `🔑 SC1K.${joinId}.${msg.authorId}.${publicKey}.${toB64(concat(nonce, sealed))}` }, false);
-        if (manual) showToast(`Let ${userName(msg.authorId)} in`, "success");
+        if (manual) notify({ title: `Let ${userName(msg.authorId)} in`, kind: "success", app: "SecretChat" });
     } catch (e) {
         logger.error("Letting someone into the room failed", e);
-        if (manual) showToast("Could not hand out the room key", "failure");
+        if (manual) notify({ title: "Could not hand out the room key", kind: "error", app: "SecretChat" });
     } finally {
         busy.delete(joinId);
         emit();
@@ -214,10 +215,10 @@ async function completeJoin(msg: RoomMessage) {
         delete state.joins[joinId];
         await addRoom(pending.channelId, record.id, name);
         retryLocked();
-        showToast(`You joined the secret room “${name}”`, "success");
+        notify({ title: `You joined the secret room “${name}”`, kind: "success", app: "SecretChat" });
     } catch (e) {
         logger.error("Joining the room failed", e);
-        showToast("Could not join the secret room", "failure");
+        notify({ title: "Could not join the secret room", kind: "error", app: "SecretChat" });
     } finally {
         busy.delete(joinId);
         emit();
@@ -228,7 +229,7 @@ export async function joinRoom(channelId: string, keyId: string) {
     if (!ChannelStore.getChannel(channelId)) {
         // The group was deleted (or you were removed) while the invite waited
         await dropRoom(channelId, false);
-        showToast("This chat doesn't exist anymore", "failure");
+        notify({ title: "This chat doesn't exist anymore", kind: "error", app: "SecretChat" });
         return;
     }
     if (Object.values(state.joins).some(j => j.channelId === channelId && j.keyId === keyId)) return;
@@ -237,9 +238,7 @@ export async function joinRoom(channelId: string, keyId: string) {
     state.joins[joinId] = { channelId, keyId, privateJwk, created: Date.now() };
     await save();
     sendMessage(channelId, { content: `🔑 SC1J.${keyId}.${joinId}.${publicKey}` }, false);
-    showToast(isPrivateChat(channelId)
-        ? "Asked to join – a member who is online lets you in automatically"
-        : "Asked to join – a member has to let you in", "message");
+    notify({ title: isPrivateChat(channelId) ? "Asked to join – a member who is online lets you in automatically" : "Asked to join – a member has to let you in", kind: "info", app: "SecretChat" });
 }
 
 export const isJoining = (channelId: string) => Object.values(state.joins).some(j => j.channelId === channelId);
@@ -276,10 +275,10 @@ export async function deleteRoomForEveryone(channelId: string) {
         }
         await RestAPI.del({ url: `/channels/${channelId}` });
         await dropRoom(channelId, true);
-        showToast("Group deleted", "success");
+        notify({ title: "Group deleted", kind: "success", app: "SecretChat" });
     } catch (e) {
         logger.error("Deleting the group failed", e);
-        showToast("Could not delete the group completely – try again", "failure");
+        notify({ title: "Could not delete the group completely – try again", kind: "error", app: "SecretChat" });
     }
 }
 
@@ -334,7 +333,7 @@ export async function createRoom(name: string, userIds: string[], icon?: string 
             await RestAPI.patch({ url: `/channels/${channelId}`, body: { name: randomGroupName(), ...(icon ? { icon } : {}) } });
         } catch (e) {
             logger.error("Setting the group name / picture failed", e);
-            showToast("Room created, but its Discord name / picture couldn't be set", "failure");
+            notify({ title: "Room created, but its Discord name / picture couldn't be set", kind: "error", app: "SecretChat" });
         }
     }
     return channelId;

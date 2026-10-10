@@ -227,7 +227,7 @@ export const BLOCKLIST_ATTR = "data-vc-opsec-scam";
  * IP loggers by their address, blocklist hits via the attribute (the list is too large for plain CSS).
  */
 export function buildDangerCss({ ipLoggers, blocklisted }: { ipLoggers: boolean; blocklisted: boolean; }) {
-    const red = `color: var(--text-feedback-critical, var(--status-danger, #f23f43)) !important;
+    const red = `color: var(--vc-ui-red) !important;
     text-decoration: underline wavy !important;`;
     const parts: string[] = [];
 

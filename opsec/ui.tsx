@@ -1,7 +1,7 @@
 /*
- * OpSec – UI: title bar button, popout with sidebar (Overview / Protection / Curtain / Check),
- * settings (same UI in the plugin window), link warning, streaming protection picker
- * (servers/channels) and scam blocklist status
+ * OpSec – UI: title bar button, popout (Overview / Protection / Curtain / Check),
+ * settings (same UI in the plugin settings), link warning, streaming protection picker
+ * (servers/channels) and scam blocklist status. Built with the shared _ui kit.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -12,13 +12,14 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { useForceUpdater } from "@utils/react";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, ConnectedAccountsStore, GuildChannelStore, GuildStore, IconUtils, Popout, React, showToast, Tooltip, useEffect, useLayoutEffect, useMemo, useRef, UserSettingsProtoStore, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ConnectedAccountsStore, GuildChannelStore, GuildStore, IconUtils, Popout, React, Tooltip, useEffect, useMemo, useRef, UserSettingsProtoStore, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { AppIcon, Badge, Button, confirm, Glyph, Group, Icon, IconButton, ICONS as UI_ICONS, notify, NotifyKind, Pill, Pills, Popover, Progress, Row, SearchField, Section, Segmented, Sheet, Slider, Spinner, State, Stats, TextField, Toggle, ToggleRow, UiColor } from "../_ui";
 import { Check, CHECKS, CheckStatus, getAuditSummary, loadConsents, onConsentsChange, runFix } from "./audit";
 import { BLOCKLIST_SOURCE, getBlocklistStatus, onBlocklistChange, refreshBlocklist } from "./blocklist";
 import { buildCurtain, CURTAIN_ICONS, CurtainAnimation, CurtainIconName, CurtainOptions, CurtainStyle, DEFAULT_CURTAIN_TEXT, isCurtainShown, MASK_PATH, onCurtainChange, showCurtain, toggleCurtain } from "./curtain";
-import { getConfig, getCurtainOptions, getIdList, getPanicKey, setOption, setIds, setProfile, settings, toggleId, UploadEditorMode } from "./index";
+import { getConfig, getCurtainOptions, getIdList, getPanicKey, setIds, setOption, setProfile, settings, toggleId, UploadEditorMode } from "./index";
 import { DEFAULT_KEYBIND, isModifierCode, isValidKeybind, Keybind, keybindConflict, keybindFromEvent, keybindParts, recording, serializeKeybind } from "./keybind";
 import type { LinkAnalysis } from "./links";
 import { ConfigKey, Profile } from "./profiles";
@@ -29,6 +30,14 @@ const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'posi
 
 const PLATFORM = navigator.platform.toLowerCase();
 const HAS_CONTENT_PROTECTION = PLATFORM.startsWith("win") || PLATFORM.startsWith("mac");
+
+/** App icon color of OpSec (window header, settings) */
+export const OPSEC_COLOR: UiColor = "mint";
+
+/** Plugin event notification (replaces Discord toasts); strips the old "OpSec: " prefix, the app name shows it */
+export function opsecNotify(text: string, kind: NotifyKind = "success") {
+    notify({ title: text.replace(/^OpSec: /, ""), kind, app: "OpSec" });
+}
 
 // ---------------------------------------------------------------- Icons
 
@@ -45,27 +54,17 @@ const ICONS = {
     camOff: "M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z",
     monitor: "M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z",
     shieldCheck: "M12 2 4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z",
-    dashboard: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
-    tune: "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z",
     bolt: "M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z",
     play: "M8 5v14l11-7z",
     cast: "M21 3H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2a9 9 0 0 1 9 9h2c0-6.08-4.93-11-11-11z",
     brush: "M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z",
     block: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.902 7.902 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.902 7.902 0 0 1 20 12c0 4.42-3.58 8-8 8z",
-    chevron: "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
     restore: "M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18z",
-    settings: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+    mask: MASK_PATH,
+    question: "M12 5a4 4 0 0 1 4 4c0 1.6-1 2.4-1.8 3-.7.5-1.2.9-1.2 1.8v.7h-2v-.9c0-1.8 1-2.6 1.8-3.2.7-.5 1.2-.9 1.2-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 4-4Zm-1 11.5h2v2.2h-2z"
 };
 
 type IconName = keyof typeof ICONS;
-
-function Icon({ name, size = 18, className }: { name: IconName; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden>
-            <path fill="currentColor" d={ICONS[name]} />
-        </svg>
-    );
-}
 
 export function MaskIcon({ size = 20, className }: { size?: number; className?: string; }) {
     return (
@@ -88,37 +87,38 @@ interface OptionInfo {
     label: string;
     short: string;
     icon: IconName;
+    color: UiColor;
     hint: string;
     hidden?: boolean;
 }
 
 const OPTIONS: Record<ConfigKey, OptionInfo> = {
-    silentTyping: { key: "silentTyping", icon: "keyboard", label: "Type invisibly", short: "Invisible typing", hint: "Others don't see \"… is typing\". Otherwise it reveals that you're online and when you reply." },
-    hideActivity: { key: "hideActivity", icon: "game", label: "Hide activity", short: "Hide activity", hint: "No \"Playing …\" / \"Listening to Spotify\". Otherwise it reveals habits and online times." },
-    invisibleStatus: { key: "invisibleStatus", icon: "eyeOff", label: "Status \"Invisible\"", short: "Invisible online", hint: "You appear offline but can use Discord completely normally." },
-    dangerousLinkWarning: { key: "dangerousLinkWarning", icon: "warning", label: "Warn about dangerous links", short: "Link protection", hint: "Asks before IP loggers (Grabify & co.), phishing lookalikes (dlscord, steamcommunlty …) or punycode tricks are opened." },
-    cleanSentLinks: { key: "cleanSentLinks", icon: "wand", label: "Remove tracking from sent links", short: "Clean links", hint: "Removes utm_, fbclid, YouTube/Spotify \"si\" etc. These reveal who shared the link." },
-    cleanClickedLinks: { key: "cleanClickedLinks", icon: "link", label: "Remove tracking from clicked links", short: "Clean clicks", hint: "Links from others are opened without tracking parameters." },
-    confirmExternalLinks: { key: "confirmExternalLinks", icon: "link", label: "Confirm every external link", short: "Confirm links", hint: "Every click reveals your IP address to the target site. This way you see exactly where it goes beforehand." },
-    scamBlocklist: { key: "scamBlocklist", icon: "block", label: "Scam blocklist (online)", short: "Scam blocklist", hint: "Over 35,000 known fake Nitro, Steam and phishing domains. Matches are marked red in chat and only opened after a warning. Only downloads the public list, sends nothing." },
-    stripMetadata: { key: "stripMetadata", icon: "photo", label: "Strip metadata from images & videos", short: "Strip metadata", hint: "GPS location, device, serial number, capture time, software … (JPEG, PNG, WebP, MP4, MOV). Lossless." },
-    anonymizeFilenames: { key: "anonymizeFilenames", icon: "file", label: "Anonymize filenames", short: "Filenames", hint: "\"IMG_20260930_143022.jpg\" or \"Screenshot from Max-PC\" becomes a random name." },
-    uploadEditor: { key: "uploadEditor", icon: "brush", label: "Edit images before sending", short: "Image editor", hint: "Crop, redact names & tokens, pixelate, arrows & text – before a screenshot goes out. PNG, JPEG, WebP." },
-    contentProtection: { key: "contentProtection", icon: "camOff", label: "Capture protection", short: "Capture protection", hint: "Discord is invisible in screenshots, recordings and screen shares – even to your own snipping tool.", hidden: !HAS_CONTENT_PROTECTION },
-    curtainOnBlur: { key: "curtainOnBlur", icon: "eye", label: "Cover when you click away", short: "Auto curtain", hint: "As soon as another window is active, Discord is covered. Clicking back removes it." },
-    panicHotkey: { key: "panicHotkey", icon: "bolt", label: "Panic key", short: "Panic key", hint: "Instantly covers Discord with a single key press." },
-    screenshareGuard: { key: "screenshareGuard", icon: "cast", label: "Streaming protection", short: "Streaming protection", hint: "While you stream or share your screen: DMs blurred, selected servers & channels hidden, notifications muted." }
+    silentTyping: { key: "silentTyping", icon: "keyboard", color: "gray", label: "Type invisibly", short: "Invisible typing", hint: "Others don't see \"… is typing\". Otherwise it reveals that you're online and when you reply." },
+    hideActivity: { key: "hideActivity", icon: "game", color: "purple", label: "Hide activity", short: "Hide activity", hint: "No \"Playing …\" / \"Listening to Spotify\". Otherwise it reveals habits and online times." },
+    invisibleStatus: { key: "invisibleStatus", icon: "eyeOff", color: "indigo", label: "Status \"Invisible\"", short: "Invisible online", hint: "You appear offline but can use Discord completely normally." },
+    dangerousLinkWarning: { key: "dangerousLinkWarning", icon: "warning", color: "orange", label: "Warn about dangerous links", short: "Link protection", hint: "Asks before IP loggers (Grabify & co.), phishing lookalikes (dlscord, steamcommunlty …) or punycode tricks are opened." },
+    cleanSentLinks: { key: "cleanSentLinks", icon: "wand", color: "teal", label: "Remove tracking from sent links", short: "Clean links", hint: "Removes utm_, fbclid, YouTube/Spotify \"si\" etc. These reveal who shared the link." },
+    cleanClickedLinks: { key: "cleanClickedLinks", icon: "link", color: "teal", label: "Remove tracking from clicked links", short: "Clean clicks", hint: "Links from others are opened without tracking parameters." },
+    confirmExternalLinks: { key: "confirmExternalLinks", icon: "link", color: "blue", label: "Confirm every external link", short: "Confirm links", hint: "Every click reveals your IP address to the target site. This way you see exactly where it goes beforehand." },
+    scamBlocklist: { key: "scamBlocklist", icon: "block", color: "red", label: "Scam blocklist (online)", short: "Scam blocklist", hint: "Over 35,000 known fake Nitro, Steam and phishing domains. Matches are marked red in chat and only opened after a warning. Only downloads the public list, sends nothing." },
+    stripMetadata: { key: "stripMetadata", icon: "photo", color: "green", label: "Strip metadata from images & videos", short: "Strip metadata", hint: "GPS location, device, serial number, capture time, software … (JPEG, PNG, WebP, MP4, MOV). Lossless." },
+    anonymizeFilenames: { key: "anonymizeFilenames", icon: "file", color: "blue", label: "Anonymize filenames", short: "Filenames", hint: "\"IMG_20260930_143022.jpg\" or \"Screenshot from Max-PC\" becomes a random name." },
+    uploadEditor: { key: "uploadEditor", icon: "brush", color: "pink", label: "Edit images before sending", short: "Image editor", hint: "Crop, redact names & tokens, pixelate, arrows & text – before a screenshot goes out. PNG, JPEG, WebP." },
+    contentProtection: { key: "contentProtection", icon: "camOff", color: "red", label: "Capture protection", short: "Capture protection", hint: "Discord is invisible in screenshots, recordings and screen shares – even to your own snipping tool.", hidden: !HAS_CONTENT_PROTECTION },
+    curtainOnBlur: { key: "curtainOnBlur", icon: "eye", color: "mint", label: "Cover when you click away", short: "Auto curtain", hint: "As soon as another window is active, Discord is covered. Clicking back removes it." },
+    panicHotkey: { key: "panicHotkey", icon: "bolt", color: "yellow", label: "Panic key", short: "Panic key", hint: "Instantly covers Discord with a single key press." },
+    screenshareGuard: { key: "screenshareGuard", icon: "cast", color: "purple", label: "Streaming protection", short: "Streaming protection", hint: "While you stream or share your screen: DMs blurred, selected servers & channels hidden, notifications muted." }
 };
 
 const TILES: ConfigKey[] = ["silentTyping", "hideActivity", "invisibleStatus", "stripMetadata", "dangerousLinkWarning", "cleanSentLinks", "screenshareGuard", "uploadEditor", "contentProtection", "curtainOnBlur"];
 
 type TabId = "overview" | "protection" | "curtain" | "check";
 
-const TABS: { id: TabId; label: string; icon: IconName | "mask"; }[] = [
-    { id: "overview", label: "Overview", icon: "dashboard" },
-    { id: "protection", label: "Protection", icon: "tune" },
-    { id: "curtain", label: "Curtain", icon: "mask" },
-    { id: "check", label: "Check", icon: "shieldCheck" }
+const TABS: { id: TabId; label: string; }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "protection", label: "Protection" },
+    { id: "curtain", label: "Curtain" },
+    { id: "check", label: "Check" }
 ];
 
 // ---------------------------------------------------------------- Building blocks
@@ -144,124 +144,8 @@ export function Tip({ text, children }: { text: ReactNode; children: React.React
     );
 }
 
-function Toggle({ checked, disabled }: { checked: boolean; disabled?: boolean; }) {
-    return (
-        <span className={classes(cl("switch"), checked && cl("switch-on"), disabled && cl("switch-disabled"))} aria-hidden>
-            <span className={cl("switch-knob")} />
-        </span>
-    );
-}
-
-/** Whole row clickable, with its own animated switch */
-function ToggleRow({ checked, onChange, label, hint, icon, disabled, sub }: {
-    checked: boolean; onChange(v: boolean): void; label: ReactNode; hint?: ReactNode; icon?: IconName | "mask"; disabled?: boolean; sub?: boolean;
-}) {
-    const toggle = () => !disabled && onChange(!checked);
-    return (
-        <div
-            role="switch"
-            aria-checked={checked}
-            aria-disabled={disabled}
-            tabIndex={disabled ? -1 : 0}
-            className={classes(cl("row"), sub && cl("row-sub"), disabled && cl("row-disabled"))}
-            onClick={toggle}
-            onKeyDown={e => {
-                if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggle();
-                }
-            }}
-        >
-            {icon && <span className={classes(cl("row-icon"), checked && cl("row-icon-on"))}>{icon === "mask" ? <MaskIcon size={18} /> : <Icon name={icon} size={18} />}</span>}
-            <span className={cl("row-text")}>
-                <span className={cl("row-label")}>{label}</span>
-                {hint && <span className={cl("row-hint")}>{hint}</span>}
-            </span>
-            <Toggle checked={checked} disabled={disabled} />
-        </div>
-    );
-}
-
-/** Measures the position of a child element for sliding highlights (tabs, segments) */
-function useSlider<T extends string>(value: T) {
-    const refs = useRef<Record<string, HTMLElement | null>>({});
-    const [pos, setPos] = useState<{ left: number; width: number; ready: boolean; }>({ left: 0, width: 0, ready: false });
-
-    useLayoutEffect(() => {
-        const measure = () => {
-            const node = refs.current[value];
-            if (node) setPos(p => ({ left: node.offsetLeft, width: node.offsetWidth, ready: p.ready || p.width > 0 }));
-        };
-        measure();
-        // Enable transitions after the first measurement (otherwise the highlight slides in from the left on open)
-        const raf = requestAnimationFrame(() => {
-            measure();
-            setPos(p => ({ ...p, ready: true }));
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [value]);
-
-    return { refs, pos };
-}
-
-function Segmented<T extends string>({ value, options, onChange, small }: {
-    value: T;
-    options: { value: T; label: string; }[];
-    onChange(v: T): void;
-    small?: boolean;
-}) {
-    const { refs, pos } = useSlider(value);
-    return (
-        <div className={classes(cl("seg"), small && cl("seg-small"))}>
-            <span
-                className={classes(cl("seg-thumb"), pos.ready && cl("animated"))}
-                style={{ transform: `translateX(${pos.left}px)`, width: pos.width }}
-            />
-            {options.map(o => (
-                <button
-                    key={o.value}
-                    ref={n => { refs.current[o.value] = n; }}
-                    className={classes(cl("seg-item"), o.value === value && cl("seg-item-active"))}
-                    onClick={() => onChange(o.value)}
-                >
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
-}
-
-function Sidebar({ value, onChange }: { value: TabId; onChange(t: TabId): void; }) {
-    const { summary } = useAudit();
-
-    return (
-        <nav className={cl("sidebar")}>
-            <div className={cl("brand")}>
-                <span className={cl("brand-logo")}><MaskIcon size={18} /></span>
-                <span className={cl("brand-text")}>
-                    <span className={cl("brand-name")}>OpSec</span>
-                    <span className={cl("brand-sub")}>Beneath the OS</span>
-                </span>
-            </div>
-
-            <div className={cl("nav")} role="tablist" aria-orientation="vertical">
-                {TABS.map(t => (
-                    <button
-                        key={t.id}
-                        role="tab"
-                        aria-selected={t.id === value}
-                        className={classes(cl("nav-item"), t.id === value && cl("nav-item-active"))}
-                        onClick={() => onChange(t.id)}
-                    >
-                        {t.icon === "mask" ? <MaskIcon size={18} /> : <Icon name={t.icon} size={18} />}
-                        <span className={cl("nav-label")}>{t.label}</span>
-                        {t.id === "check" && summary.warn > 0 && <span className={cl("nav-badge")}>{summary.warn}</span>}
-                    </button>
-                ))}
-            </div>
-
-        </nav>
-    );
+function OptGlyph({ name, color }: { name: IconName; color: UiColor; }) {
+    return <Glyph path={ICONS[name]} color={color} />;
 }
 
 function Kbd({ keys, live }: { keys: string[]; live?: boolean; }) {
@@ -271,15 +155,6 @@ function Kbd({ keys, live }: { keys: string[]; live?: boolean; }) {
                 <span key={k + i} className={classes(cl("kbd"), live && cl("kbd-live"))} style={{ animationDelay: `${i * 40}ms` }}>{k}</span>
             ))}
         </span>
-    );
-}
-
-function SectionTitle({ children, right }: { icon?: IconName | "mask"; children: ReactNode; right?: ReactNode; }) {
-    return (
-        <div className={cl("section-title")}>
-            <span>{children}</span>
-            {right && <span className={cl("section-right")}>{right}</span>}
-        </div>
     );
 }
 
@@ -304,7 +179,6 @@ function useCountUp(target: number, duration = 700) {
 }
 
 function ScoreRing({ ok, total, size = 76, stroke = 7 }: { ok: number; total: number; size?: number; stroke?: number; }) {
-    const id = useMemo(() => "opsec-ring-" + Math.random().toString(36).slice(2), []);
     const [shown, setShown] = useState(false);
     useEffect(() => { const r = requestAnimationFrame(() => setShown(true)); return () => cancelAnimationFrame(r); }, []);
     const count = useCountUp(ok);
@@ -317,18 +191,11 @@ function ScoreRing({ ok, total, size = 76, stroke = 7 }: { ok: number; total: nu
     return (
         <div className={classes(cl("ring"), cl(`ring-${tone}`))} style={{ width: size, height: size }}>
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-                <defs>
-                    <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" className={cl("ring-stop-a")} />
-                        <stop offset="100%" className={cl("ring-stop-b")} />
-                    </linearGradient>
-                </defs>
                 <circle cx={size / 2} cy={size / 2} r={r} className={cl("ring-track")} strokeWidth={stroke} />
                 <circle
                     cx={size / 2} cy={size / 2} r={r}
                     className={cl("ring-bar")}
                     strokeWidth={stroke}
-                    stroke={`url(#${id})`}
                     strokeDasharray={c}
                     strokeDashoffset={shown ? c * (1 - pct) : c}
                     transform={`rotate(-90 ${size / 2} ${size / 2})`}
@@ -371,19 +238,13 @@ function useAudit() {
     return { summary: getAuditSummary(), refresh: forceUpdate };
 }
 
-function StatusIcon({ status }: { status: CheckStatus; }) {
-    return (
-        <span className={classes(cl("status"), cl(`status-${status}`))}>
-            {status === "ok"
-                ? <svg viewBox="0 0 24 24" width={14} height={14}><path className={cl("status-check")} d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                : status === "warn"
-                    ? <svg viewBox="0 0 24 24" width={14} height={14}><path fill="currentColor" d="M11 5h2.2l-.3 9h-1.6L11 5Zm1.1 11.2a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" /></svg>
-                    : <svg viewBox="0 0 24 24" width={14} height={14}><path fill="currentColor" d="M12 5a4 4 0 0 1 4 4c0 1.6-1 2.4-1.8 3-.7.5-1.2.9-1.2 1.8v.7h-2v-.9c0-1.8 1-2.6 1.8-3.2.7-.5 1.2-.9 1.2-1.4a2 2 0 0 0-4 0H8a4 4 0 0 1 4-4Zm-1 11.5h2v2.2h-2z" /></svg>}
-        </span>
-    );
-}
+const STATUS_GLYPH: Record<CheckStatus, { path: string; color: UiColor; }> = {
+    ok: { path: UI_ICONS.check, color: "green" },
+    warn: { path: ICONS.warning, color: "orange" },
+    unknown: { path: ICONS.question, color: "gray" }
+};
 
-function CheckRow({ check, index, onDone }: { check: Check; index: number; onDone(): void; }) {
+function CheckRow({ check, onDone }: { check: Check; onDone(): void; }) {
     const [busy, setBusy] = useState(false);
     const status = safeStatus(check);
 
@@ -392,7 +253,7 @@ function CheckRow({ check, index, onDone }: { check: Check; index: number; onDon
         try {
             await runFix(check);
         } catch {
-            showToast(`OpSec: Failed to change "${check.title}"`, "failure");
+            opsecNotify(`OpSec: Failed to change "${check.title}"`, "error");
         } finally {
             setBusy(false);
             onDone();
@@ -400,21 +261,15 @@ function CheckRow({ check, index, onDone }: { check: Check; index: number; onDon
     };
 
     return (
-        <div className={classes(cl("check"), cl(`check-${status}`))} style={{ animationDelay: `${index * 35}ms` }}>
-            <StatusIcon status={status} />
-            <div className={cl("row-text")}>
-                <span className={cl("row-label")}>
-                    {check.title}
-                    {status === "warn" && check.severity === "high" && <span className={cl("pill-danger")}>Important</span>}
-                </span>
-                <span className={cl("row-hint")}>{check.hint}</span>
-            </div>
-            {status === "warn" && check.fix && (
-                <button className={classes(cl("btn"), cl("btn-small"), busy && cl("btn-busy"))} disabled={busy} onClick={fix}>
-                    {busy ? <span className={cl("spinner")} /> : check.fixLabel ?? "Fix"}
-                </button>
-            )}
-        </div>
+        <Row
+            align="top"
+            leading={<Glyph path={STATUS_GLYPH[status].path} color={STATUS_GLYPH[status].color} />}
+            title={<>{check.title}{status === "warn" && check.severity === "high" && <> <Badge color="red">Important</Badge></>}</>}
+            subtitle={check.hint}
+            trailing={status === "warn" && check.fix
+                ? busy ? <Spinner /> : <Button small variant="tinted" onClick={fix}>{check.fixLabel ?? "Fix"}</Button>
+                : undefined}
+        />
     );
 }
 
@@ -439,34 +294,35 @@ function CheckTab() {
         }
         setBusy(false);
         refresh();
-        showToast(
+        opsecNotify(
             failed ? `OpSec: ${fixable.length - failed} fixed, ${failed} failed` : `OpSec: ${fixable.length} ${fixable.length === 1 ? "setting" : "settings"} secured`,
-            failed ? "failure" : "success"
+            failed ? "error" : "success"
         );
     };
 
     return (
         <>
-            <div className={cl("hero")}>
+            <Group className={cl("hero")}>
                 <ScoreRing ok={summary.ok} total={summary.total} />
                 <div className={cl("hero-text")}>
                     <span className={cl("hero-title")}>
                         {summary.warn ? `${summary.warn} ${summary.warn === 1 ? "recommendation" : "recommendations"} open` : "Everything secured"}
                     </span>
-                    <span className={cl("row-hint")}>
+                    <span className={cl("hint")}>
                         {summary.highWarn ? `${summary.highWarn} of them important. ` : ""}Audits your account and Discord's privacy settings.
                     </span>
                     {fixable.length > 0 && (
-                        <button className={cl("btn")} disabled={busy} onClick={fixAll}>
-                            {busy ? <span className={cl("spinner")} /> : <Icon name="shieldCheck" size={16} />}
-                            {busy ? "Securing…" : fixable.length === 1 ? "Fix" : `Fix all ${fixable.length}`}
-                        </button>
+                        <div>
+                            <Button small icon={busy ? undefined : ICONS.shieldCheck} disabled={busy} onClick={fixAll}>
+                                {busy ? "Securing…" : fixable.length === 1 ? "Fix" : `Fix all ${fixable.length}`}
+                            </Button>
+                        </div>
                     )}
                 </div>
-            </div>
-            <div className={cl("checks")}>
-                {sorted.map((c, i) => <CheckRow key={c.id} check={c} index={i} onDone={refresh} />)}
-            </div>
+            </Group>
+            <Section title="Checks">
+                {sorted.map(c => <CheckRow key={c.id} check={c} onDone={refresh} />)}
+            </Section>
         </>
     );
 }
@@ -477,32 +333,27 @@ function ProfilePicker({ compact }: { compact?: boolean; }) {
     const { profile } = settings.use(["profile"]);
     const current = PROFILES.find(p => p.value === profile) ?? PROFILES[0];
     return (
-        <div className={cl("profile")}>
+        <Section title="Profile" footer={compact ? "Your original Discord settings are remembered and restored when turned off." : current.description} plain>
             <Segmented value={current.value} options={PROFILES} onChange={setProfile} />
-            {!compact && <div key={current.value} className={classes(cl("row-hint"), cl("fade-in"))}>{current.description}</div>}
-        </div>
+        </Section>
     );
 }
 
 function Tile({ info, on }: { info: OptionInfo; on: boolean; }) {
-    const [pop, setPop] = useState(0);
     return (
         <Tip text={info.hint}>
-        <button
-            className={classes(cl("tile"), on && cl("tile-on"))}
-            onClick={() => {
-                setOption(info.key, !on);
-                setPop(p => p + 1);
-            }}
-            aria-pressed={on}
-        >
-            <span key={pop} className={classes(cl("tile-icon"), pop > 0 && cl("pop"))}><Icon name={info.icon} size={16} /></span>
-            <span className={cl("tile-text")}>
-                <span className={cl("tile-label")}>{info.short}</span>
-                <span className={cl("tile-state")}>{on ? "On" : "Off"}</span>
-            </span>
-            <Toggle checked={on} />
-        </button>
+            <button
+                type="button"
+                className={classes(cl("tile"), on && cl("tile-on"))}
+                onClick={() => setOption(info.key, !on)}
+                aria-pressed={on}
+            >
+                <Glyph path={ICONS[info.icon]} color={on ? info.color : "gray"} size={26} />
+                <span className={cl("tile-text")}>
+                    <span className={cl("tile-label")}>{info.short}</span>
+                    <span className={cl("tile-state")}>{on ? "On" : "Off"}</span>
+                </span>
+            </button>
         </Tip>
     );
 }
@@ -512,71 +363,53 @@ function CurtainButton({ onAfter }: { onAfter?(): void; }) {
     const { panicHotkey } = getConfig();
     settings.use(["panicKey"]);
     return (
-        <button
-            className={classes(cl("curtain-btn"), curtain && cl("curtain-btn-active"))}
-            onClick={() => {
-                onAfter?.();
-                toggleCurtain();
-            }}
-        >
-            <span className={cl("curtain-btn-icon")}><MaskIcon size={20} /></span>
-            <span className={cl("row-text")}>
-                <span className={cl("row-label")}>Activate curtain now</span>
-                <span className={cl("row-hint")}>Covers Discord instantly</span>
-            </span>
-            {panicHotkey && <Kbd keys={keybindParts(getPanicKey())} />}
-        </button>
+        <Section>
+            <Row
+                leading={<Glyph path={MASK_PATH} color={curtain ? "green" : OPSEC_COLOR} />}
+                title="Activate curtain now"
+                subtitle="Covers Discord instantly"
+                trailing={panicHotkey ? <Kbd keys={keybindParts(getPanicKey())} /> : undefined}
+                onClick={() => {
+                    onAfter?.();
+                    toggleCurtain();
+                }}
+            />
+        </Section>
     );
 }
 
 function StatusPanel({ goTo }: { goTo(t: TabId): void; }) {
     const { summary } = useAudit();
     const tone = summary.highWarn ? "bad" : summary.warn ? "warn" : "good";
+    const color: UiColor = tone === "good" ? "green" : tone === "warn" ? "orange" : "red";
     const pct = summary.total ? Math.round((summary.ok / summary.total) * 100) : 0;
 
     return (
-        <div className={classes(cl("state"), cl(`state-${tone}`))}>
-            <span className={cl("state-shield")}>
-                <Icon name={tone === "good" ? "shieldCheck" : "warning"} size={28} />
-            </span>
-            <div className={cl("state-body")}>
-                <span className={cl("state-title")}>
-                    {tone === "good" ? "You are protected" : tone === "warn" ? "Almost fully protected" : "Action required"}
-                </span>
-                <span className={cl("row-hint")}>
-                    {summary.ok} of {summary.total} checks passed
-                    {summary.warn ? ` · ${summary.warn} open${summary.highWarn ? `, ${summary.highWarn} important` : ""}` : ""}
-                </span>
-                <span className={cl("meter")}><span className={cl("meter-fill")} style={{ width: `${pct}%` }} /></span>
-            </div>
-            <button className={classes(cl("btn"), tone === "good" && cl("btn-ghost"))} onClick={() => goTo("check")}>
-                {tone === "good" ? "Details" : "Fix"}
-            </button>
-        </div>
+        <Section>
+            <Row
+                leading={<AppIcon path={tone === "good" ? ICONS.shieldCheck : ICONS.warning} color={color} size={40} />}
+                title={tone === "good" ? "You are protected" : tone === "warn" ? "Almost fully protected" : "Action required"}
+                subtitle={`${summary.ok} of ${summary.total} checks passed${summary.warn ? ` · ${summary.warn} open${summary.highWarn ? `, ${summary.highWarn} important` : ""}` : ""}`}
+                trailing={<Button small variant={tone === "good" ? "gray" : "filled"} onClick={() => goTo("check")}>{tone === "good" ? "Details" : "Fix"}</Button>}
+            >
+                <div className={cl("meter")}><Progress value={pct / 100} color={color} /></div>
+            </Row>
+        </Section>
     );
 }
 
-function Stats() {
+function OverviewStats() {
     const { profile } = settings.use();
     const config = getConfig();
     const keys = TILES.filter(k => !OPTIONS[k].hidden);
     const active = keys.filter(k => config[k]).length;
 
     return (
-        <div className={cl("stats")}>
-            <div className={cl("stat")}>
-                <span className={cl("stat-label")}>Modules active</span>
-                <span className={cl("stat-value")}>{active}<span className={cl("stat-dim")}> / {keys.length}</span></span>
-            </div>
-            <div className={cl("stat")}>
-                <span className={cl("stat-label")}>Profile</span>
-                <span className={cl("stat-value")}>{PROFILES.find(p => p.value === profile)?.label ?? "Standard"}</span>
-            </div>
-            <div className={cl("stat")}>
-                <span className={cl("stat-label")}>Panic key</span>
-                <span className={cl("stat-value")}>{config.panicHotkey ? <Kbd keys={keybindParts(getPanicKey())} /> : <span className={cl("stat-dim")}>Off</span>}</span>
-            </div>
-        </div>
+        <Stats items={[
+            { value: <>{active}<span className={cl("dim")}> / {keys.length}</span></>, label: "Modules active", color: "green" },
+            { value: PROFILES.find(p => p.value === profile)?.label ?? "Standard", label: "Profile" },
+            { value: config.panicHotkey ? <Kbd keys={keybindParts(getPanicKey())} /> : <span className={cl("dim")}>Off</span>, label: "Panic key" }
+        ]} />
     );
 }
 
@@ -587,36 +420,41 @@ function OverviewTab({ goTo, close }: { goTo(t: TabId): void; close?(): void; })
     return (
         <>
             <StatusPanel goTo={goTo} />
-            <Stats />
+            <OverviewStats />
             <CurtainButton onAfter={close} />
-
-            <SectionTitle>Profile</SectionTitle>
             <ProfilePicker />
-
-            <SectionTitle right={<button className={cl("link-btn")} onClick={() => goTo("protection")}>All modules</button>}>
-                Quick access
-            </SectionTitle>
-            <div className={cl("tiles")}>
-                {TILES.filter(k => !OPTIONS[k].hidden).map(k => <Tile key={k} info={OPTIONS[k]} on={config[k]} />)}
-            </div>
+            <Section title="Quick access" right={<Button small variant="plain" onClick={() => goTo("protection")}>All modules</Button>} plain>
+                <div className={cl("tiles")}>
+                    {TILES.filter(k => !OPTIONS[k].hidden).map(k => <Tile key={k} info={OPTIONS[k]} on={config[k]} />)}
+                </div>
+            </Section>
         </>
     );
 }
 
 // ---------------------------------------------------------------- Protection
 
-const GROUPS: { title: string; icon: IconName; keys: ConfigKey[]; }[] = [
-    { title: "Stealth", icon: "eyeOff", keys: ["silentTyping", "hideActivity", "invisibleStatus"] },
-    { title: "Links", icon: "link", keys: ["dangerousLinkWarning", "scamBlocklist", "cleanSentLinks", "cleanClickedLinks", "confirmExternalLinks"] },
-    { title: "Files", icon: "photo", keys: ["stripMetadata", "anonymizeFilenames", "uploadEditor"] },
-    { title: "Screen", icon: "monitor", keys: ["contentProtection"] },
-    { title: "Streaming", icon: "cast", keys: ["screenshareGuard"] }
+const GROUPS: { title: string; keys: ConfigKey[]; }[] = [
+    { title: "Stealth", keys: ["silentTyping", "hideActivity", "invisibleStatus"] },
+    { title: "Links", keys: ["dangerousLinkWarning", "scamBlocklist", "cleanSentLinks", "cleanClickedLinks", "confirmExternalLinks"] },
+    { title: "Files", keys: ["stripMetadata", "anonymizeFilenames", "uploadEditor"] },
+    { title: "Screen", keys: ["contentProtection"] },
+    { title: "Streaming", keys: ["screenshareGuard"] }
 ];
 
 const EDITOR_MODES: { value: UploadEditorMode; label: string; }[] = [
     { value: "ask", label: "Ask first" },
     { value: "always", label: "Always open" }
 ];
+
+/** Indented option below a module (no glyph) */
+function SubToggle({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange(v: boolean): void; label: ReactNode; hint?: ReactNode; disabled?: boolean; }) {
+    return (
+        <div className={cl("sub")}>
+            <ToggleRow checked={checked} onChange={onChange} title={label} subtitle={hint} disabled={disabled} />
+        </div>
+    );
+}
 
 // ---------------------------------------------------------------- Scam blocklist
 
@@ -640,22 +478,21 @@ function BlocklistStatus({ enabled }: { enabled: boolean; }) {
     const st = useBlocklist();
     const update = async () => {
         const ok = await refreshBlocklist(true);
-        showToast(ok ? `OpSec: Blocklist updated (${getBlocklistStatus().count.toLocaleString("en-US")} domains)` : "OpSec: Failed to load blocklist", ok ? "success" : "failure");
+        opsecNotify(ok ? `OpSec: Blocklist updated (${getBlocklistStatus().count.toLocaleString("en-US")} domains)` : "OpSec: Failed to load blocklist", ok ? "success" : "error");
     };
 
     return (
-        <div className={classes(cl("row"), cl("row-sub"), cl("row-static"), !enabled && cl("row-disabled"))}>
-            <span className={cl("row-text")}>
-                <span className={cl("row-label")}>
-                    {st.count ? `${st.count.toLocaleString("en-US")} domains` : "Not loaded yet"}
-                    {st.failed && <span className={cl("pill-danger")}>Error</span>}
-                </span>
-                <span className={cl("row-hint")}>Updated {formatAge(st.updated)} · Source: {BLOCKLIST_SOURCE} · automatically every 12 hr</span>
-            </span>
-            <button className={classes(cl("btn"), cl("btn-small"), cl("btn-ghost"))} disabled={!enabled || st.loading} onClick={update}>
-                {st.loading ? <span className={cl("spinner")} /> : <Icon name="restore" size={14} />}
-                {st.loading ? "Loading…" : "Update now"}
-            </button>
+        <div className={cl("sub")}>
+            <Row
+                dim={!enabled}
+                title={<>{st.count ? `${st.count.toLocaleString("en-US")} domains` : "Not loaded yet"}{st.failed && <> <Badge color="red">Error</Badge></>}</>}
+                subtitle={`Updated ${formatAge(st.updated)} · Source: ${BLOCKLIST_SOURCE} · automatically every 12 hr`}
+                trailing={
+                    <Button small variant="gray" icon={st.loading ? undefined : ICONS.restore} disabled={!enabled || st.loading} onClick={update}>
+                        {st.loading ? "Loading…" : "Update now"}
+                    </Button>
+                }
+            />
         </div>
     );
 }
@@ -685,20 +522,23 @@ function GuildChannels({ guildId, hidden }: { guildId: string; hidden: Set<strin
         }
     }, [guildId]);
 
-    if (!channels.length) return <div className={classes(cl("row-hint"), cl("guild-channels"))}>No channels found.</div>;
+    if (!channels.length) return <div className={classes(cl("hint"), cl("guild-channels"))}>No channels found.</div>;
 
     return (
         <div className={cl("guild-channels")}>
-            {channels.map(c => (
-                <Tip key={c.id} text={hidden.has(c.id) ? "Hidden on stream" : "Hide on stream"}>
-                    <button
-                        className={classes(cl("chip"), hidden.has(c.id) && cl("chip-on"))}
+            <Pills>
+                {channels.map(c => (
+                    <Pill
+                        key={c.id}
+                        selected={hidden.has(c.id)}
+                        icon={hidden.has(c.id) ? ICONS.eyeOff : undefined}
+                        title={hidden.has(c.id) ? "Hidden on stream" : "Hide on stream"}
                         onClick={() => toggleId("guardHiddenChannels", c.id, !hidden.has(c.id))}
                     >
-                        {hidden.has(c.id) && <Icon name="eyeOff" size={12} />}# {c.name}
-                    </button>
-                </Tip>
-            ))}
+                        # {c.name}
+                    </Pill>
+                ))}
+            </Pills>
         </div>
     );
 }
@@ -722,60 +562,48 @@ function GuardPicker({ disabled }: { disabled: boolean; }) {
     const noneHidden = !ids.some(id => hiddenGuilds.has(id));
 
     return (
-        <div className={classes(cl("card-pad"), cl("row-sub"), disabled && cl("row-disabled"))}>
-            <div className={cl("range-head")}>
-                <span className={cl("row-label")}>Hide on stream</span>
-                <span className={cl("range-value")}>{hiddenGuilds.size} {hiddenGuilds.size === 1 ? "server" : "servers"} · {hiddenChannels.size} {hiddenChannels.size === 1 ? "channel" : "channels"}</span>
+        <div className={classes(cl("sub"), cl("picker"), disabled && cl("off"))}>
+            <div className={cl("picker-head")}>
+                <span className={cl("label")}>Hide on stream</span>
+                <span className={cl("value")}>{hiddenGuilds.size} {hiddenGuilds.size === 1 ? "server" : "servers"} · {hiddenChannels.size} {hiddenChannels.size === 1 ? "channel" : "channels"}</span>
             </div>
-            <input className={cl("input")} value={query} placeholder="Search servers …" onChange={e => setQuery(e.currentTarget.value)} disabled={disabled} />
-            <div className={cl("guild-bulk")}>
-                <button className={classes(cl("btn"), cl("btn-small"), cl("btn-ghost"))} disabled={disabled || allHidden} onClick={() => setIds("guardHiddenGuilds", ids, true)}>
-                    <Icon name="eyeOff" size={14} /> {q ? `Hide ${list.length} found` : "Hide all"}
-                </button>
-                <button className={classes(cl("btn"), cl("btn-small"), cl("btn-ghost"))} disabled={disabled || noneHidden} onClick={() => setIds("guardHiddenGuilds", ids, false)}>
-                    <Icon name="eye" size={14} /> {q ? `Unhide ${list.length} found` : "Unhide all"}
-                </button>
+            <SearchField value={query} placeholder="Search servers …" onChange={setQuery} disabled={disabled} />
+            <div className={cl("picker-bulk")}>
+                <Button small variant="gray" icon={ICONS.eyeOff} disabled={disabled || allHidden} onClick={() => setIds("guardHiddenGuilds", ids, true)}>
+                    {q ? `Hide ${list.length} found` : "Hide all"}
+                </Button>
+                <Button small variant="gray" icon={ICONS.eye} disabled={disabled || noneHidden} onClick={() => setIds("guardHiddenGuilds", ids, false)}>
+                    {q ? `Unhide ${list.length} found` : "Unhide all"}
+                </Button>
             </div>
-            <div className={cl("guild-list")}>
+            <Group className={cl("guild-list")}>
                 {list.map(g => {
                     const on = hiddenGuilds.has(g.id);
                     const expanded = open === g.id;
+                    const toggle = () => !disabled && toggleId("guardHiddenGuilds", g.id, !on);
                     return (
-                        <div key={g.id} className={classes(cl("guild"), on && cl("guild-on"))}>
-                            <div
-                                className={cl("guild-row")}
-                                role="switch"
-                                aria-checked={on}
-                                aria-disabled={disabled}
-                                tabIndex={disabled ? -1 : 0}
-                                onClick={() => !disabled && toggleId("guardHiddenGuilds", g.id, !on)}
-                                onKeyDown={e => {
-                                    if (disabled || (e.key !== " " && e.key !== "Enter")) return;
-                                    e.preventDefault();
-                                    toggleId("guardHiddenGuilds", g.id, !on);
-                                }}
-                            >
-                                <GuildIcon id={g.id} icon={g.icon} name={g.name} />
-                                <span className={cl("guild-name")}>{g.name}</span>
-                                {on && <span className={cl("guild-badge")}><Icon name="eyeOff" size={12} /> Hidden</span>}
-                                <Tip text="Hide individual channels">
-                                    <button
-                                        className={classes(cl("icon-btn"), cl("guild-expand"), expanded && cl("guild-expand-open"))}
-                                        disabled={disabled}
-                                        onClick={e => { e.stopPropagation(); setOpen(expanded ? null : g.id); }}
-                                        onKeyDown={e => e.stopPropagation()}
-                                    >
-                                        <Icon name="chevron" size={16} />
-                                    </button>
-                                </Tip>
-                                <Toggle checked={on} disabled={disabled} />
-                            </div>
+                        <div key={g.id}>
+                            <Row
+                                leading={<GuildIcon id={g.id} icon={g.icon} name={g.name} />}
+                                title={g.name}
+                                dim={disabled}
+                                onClick={disabled ? undefined : toggle}
+                                trailing={
+                                    <span className={cl("guild-trail")}>
+                                        {on && <Badge color="orange" icon={ICONS.eyeOff}>Hidden</Badge>}
+                                        <span className={classes(cl("guild-expand"), expanded && cl("guild-expand-open"))}>
+                                            <IconButton icon={UI_ICONS.chevron} label="Hide individual channels" disabled={disabled} onClick={e => { e.stopPropagation(); setOpen(expanded ? null : g.id); }} />
+                                        </span>
+                                        <Toggle checked={on} disabled={disabled} onChange={toggle} label={g.name} />
+                                    </span>
+                                }
+                            />
                             {expanded && <GuildChannels guildId={g.id} hidden={hiddenChannels} />}
                         </div>
                     );
                 })}
-                {!list.length && <div className={cl("row-hint")}>No servers found.</div>}
-            </div>
+                {!list.length && <Row title="No servers found." dim />}
+            </Group>
         </div>
     );
 }
@@ -786,25 +614,25 @@ function GuardSettings({ enabled }: { enabled: boolean; }) {
     const off = !enabled;
 
     return <>
-        <div className={classes(cl("row"), cl("row-sub"), cl("row-static"), off && cl("row-disabled"))}>
-            <span className={cl("row-text")}>
-                <span className={cl("row-label")}>
-                    <span className={classes(cl("dot"), active ? cl("dot-live") : cl("dot-idle"))} />
-                    {active ? "Active – you are streaming" : preview ? "Preview running" : "Waiting for your next stream"}
-                </span>
-                <span className={cl("row-hint")}>Test shows blurring & hiding for 12 seconds without streaming.</span>
-            </span>
-            <button className={classes(cl("btn"), cl("btn-small"), preview && cl("btn-ghost"))} disabled={off || active} onClick={() => preview ? stopPreview() : previewGuard(12)}>
-                <Icon name={preview ? "eyeOff" : "play"} size={14} /> {preview ? "Stop" : "Test"}
-            </button>
+        <div className={cl("sub")}>
+            <Row
+                dim={off}
+                title={<State tone={active ? "ok" : preview ? "warn" : undefined}>{active ? "Active – you are streaming" : preview ? "Preview running" : "Waiting for your next stream"}</State>}
+                subtitle="Test shows blurring & hiding for 12 seconds without streaming."
+                trailing={
+                    <Button small variant={preview ? "gray" : "tinted"} icon={preview ? ICONS.eyeOff : ICONS.play} disabled={off || active} onClick={() => preview ? stopPreview() : previewGuard(12)}>
+                        {preview ? "Stop" : "Test"}
+                    </Button>
+                }
+            />
         </div>
-        <ToggleRow sub disabled={off} checked={s.guardBlurDms} onChange={v => settings.store.guardBlurDms = v}
+        <SubToggle disabled={off} checked={s.guardBlurDms} onChange={v => settings.store.guardBlurDms = v}
             label="Blur DMs" hint="Direct message list and DM avatars in the server bar." />
-        <ToggleRow sub disabled={off || !s.guardBlurDms} checked={s.guardRevealOnHover} onChange={v => settings.store.guardRevealOnHover = v}
+        <SubToggle disabled={off || !s.guardBlurDms} checked={s.guardRevealOnHover} onChange={v => settings.store.guardRevealOnHover = v}
             label="Reveal on hover" hint="Briefly uncover with the mouse – viewers will see it too." />
-        <ToggleRow sub disabled={off} checked={s.guardNotifications} onChange={v => settings.store.guardNotifications = v}
+        <SubToggle disabled={off} checked={s.guardNotifications} onChange={v => settings.store.guardNotifications = v}
             label="Mute notifications" hint="No desktop popups & sounds from Discord, no Vencord popups. Uses Discord's Streamer Mode (turned on along with it)." />
-        <ToggleRow sub disabled={off} checked={s.guardStreamerMode} onChange={v => settings.store.guardStreamerMode = v}
+        <SubToggle disabled={off} checked={s.guardStreamerMode} onChange={v => settings.store.guardStreamerMode = v}
             label="Turn on Discord's Streamer Mode" hint="Hides email, connections and invite links, among other things. Your previous state is restored afterwards." />
         <GuardPicker disabled={off} />
     </>;
@@ -818,29 +646,29 @@ function ProtectionTab() {
         switch (key) {
             case "dangerousLinkWarning":
                 return <>
-                    <ToggleRow sub disabled={!config.dangerousLinkWarning} checked={store.highlightIpLoggers} onChange={v => settings.store.highlightIpLoggers = v}
+                    <SubToggle disabled={!config.dangerousLinkWarning} checked={store.highlightIpLoggers} onChange={v => settings.store.highlightIpLoggers = v}
                         label="Mark IP loggers red in chat" />
-                    <ToggleRow sub disabled={!config.dangerousLinkWarning} checked={store.warnShorteners} onChange={v => settings.store.warnShorteners = v}
+                    <SubToggle disabled={!config.dangerousLinkWarning} checked={store.warnShorteners} onChange={v => settings.store.warnShorteners = v}
                         label="Also warn about short links" hint="bit.ly, tinyurl … the destination isn't visible before clicking." />
                 </>;
             case "scamBlocklist":
                 return <BlocklistStatus enabled={config.scamBlocklist} />;
             case "stripMetadata":
-                return <ToggleRow sub disabled={!config.stripMetadata} checked={store.showUploadToast} onChange={v => settings.store.showUploadToast = v}
+                return <SubToggle disabled={!config.stripMetadata} checked={store.showUploadToast} onChange={v => settings.store.showUploadToast = v}
                     label="Show what was removed" />;
             case "uploadEditor":
                 return (
-                    <div className={classes(cl("card-pad"), cl("row-sub"), !config.uploadEditor && cl("row-disabled"))}>
+                    <div className={classes(cl("sub"), cl("pad"), !config.uploadEditor && cl("off"))}>
                         <Segmented small value={store.uploadEditorMode as UploadEditorMode} options={EDITOR_MODES} onChange={v => settings.store.uploadEditorMode = v} />
-                        <span className={cl("row-hint")}>
-                            {store.uploadEditorMode === "always" ? "Every image opens the editor before sending." : "Ask briefly before each image: \"Edit image?\""} Closing = send the original (metadata is still stripped)."
+                        <span className={cl("hint")}>
+                            {store.uploadEditorMode === "always" ? "Every image opens the editor before sending." : "Ask briefly before each image: \"Edit image?\""} Closing = send the original (metadata is still stripped).
                         </span>
                     </div>
                 );
             case "screenshareGuard":
                 return <GuardSettings enabled={config.screenshareGuard} />;
             case "anonymizeFilenames":
-                return <ToggleRow sub disabled={!config.anonymizeFilenames} checked={store.anonymizeAllFiles} onChange={v => settings.store.anonymizeAllFiles = v}
+                return <SubToggle disabled={!config.anonymizeFilenames} checked={store.anonymizeAllFiles} onChange={v => settings.store.anonymizeAllFiles = v}
                     label="Also rename documents" hint="Otherwise PDFs, ZIPs etc. keep their name – which is usually important there." />;
         }
         return null;
@@ -848,35 +676,27 @@ function ProtectionTab() {
 
     return (
         <>
-            <SectionTitle icon="shieldCheck">Profile</SectionTitle>
             <ProfilePicker compact />
-            <div className={cl("row-hint")}>Your original Discord settings are remembered and restored when turned off.</div>
 
             {GROUPS.map(g => {
                 const keys = g.keys.filter(k => !OPTIONS[k].hidden);
                 if (!keys.length) return null;
                 return (
-                    <div key={g.title} className={cl("group")}>
-                        <SectionTitle icon={g.icon}>{g.title}</SectionTitle>
-                        <div className={cl("card")}>
-                            {keys.map(k => (
-                                <div key={k}>
-                                    <ToggleRow icon={OPTIONS[k].icon} checked={config[k]} onChange={v => setOption(k, v)} label={OPTIONS[k].label} hint={OPTIONS[k].hint} />
-                                    {sub(k)}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <Section key={g.title} title={g.title}>
+                        {keys.map(k => (
+                            <React.Fragment key={k}>
+                                <ToggleRow leading={<OptGlyph name={OPTIONS[k].icon} color={OPTIONS[k].color} />} checked={config[k]} onChange={v => setOption(k, v)} title={OPTIONS[k].label} subtitle={OPTIONS[k].hint} />
+                                {sub(k)}
+                            </React.Fragment>
+                        ))}
+                    </Section>
                 );
             })}
 
-            <div className={cl("group")}>
-                <SectionTitle icon="settings">General</SectionTitle>
-                <div className={cl("card")}>
-                    <ToggleRow icon="monitor" checked={store.showTitleBarButton} onChange={v => settings.store.showTitleBarButton = v}
-                        label="Icon in the title bar" hint="When hidden, you can reach OpSec via Settings → Vencord → Plugins." />
-                </div>
-            </div>
+            <Section title="General">
+                <ToggleRow icon={ICONS.monitor} color="gray" checked={store.showTitleBarButton} onChange={v => settings.store.showTitleBarButton = v}
+                    title="Icon in the title bar" subtitle="When hidden, you can reach OpSec via Settings → Vencord → Plugins." />
+            </Section>
         </>
     );
 }
@@ -912,11 +732,7 @@ const ICON_CHOICES: { value: CurtainIconName; label: string; }[] = [
 
 function CurtainGlyph({ name, size = 18 }: { name: CurtainIconName; size?: number; }) {
     if (name === "custom") return <span className={cl("icon-pick-custom")}>Aa</span>;
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
-            <path fill="currentColor" d={CURTAIN_ICONS[name]} />
-        </svg>
-    );
+    return <Icon path={CURTAIN_ICONS[name]} size={size} />;
 }
 
 const ANIMATIONS: { value: CurtainAnimation; label: string; }[] = [
@@ -926,7 +742,10 @@ const ANIMATIONS: { value: CurtainAnimation; label: string; }[] = [
     { value: "glitch", label: "Glitch" }
 ];
 
+/** Curtain accent choices (stored as hex in the settings, the curtain itself draws with them) */
 const ACCENTS = ["#3ddc97", "#4c9bff", "#8b7bff", "#ff5c5c", "#ffb020", "#f4f4f5"];
+
+const MOCK_AVATARS: UiColor[] = ["orange", "indigo", "green", "yellow"];
 
 function MockDiscord() {
     return (
@@ -936,7 +755,7 @@ function MockDiscord() {
             <div className={cl("mock-chat")}>
                 {[[60, 85], [40, 70], [75, 50], [55, 90]].map(([a, b], i) => (
                     <div key={i} className={cl("mock-msg")}>
-                        <span className={cl("mock-avatar")} style={{ background: ["#f47b67", "#5865f2", "#3ba55c", "#faa81a"][i] }} />
+                        <span className={cl("mock-avatar")} style={{ background: `var(--vc-ui-${MOCK_AVATARS[i]})` }} />
                         <span className={cl("mock-lines")}><i style={{ width: `${a}%` }} /><i style={{ width: `${b}%` }} /></span>
                     </div>
                 ))}
@@ -978,22 +797,15 @@ function CurtainPreview({ options, replay }: { options: CurtainOptions; replay: 
     );
 }
 
-function Range({ label, value, min, max, unit, onChange, disabled }: {
+function SliderRow({ label, value, min, max, unit, onChange, disabled }: {
     label: string; value: number; min: number; max: number; unit: string; onChange(v: number): void; disabled?: boolean;
 }) {
-    const pct = ((value - min) / (max - min)) * 100;
     return (
-        <label className={classes(cl("range"), disabled && cl("row-disabled"))}>
-            <span className={cl("range-head")}>
-                <span className={cl("row-label")}>{label}</span>
-                <span className={cl("range-value")}>{value}{unit}</span>
-            </span>
-            <input
-                type="range" min={min} max={max} value={value} disabled={disabled}
-                style={{ "--pct": `${pct}%` } as any}
-                onChange={e => onChange(Number(e.currentTarget.value))}
-            />
-        </label>
+        <Row title={label} dim={disabled}>
+            <div className={classes(cl("slider"), disabled && cl("off"))}>
+                <Slider value={value} min={min} max={max} format={v => `${v}${unit}`} onChange={onChange} />
+            </div>
+        </Row>
     );
 }
 
@@ -1043,27 +855,26 @@ function KeybindRecorder() {
     const conflict = keybindConflict(current);
 
     return (
-        <div className={cl("keybind")}>
-            <button
-                className={classes(cl("keybind-box"), rec && cl("keybind-rec"))}
-                onClick={() => setRec(r => !r)}
-            >
-                {rec
-                    ? live.length
-                        ? <Kbd keys={[...live, "…"]} live />
-                        : <span className={cl("keybind-prompt")}>Press your key combination …</span>
-                    : <span key={saved} className={saved ? cl("flash") : undefined}><Kbd keys={keybindParts(current)} /></span>}
-                <span className={cl("keybind-action")}>{rec ? "Esc = Cancel" : "Change"}</span>
-            </button>
-            {panicKey !== DEFAULT_KEYBIND && !rec && (
-                <Tip text="Reset to Ctrl + Shift + L">
-                    <button className={cl("icon-btn")} onClick={() => settings.store.panicKey = DEFAULT_KEYBIND}>
-                        <Icon name="restore" size={16} />
-                    </button>
-                </Tip>
-            )}
-            {error && rec && <div className={classes(cl("row-hint"), cl("text-warn"))}>{error}</div>}
-            {!rec && conflict && <div className={classes(cl("row-hint"), cl("text-warn"))}>Overrides "{conflict}".</div>}
+        <div className={classes(cl("sub"), cl("pad"))}>
+            <div className={cl("keybind")}>
+                <button
+                    type="button"
+                    className={classes(cl("keybind-box"), rec && cl("keybind-rec"))}
+                    onClick={() => setRec(r => !r)}
+                >
+                    {rec
+                        ? live.length
+                            ? <Kbd keys={[...live, "…"]} live />
+                            : <span className={cl("keybind-prompt")}>Press your key combination …</span>
+                        : <span key={saved} className={saved ? cl("flash") : undefined}><Kbd keys={keybindParts(current)} /></span>}
+                    <span className={cl("keybind-action")}>{rec ? "Esc = Cancel" : "Change"}</span>
+                </button>
+                {panicKey !== DEFAULT_KEYBIND && !rec && (
+                    <IconButton icon={ICONS.restore} label="Reset to Ctrl + Shift + L" onClick={() => settings.store.panicKey = DEFAULT_KEYBIND} />
+                )}
+            </div>
+            {error && rec && <span className={classes(cl("hint"), cl("text-warn"))}>{error}</span>}
+            {!rec && conflict && <span className={classes(cl("hint"), cl("text-warn"))}>Overrides "{conflict}".</span>}
         </div>
     );
 }
@@ -1075,62 +886,63 @@ function CurtainTab({ close }: { close?(): void; }) {
     const [replay, setReplay] = useState(0);
     const usesLook = !DISGUISES.includes(s.curtainStyle as CurtainStyle);
     const usesIcon = usesLook && s.curtainStyle !== "terminal";
+    const styleHint = s.curtainStyle === "update"
+        ? "Disguises Discord as a running Windows update – nobody suspects a chat behind it."
+        : s.curtainStyle === "bsod"
+            ? "Disguises Discord as a Windows blue screen with counting-up progress."
+            : s.curtainStyle === "terminal"
+                ? "A terminal like in a hacker movie: types commands, runs progress bars and hex lines – endlessly. Your text appears as the window title."
+                : undefined;
 
     return (
         <>
             <div className={cl("preview-wrap")}>
                 <CurtainPreview options={options} replay={replay} />
                 <div className={cl("preview-actions")}>
-                    <button className={classes(cl("btn"), cl("btn-ghost"), cl("btn-small"))} onClick={() => setReplay(r => r + 1)}>
-                        <Icon name="play" size={14} /> Replay
-                    </button>
-                    <button className={classes(cl("btn"), cl("btn-small"))} onClick={() => { close?.(); setTimeout(() => showCurtain("manual"), close ? 150 : 0); }}>
-                        <MaskIcon size={14} /> Test for real
-                    </button>
+                    <Button small variant="gray" icon={ICONS.play} onClick={() => setReplay(r => r + 1)}>Replay</Button>
+                    <Button small icon={MASK_PATH} onClick={() => { close?.(); setTimeout(() => showCurtain("manual"), close ? 150 : 0); }}>Test for real</Button>
                 </div>
             </div>
 
-            <SectionTitle icon="mask">Style</SectionTitle>
-            <div className={cl("styles")}>
-                {STYLES.map(st => (
-                    <button
-                        key={st.value}
-                        className={classes(cl("style"), s.curtainStyle === st.value && cl("style-active"))}
-                        onClick={() => settings.store.curtainStyle = st.value}
-                    >
-                        <span className={classes(cl("style-thumb"), cl(`thumb-${st.value}`))} style={{ "--opsec-c-accent": s.curtainAccent } as any}>
-                            {st.value === "update"
-                                ? <span className={cl("thumb-dots")} />
-                                : st.value === "bsod"
-                                    ? <span className={cl("thumb-sad")}>:(</span>
-                                    : st.value === "terminal"
-                                        ? <span className={cl("thumb-term")}>&gt;_</span>
-                                        : st.value === "lock"
-                                            ? <span className={cl("thumb-clock")}>12:30</span>
-                                            : st.value !== "matrix" && <MaskIcon size={16} />}
-                        </span>
-                        <span>{st.label}</span>
-                    </button>
-                ))}
-            </div>
-            {s.curtainStyle === "update" && <div className={cl("row-hint")}>Disguises Discord as a running Windows update – nobody suspects a chat behind it.</div>}
-            {s.curtainStyle === "bsod" && <div className={cl("row-hint")}>Disguises Discord as a Windows blue screen with counting-up progress.</div>}
-            {s.curtainStyle === "terminal" && <div className={cl("row-hint")}>A terminal like in a hacker movie: types commands, runs progress bars and hex lines – endlessly. Your text appears as the window title.</div>}
+            <Section title="Style" footer={styleHint} plain>
+                <div className={cl("styles")}>
+                    {STYLES.map(st => (
+                        <button
+                            type="button"
+                            key={st.value}
+                            className={classes(cl("style"), s.curtainStyle === st.value && cl("style-active"))}
+                            onClick={() => settings.store.curtainStyle = st.value}
+                        >
+                            <span className={classes(cl("style-thumb"), cl(`thumb-${st.value}`))} style={{ "--opsec-c-accent": s.curtainAccent } as any}>
+                                {st.value === "update"
+                                    ? <span className={cl("thumb-dots")} />
+                                    : st.value === "bsod"
+                                        ? <span className={cl("thumb-sad")}>:(</span>
+                                        : st.value === "terminal"
+                                            ? <span className={cl("thumb-term")}>&gt;_</span>
+                                            : st.value === "lock"
+                                                ? <span className={cl("thumb-clock")}>12:30</span>
+                                                : st.value !== "matrix" && <MaskIcon size={16} />}
+                            </span>
+                            <span>{st.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </Section>
 
-            <SectionTitle icon="play">Animation</SectionTitle>
-            <Segmented small value={s.curtainAnimation as CurtainAnimation} options={ANIMATIONS} onChange={v => { settings.store.curtainAnimation = v; setReplay(r => r + 1); }} />
+            <Section title="Animation" plain>
+                <Segmented small value={s.curtainAnimation as CurtainAnimation} options={ANIMATIONS} onChange={v => { settings.store.curtainAnimation = v; setReplay(r => r + 1); }} />
+            </Section>
 
-            {usesLook && <>
-                <SectionTitle icon="tune">Appearance</SectionTitle>
-                <div className={cl("card")}>
-                    <div className={cl("card-pad")}>
-                        <Range label="Opacity" value={s.curtainOpacity} min={40} max={100} unit="%" onChange={v => settings.store.curtainOpacity = v} disabled={s.curtainStyle === "black"} />
-                        <Range label="Blur" value={s.curtainBlur} min={0} max={40} unit=" px" onChange={v => settings.store.curtainBlur = v} disabled={s.curtainStyle === "black"} />
-                        <div className={cl("range-head")}><span className={cl("row-label")}>Accent color</span></div>
+            {usesLook && (
+                <Section title="Appearance">
+                    <SliderRow label="Opacity" value={s.curtainOpacity} min={40} max={100} unit="%" onChange={v => settings.store.curtainOpacity = v} disabled={s.curtainStyle === "black"} />
+                    <SliderRow label="Blur" value={s.curtainBlur} min={0} max={40} unit=" px" onChange={v => settings.store.curtainBlur = v} disabled={s.curtainStyle === "black"} />
+                    <Row title="Accent color">
                         <div className={cl("swatches")}>
                             {ACCENTS.map(a => (
                                 <Tip key={a} text={a.toUpperCase()}>
-                                    <button className={classes(cl("swatch"), s.curtainAccent.toLowerCase() === a && cl("swatch-active"))} style={{ background: a }} onClick={() => settings.store.curtainAccent = a} aria-label={a} />
+                                    <button type="button" className={classes(cl("swatch"), s.curtainAccent.toLowerCase() === a && cl("swatch-active"))} style={{ background: a }} onClick={() => settings.store.curtainAccent = a} aria-label={a} />
                                 </Tip>
                             ))}
                             <Tip text="Custom color">
@@ -1139,14 +951,15 @@ function CurtainTab({ close }: { close?(): void; }) {
                                 </label>
                             </Tip>
                         </div>
-                    </div>
-                    {usesIcon && <ToggleRow icon="mask" checked={s.curtainShowIcon} onChange={v => settings.store.curtainShowIcon = v} label="Show icon" />}
+                    </Row>
+                    {usesIcon && <ToggleRow icon={MASK_PATH} color={OPSEC_COLOR} checked={s.curtainShowIcon} onChange={v => settings.store.curtainShowIcon = v} title="Show icon" />}
                     {usesIcon && s.curtainShowIcon && (
-                        <div className={cl("card-pad")}>
+                        <div className={classes(cl("sub"), cl("pad"))}>
                             <div className={cl("icon-picks")}>
                                 {ICON_CHOICES.map(i => (
                                     <Tip key={i.value} text={i.label}>
                                         <button
+                                            type="button"
                                             aria-label={i.label}
                                             className={classes(cl("icon-pick"), s.curtainIcon === i.value && cl("icon-pick-active"))}
                                             onClick={() => settings.store.curtainIcon = i.value}
@@ -1157,45 +970,43 @@ function CurtainTab({ close }: { close?(): void; }) {
                                 ))}
                             </div>
                             {s.curtainIcon === "custom" && (
-                                <input
-                                    className={cl("input")}
+                                <TextField
                                     value={s.curtainIconCustom}
                                     maxLength={300}
                                     placeholder="Emoji (e.g. 🍕) or image link (https://…)"
-                                    onChange={e => settings.store.curtainIconCustom = e.currentTarget.value}
+                                    onChange={v => settings.store.curtainIconCustom = v}
                                 />
                             )}
                         </div>
                     )}
-                    <ToggleRow icon="file" checked={s.curtainShowText} onChange={v => settings.store.curtainShowText = v} label="Show text" hint="Enter your own text below – leave empty for the default text." />
+                    <ToggleRow icon={ICONS.file} color="blue" checked={s.curtainShowText} onChange={v => settings.store.curtainShowText = v} title="Show text" subtitle="Enter your own text below – leave empty for the default text." />
                     {s.curtainShowText && (
-                        <div className={cl("card-pad")}>
-                            <input
-                                className={cl("input")}
+                        <div className={classes(cl("sub"), cl("pad"))}>
+                            <TextField
                                 value={s.curtainText}
                                 maxLength={60}
                                 placeholder={DEFAULT_CURTAIN_TEXT}
-                                onChange={e => settings.store.curtainText = e.currentTarget.value}
+                                onChange={v => settings.store.curtainText = v}
                             />
                         </div>
                     )}
-                </div>
-            </>}
+                </Section>
+            )}
 
-            <SectionTitle icon="bolt">Trigger & unlock</SectionTitle>
-            <div className={cl("card")}>
-                <ToggleRow icon="bolt" checked={config.panicHotkey} onChange={v => setOption("panicHotkey", v)} label="Panic key" hint="Instantly covers Discord, press again to unlock." />
-                {config.panicHotkey && <div className={cl("card-pad")}><KeybindRecorder /></div>}
-                <ToggleRow icon="eye" checked={config.curtainOnBlur} onChange={v => setOption("curtainOnBlur", v)} label="Cover when you click away" hint="As soon as another window is active. Clicking back removes it." />
+            <Section title="Trigger & unlock">
+                <ToggleRow icon={ICONS.bolt} color="yellow" checked={config.panicHotkey} onChange={v => setOption("panicHotkey", v)} title="Panic key" subtitle="Instantly covers Discord, press again to unlock." />
+                {config.panicHotkey && <KeybindRecorder />}
+                <ToggleRow icon={ICONS.eye} color="mint" checked={config.curtainOnBlur} onChange={v => setOption("curtainOnBlur", v)} title="Cover when you click away" subtitle="As soon as another window is active. Clicking back removes it." />
                 <ToggleRow
-                    icon="eyeOff"
+                    icon={ICONS.eyeOff}
+                    color="indigo"
                     checked={!s.curtainClickUnlock && config.panicHotkey}
                     disabled={!config.panicHotkey}
                     onChange={v => settings.store.curtainClickUnlock = !v}
-                    label="Unlock only with panic key"
-                    hint={config.panicHotkey ? "A click doesn't remove the curtain – anyone who doesn't know the key can't get in." : "Requires an active panic key."}
+                    title="Unlock only with panic key"
+                    subtitle={config.panicHotkey ? "A click doesn't remove the curtain – anyone who doesn't know the key can't get in." : "Requires an active panic key."}
                 />
-            </div>
+            </Section>
         </>
     );
 }
@@ -1204,23 +1015,32 @@ function CurtainTab({ close }: { close?(): void; }) {
 
 export function OpSecApp({ variant, close }: { variant: "popout" | "modal"; close?(): void; }) {
     const { lastTab } = settings.use(["lastTab"]);
+    const { summary } = useAudit();
     const tab = (TABS.some(t => t.id === lastTab) ? lastTab : "overview") as TabId;
     const goTo = (t: TabId) => settings.store.lastTab = t;
 
     return (
-        <div className={classes(cl("app"), cl(`app-${variant}`), cl("no-intercept"), "vc-keep-motion")}>
-            <Sidebar value={tab} onChange={goTo} />
-            <main className={cl("main")}>
-                <div className={cl("scroller")}>
-                    <div key={tab} className={cl("pane")}>
-                        {tab === "overview" && <OverviewTab goTo={goTo} close={close} />}
-                        {tab === "protection" && <ProtectionTab />}
-                        {tab === "curtain" && <CurtainTab close={close} />}
-                        {tab === "check" && <CheckTab />}
-                    </div>
-                </div>
-            </main>
-        </div>
+        <Sheet
+            className={classes(cl("app"), cl(`app-${variant}`), cl("no-intercept"), "vc-keep-motion")}
+            embedded={variant === "modal"}
+            height={variant === "popout" ? "min(640px, 76vh)" : undefined}
+            onClose={close}
+            header={{ title: "OpSec", subtitle: "Beneath the OS", icon: MASK_PATH, iconColor: OPSEC_COLOR }}
+            top={
+                <Segmented
+                    value={tab}
+                    options={TABS.map(t => ({ value: t.id, label: t.label, count: t.id === "check" ? summary.warn : undefined }))}
+                    onChange={goTo}
+                />
+            }
+        >
+            <div key={tab} className={cl("pane")}>
+                {tab === "overview" && <OverviewTab goTo={goTo} close={close} />}
+                {tab === "protection" && <ProtectionTab />}
+                {tab === "curtain" && <CurtainTab close={close} />}
+                {tab === "check" && <CheckTab />}
+            </div>
+        </Sheet>
     );
 }
 
@@ -1228,28 +1048,28 @@ export const SettingsPanel = ErrorBoundary.wrap(() => <OpSecApp variant="modal" 
 
 // ---------------------------------------------------------------- Link warning
 
-export function showLinkWarning(url: string, analysis: LinkAnalysis, open: () => void) {
+export async function showLinkWarning(url: string, analysis: LinkAnalysis, open: () => void) {
     const danger = analysis.risk === "danger";
     const warn = analysis.risk === "warn";
 
-    Alerts.show({
+    const ok = await confirm({
         title: danger ? "Dangerous link" : warn ? "Be careful with this link" : "Open external link?",
+        icon: danger || warn ? ICONS.warning : ICONS.link,
+        iconColor: danger ? "red" : warn ? "orange" : "blue",
         body: (
             <div className={classes(cl("link-warning"), cl("no-intercept"), "vc-keep-motion")}>
-                <div className={classes(cl("link-badge"), danger ? cl("link-badge-danger") : warn ? cl("link-badge-warn") : cl("link-badge-info"))}>
-                    <Icon name={danger || warn ? "warning" : "link"} size={28} />
-                </div>
                 {analysis.reason
                     ? <div className={classes(cl("link-reason"), danger ? cl("link-danger") : cl("link-warn"))}>{analysis.reason}</div>
-                    : <div className={cl("row-hint")}>The site learns your IP address when you open it.</div>}
+                    : <div className={cl("hint")}>The site learns your IP address when you open it.</div>}
                 <div className={cl("link-host")}>{analysis.host || url}</div>
                 <div className={cl("link-url")}>{url}</div>
             </div>
         ),
         confirmText: danger ? "Open anyway" : "Open",
         cancelText: "Cancel",
-        onConfirm: open
+        destructive: danger
     });
+    if (ok) open();
 }
 
 // ---------------------------------------------------------------- Title bar
@@ -1271,9 +1091,9 @@ function TitleBarButton() {
             targetElementRef={buttonRef}
             renderPopout={() => (
                 <ErrorBoundary noop>
-                    <div className={classes(cl("popout"), "vc-keep-motion")}>
+                    <Popover width={440} className={classes(cl("popout"), "vc-keep-motion")}>
                         <OpSecApp variant="popout" close={() => setShow(false)} />
-                    </div>
+                    </Popover>
                 </ErrorBoundary>
             )}
         >
@@ -1283,7 +1103,7 @@ function TitleBarButton() {
                     className={classes(cl("btn-titlebar"), profile === "paranoid" && cl("btn-titlebar-hot"))}
                     onClick={() => setShow(v => !v)}
                     tooltip={isShown ? null : "OpSec"}
-                    icon={() => <MaskIcon />}
+                    icon={() => <MaskIcon className="vc-ui-tb-icon" />}
                     selected={isShown}
                 />
             )}

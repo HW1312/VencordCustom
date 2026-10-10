@@ -1,260 +1,95 @@
-/* ===================================================================== Wrapped */
+/* Wrapped – only the charts and stats specials; window, lists, switches etc. come from the shared _ui kit */
 
-.vc-wrapped-dash,
-.vc-wrapped-settings {
-    --wr-c1: #8b5cf6;
-    --wr-c2: #5865f2;
-    --wr-grad: linear-gradient(135deg, #5865f2, #8b5cf6 55%, #ec4899);
-    --wr-text: var(--text-default, var(--text-normal, #dbdee1));
-    --wr-strong: var(--header-primary, var(--text-strong, #f2f3f5));
-    --wr-muted: var(--text-muted, #949ba4);
-    --wr-line: var(--border-subtle, rgb(128 128 128 / 20%));
-    --wr-soft: color-mix(in srgb, var(--wr-text) 5%, transparent);
-    --wr-soft-2: color-mix(in srgb, var(--wr-text) 10%, transparent);
-    --wr-bad: var(--status-danger, #f23f43);
-
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    color: var(--wr-text);
-    font-size: 14px;
-    padding-bottom: 12px;
-}
-
-.vc-wrapped-icon {
-    flex-shrink: 0;
-}
-
-.vc-wrapped-hint {
-    display: block;
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--wr-muted);
-}
-
-.vc-wrapped-empty {
-    padding: 10px;
-    border-radius: 8px;
-    background: var(--wr-soft);
-    color: var(--wr-muted);
-    font-size: 13px;
-    text-align: center;
-}
-
-.vc-wrapped-error {
-    color: var(--wr-bad);
-    font-size: 13px;
-}
-
-.vc-wrapped-row-inline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
-
-/* ---------- Header ---------- */
-
-.vc-wrapped-top {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.vc-wrapped-kicker {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--wr-muted);
-}
-
-.vc-wrapped-headline {
-    font-size: 34px;
-    font-weight: 900;
-    line-height: 1.05;
-    background: var(--wr-grad);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-}
-
-/* ---------- Segmented control ---------- */
-
-.vc-wrapped-seg {
-    display: inline-flex;
-    padding: 3px;
-    gap: 2px;
-    border-radius: 10px;
-    background: var(--wr-soft-2);
-}
-
-.vc-wrapped-seg-item {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 8px;
-    background: none;
-    color: var(--wr-muted);
-    font-size: 13px;
+.vc-wrapped-unit {
+    margin-left: 2px;
+    font-size: 0.6em;
     font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    opacity: 0.8;
 }
 
-.vc-wrapped-seg-small .vc-wrapped-seg-item {
-    padding: 4px 9px;
-    font-size: 12px;
-}
-
-.vc-wrapped-seg-item:hover {
-    color: var(--wr-text);
-}
-
-.vc-wrapped-seg-item-active {
-    background: var(--wr-grad);
-    color: #fff !important;
-}
-
-/* ---------- Hero cards ---------- */
-
-.vc-wrapped-heroes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-}
-
-.vc-wrapped-hero {
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    padding: 14px;
-    border-radius: 14px;
-    color: #fff;
-    box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
-}
-
-.vc-wrapped-hero::after {
-    content: "";
-    position: absolute;
-    right: -30px;
-    top: -30px;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 12%);
-}
-
-.vc-wrapped-hero-voice { background: linear-gradient(135deg, #10b981, #0e7490); }
-.vc-wrapped-hero-msg { background: linear-gradient(135deg, #5865f2, #8b5cf6); }
-.vc-wrapped-hero-active { background: linear-gradient(135deg, #f59e0b, #ef4444); }
-.vc-wrapped-hero-game { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
-
-.vc-wrapped-hero-icon {
-    opacity: 0.9;
-}
-
-.vc-wrapped-hero-value {
-    margin-top: 6px;
-    font-size: 28px;
-    font-weight: 900;
-    line-height: 1.1;
-    font-variant-numeric: tabular-nums;
+.vc-wrapped-game {
+    display: block;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.vc-wrapped-hero-game .vc-wrapped-hero-value {
-    font-size: 20px;
-    line-height: 1.4;
+.vc-wrapped-empty {
+    font-weight: 400;
+    color: var(--vc-ui-dim);
 }
-
-.vc-wrapped-hero-unit {
-    margin-left: 2px;
-    font-size: 16px;
-    font-weight: 700;
-    opacity: 0.85;
-}
-
-.vc-wrapped-hero-label {
-    font-size: 12px;
-    font-weight: 600;
-    opacity: 0.9;
-}
-
-/* ---------- Cards ---------- */
 
 .vc-wrapped-cols {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
+    gap: 0 16px;
+    align-items: start;
 }
 
-.vc-wrapped-card {
+.vc-wrapped-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-    padding: 14px;
-    border-radius: 14px;
-    background: var(--wr-soft);
-    border: 1px solid var(--wr-line);
-}
-
-.vc-wrapped-card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
-}
-
-.vc-wrapped-card-title {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--wr-strong);
 }
 
 .vc-wrapped-sub-title {
     margin-top: 4px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-size: 12px;
+    font-weight: 500;
     text-transform: uppercase;
-    color: var(--wr-muted);
+    color: var(--vc-ui-dim);
 }
 
-/* ---------- Bar chart ---------- */
+.vc-wrapped-fact-emoji {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.vc-wrapped-alltime-num {
+    font-family: var(--vc-ui-font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--vc-ui-purple);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Chart card ---------- */
+
+.vc-wrapped-chart-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+}
 
 .vc-wrapped-bars {
-    position: relative;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.vc-wrapped-bars-max {
+.vc-wrapped-bars-max,
+.vc-wrapped-bars-labels,
+.vc-wrapped-heat-legend {
     font-size: 11px;
-    color: var(--wr-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-wrapped-bars-svg {
     width: 100%;
     height: 140px;
-    border-bottom: 1px solid var(--wr-line);
+    border-bottom: 0.5px solid var(--vc-ui-sep);
 }
 
 .vc-wrapped-bar {
-    transition: opacity 0.15s;
+    transition: opacity 0.15s var(--vc-ui-ease);
 }
 
 .vc-wrapped-bars-svg:hover .vc-wrapped-bar {
-    opacity: 0.6;
+    opacity: 0.55;
 }
 
 .vc-wrapped-bars-svg g:hover .vc-wrapped-bar {
@@ -263,14 +98,11 @@
 
 .vc-wrapped-bars-labels {
     display: flex;
-    font-size: 11px;
-    color: var(--wr-muted);
 }
 
 .vc-wrapped-bars-labels > span {
     flex: 1;
     min-width: 0;
-    overflow: visible;
     white-space: nowrap;
 }
 
@@ -295,8 +127,8 @@
 .vc-wrapped-heat-hour,
 .vc-wrapped-heat-day {
     font-size: 10px;
-    color: var(--wr-muted);
     line-height: 1.6;
+    color: var(--vc-ui-dim);
 }
 
 .vc-wrapped-heat-cell {
@@ -304,12 +136,12 @@
     min-width: 8px;
     border-radius: 3px;
     background:
-        linear-gradient(color-mix(in srgb, var(--wr-c1) calc(var(--wr-a, 0) * 100%), transparent), color-mix(in srgb, var(--wr-c1) calc(var(--wr-a, 0) * 100%), transparent)),
-        var(--wr-soft-2);
+        linear-gradient(color-mix(in srgb, var(--vc-ui-purple) calc(var(--wr-a, 0) * 100%), transparent), color-mix(in srgb, var(--vc-ui-purple) calc(var(--wr-a, 0) * 100%), transparent)),
+        var(--vc-ui-track);
 }
 
 .vc-wrapped-heat-grid .vc-wrapped-heat-cell:hover {
-    outline: 2px solid var(--wr-strong);
+    outline: 1.5px solid var(--vc-ui-title);
 }
 
 .vc-wrapped-heat-legend {
@@ -317,8 +149,6 @@
     align-items: center;
     justify-content: flex-end;
     gap: 3px;
-    font-size: 11px;
-    color: var(--wr-muted);
 }
 
 .vc-wrapped-heat-legend .vc-wrapped-heat-cell {
@@ -326,245 +156,32 @@
     min-width: 12px;
 }
 
-/* ---------- Lists ---------- */
-
-.vc-wrapped-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.vc-wrapped-meter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.vc-wrapped-meter-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.vc-wrapped-meter-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 13px;
-}
-
-.vc-wrapped-meter-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 600;
-    color: var(--wr-strong);
-}
+/* ---------- Meter rows ---------- */
 
 .vc-wrapped-meter-value {
-    flex-shrink: 0;
+    color: var(--vc-ui-dim);
+    font-size: 13px;
     font-variant-numeric: tabular-nums;
-    color: var(--wr-muted);
+    white-space: nowrap;
 }
 
 .vc-wrapped-meter-track {
-    margin-top: 4px;
-    height: 6px;
+    margin-top: 5px;
+    height: 5px;
     border-radius: 3px;
-    background: var(--wr-soft-2);
+    background: var(--vc-ui-track);
     overflow: hidden;
 }
 
 .vc-wrapped-meter-fill {
     height: 100%;
     border-radius: 3px;
-    background: var(--wr-grad);
-}
-
-.vc-wrapped-meter-sub {
-    margin-top: 2px;
-    font-size: 11px;
-    color: var(--wr-muted);
-}
-
-.vc-wrapped-pic {
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
-    border-radius: 10px;
-    object-fit: cover;
-}
-
-.vc-wrapped-pic-round {
-    border-radius: 50%;
-}
-
-.vc-wrapped-pic-fallback {
-    display: grid;
-    place-items: center;
-    background: var(--wr-soft-2);
-    color: var(--wr-text);
-    font-weight: 800;
-    font-size: 14px;
-}
-
-/* ---------- Fun facts ---------- */
-
-.vc-wrapped-facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 8px;
-}
-
-.vc-wrapped-fact {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--wr-soft-2);
-    line-height: 1.4;
-}
-
-.vc-wrapped-fact-emoji {
-    font-size: 20px;
-    line-height: 1.1;
-}
-
-/* ---------- All-time ---------- */
-
-.vc-wrapped-alltime-total {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.vc-wrapped-alltime-num {
-    font-size: 30px;
-    font-weight: 900;
-    background: var(--wr-grad);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-}
-
-.vc-wrapped-progress {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.vc-wrapped-progress-track {
-    height: 8px;
-    border-radius: 4px;
-    background: var(--wr-soft-2);
-    overflow: hidden;
-}
-
-.vc-wrapped-progress-fill {
-    height: 100%;
-    background: var(--wr-grad);
-    transition: width 0.3s;
-}
-
-/* ---------- Buttons & inputs ---------- */
-
-.vc-wrapped-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border: none;
-    border-radius: 8px;
-    background: var(--wr-grad);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: filter 0.15s, transform 0.15s;
-}
-
-.vc-wrapped-btn:hover {
-    filter: brightness(1.1);
-}
-
-.vc-wrapped-btn:active {
-    transform: scale(0.97);
-}
-
-.vc-wrapped-btn-ghost {
-    background: var(--wr-soft-2);
-    color: var(--wr-text);
-}
-
-.vc-wrapped-btn-danger {
-    background: var(--wr-bad);
-}
-
-.vc-wrapped-select {
-    padding: 6px 8px;
-    border: 1px solid var(--wr-line);
-    border-radius: 8px;
-    background: var(--input-background, var(--background-secondary, #2b2d31));
-    color: var(--wr-text);
-    font-size: 13px;
-}
-
-/* ---------- Settings ---------- */
-
-.vc-wrapped-settings > .vc-wrapped-btn {
-    align-self: flex-start;
-}
-
-.vc-wrapped-settings-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.vc-wrapped-logo {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    border-radius: 12px;
-    background: var(--wr-grad);
-    color: #fff;
-}
-
-.vc-wrapped-settings-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--wr-strong);
-}
-
-.vc-wrapped-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.vc-wrapped-option-label {
-    font-weight: 600;
+    background: var(--vc-ui-purple);
 }
 
 /* ---------- Title bar ---------- */
 
 .vc-wrapped-btn-titlebar,
-.vc-wrapped-btn-titlebar .vc-wrapped-icon {
+.vc-wrapped-btn-titlebar svg {
     -webkit-app-region: no-drag;
-}
-
-.vc-wrapped-btn-titlebar .vc-wrapped-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-}
-
-.vc-wrapped-btn-titlebar:hover .vc-wrapped-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
 }

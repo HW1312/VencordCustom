@@ -11,6 +11,7 @@ import {
     SelectedChannelStore, showToast, useEffect, useRef, UserStore, useState, useStateFromStores
 } from "@webpack/common";
 
+import { Empty, Spinner } from "../_ui";
 import { ContextMenu, MenuItem, MenuState } from "./menu";
 import { cl, CLOSE_PATH, displayName, Icon, log, MAIN_PATH, MAX_PATH, MIN_PATH, MUTE_PATH, PIN_PATH, POPOUT_PATH, SPEAKER_PATH, tip, usePopoutDocument, userAvatar } from "./shared";
 import { toggleUserMute, VolumeSlider } from "./voice";
@@ -87,14 +88,14 @@ function StreamVideo({ target }: { target: StreamTarget; }) {
     const { streamId, live, preview } = useStreamState(target);
     const Video: any = MediaEngineStore.getVideoComponent?.();
 
-    if (!live) return <div className={cl("stream-empty")}>The stream has ended.</div>;
+    if (!live) return <div className={cl("stream-empty")}><Empty title="The stream has ended." /></div>;
 
     return (
         <div className={cl("stream-video")}>
             {preview && <img className={cl("stream-preview")} src={preview} alt="" />}
             {streamId && Video
                 ? <ErrorBoundary noop><Video streamId={streamId} fit="contain" paused={false} mirror={false} className={cl("stream-media")} /></ErrorBoundary>
-                : <div className={cl("stream-loading")}><span className={cl("stream-spinner")} /> Connecting to stream …</div>}
+                : <div className={cl("stream-loading")}><Spinner size={16} /> Connecting to stream …</div>}
         </div>
     );
 }

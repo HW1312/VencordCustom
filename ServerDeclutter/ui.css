@@ -1,345 +1,67 @@
-/* ===================================================================== ServerDeclutter */
+/* ServerDeclutter – only plugin-specific styles, colors from the _ui tokens */
 
-.vc-serverdeclutter-modal,
-.vc-serverdeclutter-settings,
-.vc-serverdeclutter-confirm-list {
-    --sd-a: #5865f2;
-    --sd-grad: linear-gradient(135deg, var(--sd-a), #8b5cf6);
-    --sd-good: var(--status-positive, #23a55a);
-    --sd-warn: var(--status-warning, #f0b232);
-    --sd-bad: var(--status-danger, #f23f43);
-    --sd-text: var(--text-default, var(--text-normal, #dbdee1));
-    --sd-muted: var(--text-muted, #949ba4);
-    --sd-line: var(--border-subtle, rgb(128 128 128 / 20%));
-    --sd-soft: color-mix(in srgb, var(--sd-text) 5%, transparent);
-    --sd-soft-2: color-mix(in srgb, var(--sd-text) 10%, transparent);
-    --sd-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
-
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    color: var(--sd-text);
-    font-size: 14px;
-    padding-bottom: 8px;
+.vc-serverdeclutter-window {
+    width: min(1180px, 94vw) !important;
+    max-width: 94vw !important;
 }
 
-.vc-serverdeclutter-icon {
-    flex-shrink: 0;
+.vc-serverdeclutter-top {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .vc-serverdeclutter-muted {
-    font-size: 12px;
-    color: var(--sd-muted);
-}
-
-.vc-serverdeclutter-hint {
-    display: block;
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--sd-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-serverdeclutter-text-bad {
-    color: var(--sd-bad);
-}
-
-.vc-serverdeclutter-row-inline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+    color: var(--vc-ui-red);
 }
 
 .vc-serverdeclutter-spacer {
     flex: 1;
 }
 
-.vc-serverdeclutter-section-title {
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--sd-muted);
-}
-
-/* ---------- Header (settings) ---------- */
-
-.vc-serverdeclutter-head {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.vc-serverdeclutter-logo {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: var(--sd-grad);
-    color: #fff;
-    flex-shrink: 0;
-}
-
-.vc-serverdeclutter-head-title {
-    font-size: 18px;
-    font-weight: 800;
-}
-
-.vc-serverdeclutter-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.vc-serverdeclutter-option-label {
-    font-weight: 600;
-}
-
-.vc-serverdeclutter-settings > .vc-serverdeclutter-btn {
-    align-self: flex-start;
-}
-
-/* ---------- Notices & stats ---------- */
-
-.vc-serverdeclutter-notice {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-.vc-serverdeclutter-notice > svg {
-    margin-top: 1px;
-}
-
-.vc-serverdeclutter-notice-info {
-    background: color-mix(in srgb, var(--sd-a) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--sd-a) 35%, transparent);
-}
-
-.vc-serverdeclutter-notice-info > svg {
-    color: var(--sd-a);
-}
-
-.vc-serverdeclutter-notice-warn {
-    background: color-mix(in srgb, var(--sd-warn) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--sd-warn) 40%, transparent);
-}
-
-.vc-serverdeclutter-notice-warn > svg {
-    color: var(--sd-warn);
-}
-
-.vc-serverdeclutter-notice-danger {
-    background: color-mix(in srgb, var(--sd-bad) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--sd-bad) 45%, transparent);
-}
-
-.vc-serverdeclutter-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 8px;
-}
-
-.vc-serverdeclutter-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 6px;
-    border-radius: 10px;
-    background: var(--sd-soft-2);
-}
-
-.vc-serverdeclutter-stat-value {
-    font-size: 18px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-}
-
-.vc-serverdeclutter-stat-label {
-    font-size: 11px;
-    color: var(--sd-muted);
-    text-align: center;
-}
-
-/* ---------- Buttons & inputs ---------- */
-
-.vc-serverdeclutter-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: transform 0.25s var(--sd-spring), filter 0.2s, opacity 0.2s;
-}
-
-.vc-serverdeclutter-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-}
-
-.vc-serverdeclutter-btn:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.vc-serverdeclutter-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.vc-serverdeclutter-btn-small {
-    padding: 5px 10px;
-    font-size: 12px;
-}
-
-.vc-serverdeclutter-btn-primary {
-    background: var(--sd-grad);
-}
-
-.vc-serverdeclutter-btn-success {
-    background: var(--sd-good);
-}
-
-.vc-serverdeclutter-btn-danger {
-    background: var(--sd-bad);
-}
-
-.vc-serverdeclutter-btn-ghost {
-    background: var(--sd-soft-2);
-    color: var(--sd-text);
-}
-
-.vc-serverdeclutter-icon-btn {
-    display: inline-grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--sd-muted);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.vc-serverdeclutter-icon-btn:hover:not(:disabled) {
-    background: var(--sd-soft-2);
-    color: var(--sd-text);
-}
-
-.vc-serverdeclutter-icon-btn-danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--sd-bad) 18%, transparent);
-    color: var(--sd-bad);
-}
-
-.vc-serverdeclutter-icon-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.vc-serverdeclutter-link {
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--text-link, #00a8fc);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-serverdeclutter-input {
-    min-width: 0;
-    padding: 6px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--sd-line);
-    background: var(--input-background, var(--background-base-lowest, var(--background-tertiary, rgb(0 0 0 / 20%))));
-    color: var(--sd-text);
-    font-size: 14px;
-    outline: none;
-}
-
-.vc-serverdeclutter-input:focus {
-    border-color: var(--sd-a);
-}
+/* ---------- Number field with suffix ---------- */
 
 .vc-serverdeclutter-number {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-}
-
-.vc-serverdeclutter-number .vc-serverdeclutter-input {
-    width: 80px;
-}
-
-.vc-serverdeclutter-seg {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 10px;
-    background: var(--sd-soft-2);
-    align-self: flex-start;
-}
-
-.vc-serverdeclutter-seg-item {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 7px;
-    background: transparent;
-    color: var(--sd-muted);
     font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
 }
 
-.vc-serverdeclutter-seg-item:hover {
-    color: var(--sd-text);
+.vc-serverdeclutter-number input {
+    width: 72px;
 }
 
-.vc-serverdeclutter-seg-item-active {
-    background: var(--sd-grad);
-    color: #fff !important;
-}
-
-/* ---------- Suggestions ---------- */
+/* ---------- Suggestions (widget cards) ---------- */
 
 .vc-serverdeclutter-suggestions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 8px;
 }
 
 .vc-serverdeclutter-suggestion {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px 6px 6px;
-    border-radius: 999px;
-    border: 1px solid var(--sd-line);
-    background: var(--sd-soft);
-    color: var(--sd-text);
+    gap: 10px;
+    padding: 10px 12px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
     font-size: 13px;
+    text-align: left;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, transform 0.25s var(--sd-spring);
+    transition: background 0.15s, transform 0.25s var(--vc-ui-spring);
 }
 
 .vc-serverdeclutter-suggestion:hover {
-    background: var(--sd-soft-2);
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-serverdeclutter-suggestion:active {
@@ -347,121 +69,52 @@
 }
 
 .vc-serverdeclutter-suggestion-count {
-    min-width: 22px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    color: #fff;
-    font-weight: 800;
-    font-size: 12px;
-    text-align: center;
-    background: var(--sd-a);
+    font-family: var(--vc-ui-font-display);
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--vc-ui-blue);
 }
 
 .vc-serverdeclutter-suggestion-warn .vc-serverdeclutter-suggestion-count {
-    background: var(--sd-warn);
-    color: #1e1f22;
+    color: var(--vc-ui-orange);
 }
 
 .vc-serverdeclutter-suggestion-danger .vc-serverdeclutter-suggestion-count {
-    background: var(--sd-bad);
+    color: var(--vc-ui-red);
 }
 
 .vc-serverdeclutter-suggestion-active {
-    border-color: var(--sd-a);
-    background: color-mix(in srgb, var(--sd-a) 14%, transparent);
+    box-shadow: inset 0 0 0 2px var(--vc-ui-blue);
 }
 
-/* ---------- Search & filters ---------- */
-
-.vc-serverdeclutter-toolbar {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.vc-serverdeclutter-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 6px 4px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--sd-line);
-    background: var(--input-background, var(--background-base-lowest, var(--background-tertiary, rgb(0 0 0 / 20%))));
-    color: var(--sd-muted);
-}
-
-.vc-serverdeclutter-search:focus-within {
-    border-color: var(--sd-a);
-}
-
-.vc-serverdeclutter-search input {
-    flex: 1;
-    min-width: 0;
-    padding: 4px 0;
-    border: none;
-    background: transparent;
-    color: var(--sd-text);
-    font-size: 14px;
-    outline: none;
-}
-
-.vc-serverdeclutter-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.vc-serverdeclutter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--sd-line);
-    background: transparent;
-    color: var(--sd-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-serverdeclutter-chip:hover {
-    color: var(--sd-text);
-    background: var(--sd-soft);
-}
-
-.vc-serverdeclutter-chip-active {
-    border-color: transparent;
-    background: var(--sd-grad);
-    color: #fff !important;
-}
-
-.vc-serverdeclutter-chip-count {
+.vc-serverdeclutter-pill-count {
+    margin-left: 6px;
+    opacity: 0.6;
     font-variant-numeric: tabular-nums;
-    opacity: 0.75;
 }
 
-/* ---------- Selection bar & progress ---------- */
+/* ---------- Bulk bar & job ---------- */
 
 .vc-serverdeclutter-bulkbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
-    border-radius: 10px;
-    background: var(--sd-soft);
-    border: 1px solid var(--sd-line);
+    padding: 6px 6px 6px 12px;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    transition: background 0.15s;
 }
 
 .vc-serverdeclutter-bulkbar-active {
-    border-color: color-mix(in srgb, var(--sd-a) 50%, transparent);
-    background: color-mix(in srgb, var(--sd-a) 8%, transparent);
+    background: color-mix(in srgb, var(--vc-ui-blue) 14%, transparent);
 }
 
 .vc-serverdeclutter-bulk-count {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--vc-ui-title);
 }
 
 .vc-serverdeclutter-job {
@@ -469,9 +122,9 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--sd-soft);
-    border: 1px solid var(--sd-line);
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-title);
 }
 
 .vc-serverdeclutter-job-head {
@@ -484,8 +137,7 @@
     display: flex;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 4px;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .vc-serverdeclutter-progress-label {
@@ -494,49 +146,35 @@
     white-space: nowrap;
 }
 
-.vc-serverdeclutter-progress-track {
-    height: 6px;
-    border-radius: 3px;
-    overflow: hidden;
-    background: var(--sd-soft-2);
-}
-
-.vc-serverdeclutter-progress-fill {
-    height: 100%;
-    background: var(--sd-grad);
-    transition: width 0.3s ease;
-}
-
 .vc-serverdeclutter-log {
     max-height: 120px;
     overflow-y: auto;
+    font-family: var(--vc-ui-mono);
     font-size: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    color: var(--vc-ui-text);
 }
 
 .vc-serverdeclutter-log-warn {
-    color: var(--sd-warn);
+    color: var(--vc-ui-orange);
 }
 
 .vc-serverdeclutter-log-error {
-    color: var(--sd-bad);
+    color: var(--vc-ui-red);
 }
 
 /* ---------- Table ---------- */
 
 .vc-serverdeclutter-table-wrap {
-    max-height: 56vh;
     overflow: auto;
-    border-radius: 10px;
-    border: 1px solid var(--sd-line);
+    border-radius: 12px;
+    background: var(--vc-ui-group);
 }
 
 .vc-serverdeclutter-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
+    color: var(--vc-ui-text);
 }
 
 .vc-serverdeclutter-table th {
@@ -546,20 +184,20 @@
     padding: 8px;
     text-align: left;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
     white-space: nowrap;
-    color: var(--sd-muted);
-    background: var(--modal-background, var(--background-base-low, var(--background-primary, #313338)));
-    border-bottom: 1px solid var(--sd-line);
+    color: var(--vc-ui-dim);
+    background: var(--vc-ui-glass);
+    border-bottom: 0.5px solid var(--vc-ui-sep);
     cursor: pointer;
     user-select: none;
 }
 
 .vc-serverdeclutter-table th:hover,
 .vc-serverdeclutter-th-active {
-    color: var(--sd-text) !important;
+    color: var(--vc-ui-title) !important;
 }
 
 .vc-serverdeclutter-th {
@@ -570,7 +208,7 @@
 
 .vc-serverdeclutter-table td {
     padding: 6px 8px;
-    border-bottom: 1px solid var(--sd-line);
+    border-bottom: 0.5px solid var(--vc-ui-sep);
     white-space: nowrap;
     vertical-align: middle;
 }
@@ -581,11 +219,11 @@
 }
 
 .vc-serverdeclutter-table tbody tr:hover {
-    background: var(--sd-soft);
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-serverdeclutter-row-selected {
-    background: color-mix(in srgb, var(--sd-a) 12%, transparent) !important;
+    background: color-mix(in srgb, var(--vc-ui-blue) 14%, transparent) !important;
 }
 
 .vc-serverdeclutter-table .vc-serverdeclutter-num {
@@ -597,9 +235,9 @@
     width: 24px;
 }
 
-.vc-serverdeclutter-col-check input {
+.vc-serverdeclutter-table input[type="checkbox"] {
     cursor: pointer;
-    accent-color: var(--sd-a);
+    accent-color: var(--vc-ui-blue);
 }
 
 .vc-serverdeclutter-name-cell {
@@ -612,7 +250,13 @@
 .vc-serverdeclutter-name {
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: 600;
+    font-weight: 500;
+    color: var(--vc-ui-title);
+}
+
+.vc-serverdeclutter-owner {
+    display: inline-flex;
+    color: var(--vc-ui-yellow);
 }
 
 .vc-serverdeclutter-icon-link {
@@ -620,8 +264,8 @@
     border: none;
     background: none;
     cursor: pointer;
-    border-radius: 50%;
-    transition: transform 0.25s var(--sd-spring);
+    border-radius: 25%;
+    transition: transform 0.25s var(--vc-ui-spring);
 }
 
 .vc-serverdeclutter-icon-link:hover {
@@ -632,10 +276,10 @@
     display: inline-grid;
     place-items: center;
     flex-shrink: 0;
-    border-radius: 50%;
+    border-radius: 25%;
     overflow: hidden;
-    background: var(--sd-soft-2);
-    color: var(--sd-text);
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
     font-size: 10px;
     font-weight: 700;
     object-fit: cover;
@@ -651,27 +295,6 @@
     display: flex;
     align-items: center;
     gap: 6px;
-}
-
-.vc-serverdeclutter-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 1px 7px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    background: var(--sd-soft-2);
-    color: var(--sd-muted);
-}
-
-.vc-serverdeclutter-badge-mention {
-    background: var(--sd-bad);
-    color: #fff;
-}
-
-.vc-serverdeclutter-badge-owner {
-    padding: 2px 4px;
-    color: var(--sd-warn);
 }
 
 .vc-serverdeclutter-col-actions {
@@ -691,12 +314,6 @@
     opacity: 1;
 }
 
-.vc-serverdeclutter-empty {
-    padding: 24px;
-    text-align: center;
-    color: var(--sd-muted);
-}
-
 /* ---------- Confirmation ---------- */
 
 .vc-serverdeclutter-confirm-list {
@@ -706,8 +323,9 @@
     max-height: 260px;
     overflow-y: auto;
     margin-top: 8px;
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
+    text-align: left;
+    color: var(--vc-ui-text);
+    font-size: 13px;
 }
 
 .vc-serverdeclutter-confirm-item {

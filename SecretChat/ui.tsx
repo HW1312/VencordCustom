@@ -7,14 +7,14 @@ import "./ui.css";
 
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { classNameFactory } from "@api/Styles";
-import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
-import { Channel, Message, RenderModalProps } from "@vencord/discord-types";
-import { Alerts, Modal, openModal, showToast, Tooltip, UserStore, useState } from "@webpack/common";
+import { Channel, Message } from "@vencord/discord-types";
+import { showToast, Tooltip, UserStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { Avatar as KitAvatar, Button, confirm, Empty, Glyph, Icon, IconButton, ICONS, LinkRow, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, State, TextField } from "../_ui";
 import { RoomCard } from "./area";
 import { keyFromPassword, randomBytes } from "./crypto";
 import { acceptHandshake, decrypted, handshakes, ignoreHandshake, retryLocked, startHandshake } from "./messages";
@@ -26,31 +26,25 @@ const cl = classNameFactory("vc-secretchat-");
 
 // ---------------------------------------------------------------- Icons
 
+export const LOCK_PATH = "M6 9V7a6 6 0 1 1 12 0v2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1Zm2-2a4 4 0 1 1 8 0v2H8V7Zm4 6a2 2 0 0 0-1 3.73V18a1 1 0 1 0 2 0v-1.27A2 2 0 0 0 12 13Z";
+const UNLOCK_PATH = "M8 7a4 4 0 0 1 7.75-1.4 1 1 0 1 0 1.87-.7A6 6 0 0 0 6 7v2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2H8V7Zm4 6a2 2 0 0 0-1 3.73V18a1 1 0 1 0 2 0v-1.27A2 2 0 0 0 12 13Z";
+export const GROUP_PATH = "M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05A4.22 4.22 0 0 1 17 16.5V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z";
+const SHIELD_PATH = "M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z";
+
+/** App icon color of SecretChat (window headers, buttons in chat) */
+export const SC_COLOR = "green" as const;
+
 export const LockIcon: IconComponent = ({ width = 24, height = 24, className }) => (
     <svg width={width} height={height} viewBox="0 0 24 24" className={className} fill="currentColor">
-        <path fillRule="evenodd" d="M6 9V7a6 6 0 1 1 12 0v2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1Zm2-2a4 4 0 1 1 8 0v2H8V7Zm4 6a2 2 0 0 0-1 3.73V18a1 1 0 1 0 2 0v-1.27A2 2 0 0 0 12 13Z" />
+        <path fillRule="evenodd" d={LOCK_PATH} />
     </svg>
 );
 
 const UnlockIcon: IconComponent = ({ width = 24, height = 24, className }) => (
     <svg width={width} height={height} viewBox="0 0 24 24" className={className} fill="currentColor">
-        <path fillRule="evenodd" d="M8 7a4 4 0 0 1 7.75-1.4 1 1 0 1 0 1.87-.7A6 6 0 0 0 6 7v2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2H8V7Zm4 6a2 2 0 0 0-1 3.73V18a1 1 0 1 0 2 0v-1.27A2 2 0 0 0 12 13Z" />
+        <path fillRule="evenodd" d={UNLOCK_PATH} />
     </svg>
 );
-
-const icon = (d: string): IconComponent => ({ width = 16, height = 16, className }) => (
-    <svg width={width} height={height} viewBox="0 0 24 24" className={className} fill="currentColor"><path d={d} /></svg>
-);
-
-export const PersonIcon = icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z");
-export const GroupIcon = icon("M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05A4.22 4.22 0 0 1 17 16.5V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z");
-const CopyIcon = icon("M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z");
-export const PencilIcon = icon("M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z");
-export const TrashIcon = icon("M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z");
-const CheckIcon = icon("M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z");
-export const PlusIcon = icon("M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z");
-export const CloseIcon = icon("M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z");
-const ShieldIcon = icon("M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Z");
 
 const userName = (id?: string) => {
     const u = id ? UserStore.getUser(id) : null;
@@ -88,103 +82,84 @@ export const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
 
 // ---------------------------------------------------------------- Small parts
 
-export function Avatar({ userId }: { userId?: string; }) {
+export function UserAvatar({ userId, size = 32 }: { userId?: string; size?: number; }) {
     const user = userId ? UserStore.getUser(userId) : null;
-    const url = (user as any)?.getAvatarURL?.(undefined, 64);
-    return url
-        ? <img className={cl("avatar")} src={url} alt="" />
-        : <span className={cl("avatar")}><PersonIcon width={20} height={20} /></span>;
+    return <KitAvatar src={(user as any)?.getAvatarURL?.(undefined, 64)} size={size} />;
 }
 
-export function IconButton({ label, danger, onClick, children }: { label: string; danger?: boolean; onClick(): void; children: ReactNode; }) {
+/** Name field that replaces a row title while renaming; onDone(null) = cancelled */
+export function RenameField({ initial, onDone }: { initial: string; onDone(name: string | null): void; }) {
+    const [name, setName] = useState(initial);
     return (
-        <Tooltip text={label}>
-            {p => (
-                <button {...p} aria-label={label} className={classes(cl("icon-btn"), danger && cl("icon-btn-danger"))} onClick={onClick}>
-                    {children}
-                </button>
-            )}
-        </Tooltip>
+        <span className={cl("rename")} onClick={e => e.stopPropagation()}>
+            <TextField
+                value={name}
+                autoFocus
+                maxLength={64}
+                onChange={setName}
+                onBlur={() => onDone(name)}
+                onKeyDown={e => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape") { e.stopPropagation(); onDone(null); }
+                }}
+            />
+        </span>
     );
 }
 
-function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; }[]; onChange(v: T): void; }) {
-    return (
-        <div className={cl("segmented")}>
-            {options.map(o => (
-                <button key={o.value} className={classes(cl("segment"), o.value === value && cl("segment-on"))} onClick={() => onChange(o.value)}>
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
-}
-
-function confirmDelete(k: KeyRecord) {
-    Alerts.show({
+async function confirmDelete(k: KeyRecord) {
+    const ok = await confirm({
         title: `Delete “${k.name}”?`,
         body: "Messages sent with this key can't be read on this PC anymore.",
         confirmText: "Delete key",
-        cancelText: "Cancel",
-        confirmColor: "vc-secretchat-danger-btn",
-        onConfirm: () => deleteKey(k.id)
+        destructive: true
     });
+    if (ok) deleteKey(k.id);
 }
 
 // ---------------------------------------------------------------- Window for one chat
 
 function KeyRow({ k, selected, onClick }: { k: KeyRecord; selected: boolean; onClick(): void; }) {
     const [editing, setEditing] = useState(false);
-    const [name, setName] = useState(k.name);
 
     return (
-        <div className={classes(cl("row"), selected && cl("row-on"))} onClick={() => !editing && onClick()}>
-            {k.kind === "private"
-                ? <Avatar userId={k.partnerId} />
-                : <span className={classes(cl("avatar"), cl("avatar-group"))}><GroupIcon width={20} height={20} /></span>}
-
-            <span className={cl("row-main")}>
-                {editing ? (
-                    <input
-                        className={classes(cl("input"), cl("input-inline"))}
-                        value={name}
-                        autoFocus
-                        maxLength={64}
-                        onClick={e => e.stopPropagation()}
-                        onChange={e => setName(e.currentTarget.value)}
-                        onBlur={() => { renameKey(k.id, name); setEditing(false); }}
-                        onKeyDown={e => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                            if (e.key === "Escape") { e.stopPropagation(); setName(k.name); setEditing(false); }
-                        }}
-                    />
-                ) : <span className={cl("row-title")}>{k.name}</span>}
+        <Row
+            className={classes(cl("key"), selected && cl("key-on"))}
+            onClick={() => !editing && onClick()}
+            leading={k.kind === "private"
+                ? <UserAvatar userId={k.partnerId} />
+                : <Glyph path={GROUP_PATH} color="indigo" size={32} />}
+            title={editing
+                ? <RenameField initial={k.name} onDone={n => { if (n != null) renameKey(k.id, n); setEditing(false); }} />
+                : k.name}
+            subtitle={
                 <Tooltip text="Safety code – compare it with the others">
-                    {p => <span {...p} className={cl("safety")}><ShieldIcon width={12} height={12} />{k.safety}</span>}
+                    {p => <span {...p} className={cl("safety")}><Icon path={SHIELD_PATH} size={11} />{k.safety}</span>}
                 </Tooltip>
-            </span>
-
-            <span className={cl("row-actions")} onClick={e => e.stopPropagation()}>
-                <IconButton label="Rename" onClick={() => setEditing(true)}><PencilIcon /></IconButton>
-                {k.kind === "group" && (
-                    <IconButton label="Copy code" onClick={() => copyWithToast(inviteCode(k), "Code copied")}><CopyIcon /></IconButton>
-                )}
-                <IconButton label="Delete" danger onClick={() => confirmDelete(k)}><TrashIcon /></IconButton>
-            </span>
-
-            <span className={cl("check")}>{selected && <CheckIcon width={14} height={14} />}</span>
-        </div>
+            }
+            trailing={
+                <span className={cl("key-trailing")} onClick={e => e.stopPropagation()}>
+                    <span className={cl("key-actions")}>
+                        <IconButton icon={ICONS.edit} label="Rename" onClick={() => setEditing(true)} />
+                        {k.kind === "group" && (
+                            <IconButton icon={ICONS.copy} label="Copy code" onClick={() => copyWithToast(inviteCode(k), "Code copied")} />
+                        )}
+                        <IconButton icon={ICONS.trash} label="Delete" destructive onClick={() => confirmDelete(k)} />
+                    </span>
+                    <span className={cl("key-check")}>{selected && <Icon path={ICONS.check} size={16} />}</span>
+                </span>
+            }
+        />
     );
 }
 
 function KeyList({ keys, current, channelId }: { keys: KeyRecord[]; current: string | null; channelId: string; }) {
-    if (!keys.length) return null;
     return (
-        <div className={cl("rows")}>
+        <>
             {keys.map(k => (
                 <KeyRow key={k.id} k={k} selected={current === k.id} onClick={() => setChannelKey(channelId, current === k.id ? null : k.id)} />
             ))}
-        </div>
+        </>
     );
 }
 
@@ -200,39 +175,37 @@ function PrivateTab({ channel, current }: { channel: Channel; current: string | 
     const candidates = recipients.filter(id => !connected.has(id));
     const waiting = new Set(Object.values(s.pending).map(p => p.to));
 
+    if (!keys.length && !candidates.length) {
+        return <Empty icon={ICONS.user} title="No 1:1 keys yet" hint="Right-click someone → Start encrypted chat" />;
+    }
+
     return (
-        <div className={cl("tab-body")}>
+        <Section>
             <KeyList keys={keys} current={current} channelId={channel.id} />
-
             {candidates.map(id => waiting.has(id) ? (
-                <div key={id} className={classes(cl("connect"), cl("connect-waiting"))}>
-                    <Avatar userId={id} />
-                    <span className={cl("row-title")}>{userName(id)}</span>
-                    <span className={cl("waiting")}>Waiting …</span>
-                    <IconButton label="Cancel request" danger onClick={() => cancelPending(id)}><CloseIcon /></IconButton>
-                </div>
-            ) : (
-                <button
+                <Row
                     key={id}
-                    className={cl("connect")}
-                    onClick={() => {
-                        const user = UserStore.getUser(id);
-                        if (user) startHandshake(user, channel.id);
-                    }}
-                >
-                    <Avatar userId={id} />
-                    <span className={cl("row-title")}>{userName(id)}</span>
-                    <span className={cl("connect-label")}><PlusIcon />Connect</span>
-                </button>
+                    leading={<UserAvatar userId={id} />}
+                    title={userName(id)}
+                    trailing={<>
+                        <State spinner>Waiting …</State>
+                        <IconButton icon={ICONS.close} label="Cancel request" destructive onClick={() => cancelPending(id)} />
+                    </>}
+                />
+            ) : (
+                <Row
+                    key={id}
+                    leading={<UserAvatar userId={id} />}
+                    title={userName(id)}
+                    trailing={
+                        <Button small variant="tinted" color={SC_COLOR} icon={ICONS.plus} onClick={() => {
+                            const user = UserStore.getUser(id);
+                            if (user) startHandshake(user, channel.id);
+                        }}>Connect</Button>
+                    }
+                />
             ))}
-
-            {!keys.length && !candidates.length && (
-                <div className={cl("empty")}>
-                    <PersonIcon width={28} height={28} />
-                    Right-click someone → Start encrypted chat
-                </div>
-            )}
-        </div>
+        </Section>
     );
 }
 
@@ -275,56 +248,54 @@ function GroupTab({ channel, current }: { channel: Channel; current: string | nu
     };
 
     return (
-        <div className={cl("tab-body")}>
-            <KeyList keys={keys} current={current} channelId={channel.id} />
+        <>
+            {!!keys.length && (
+                <Section>
+                    <KeyList keys={keys} current={current} channelId={channel.id} />
+                </Section>
+            )}
 
-            <div className={cl("actions")}>
-                <button className={classes(cl("chip"), panel === "new" && cl("chip-on"))} onClick={() => setPanel(panel === "new" ? null : "new")}>
-                    <PlusIcon />New key
-                </button>
-                <button className={classes(cl("chip"), panel === "code" && cl("chip-on"))} onClick={() => setPanel(panel === "code" ? null : "code")}>
-                    <CopyIcon />Paste code
-                </button>
-            </div>
+            <Pills>
+                <Pill icon={ICONS.plus} selected={panel === "new"} onClick={() => setPanel(panel === "new" ? null : "new")}>New key</Pill>
+                <Pill icon={ICONS.copy} selected={panel === "code"} onClick={() => setPanel(panel === "code" ? null : "code")}>Paste code</Pill>
+            </Pills>
 
             {panel === "new" && (
                 <div className={cl("panel")}>
-                    <input className={cl("input")} value={name} autoFocus placeholder="Name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
+                    <TextField value={name} autoFocus placeholder="Name" maxLength={64} onChange={setName} />
                     <Segmented<"random" | "password">
+                        small
                         value={mode}
                         onChange={setMode}
                         options={[{ value: "random", label: "Code" }, { value: "password", label: "Password" }]}
                     />
                     {mode === "password" && (
-                        <input
-                            className={cl("input")}
+                        <TextField
                             type="password"
                             value={password}
                             placeholder="Password (8+ characters)"
-                            onChange={e => setPassword(e.currentTarget.value)}
+                            onChange={setPassword}
                             onKeyDown={e => { if (e.key === "Enter") create(); }}
                         />
                     )}
-                    <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!canCreate} onClick={create}>
-                        {busy ? "Creating …" : "Create"}
-                    </button>
+                    <Button wide disabled={!canCreate} onClick={create}>{busy ? "Creating …" : "Create"}</Button>
                 </div>
             )}
 
             {panel === "code" && (
                 <div className={cl("panel")}>
-                    <input
-                        className={classes(cl("input"), cl("input-mono"), code && !codeValid && cl("input-error"))}
+                    <TextField
+                        className={classes(cl("mono"), code && !codeValid && cl("field-error"))}
                         value={code}
                         autoFocus
                         placeholder="sckey1.…"
-                        onChange={e => setCode(e.currentTarget.value)}
+                        onChange={setCode}
                         onKeyDown={e => { if (e.key === "Enter") add(); }}
                     />
-                    <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!codeValid} onClick={add}>Add</button>
+                    <Button wide disabled={!codeValid} onClick={add}>Add</Button>
                 </div>
             )}
-        </div>
+        </>
     );
 }
 
@@ -337,13 +308,7 @@ function RoomSection({ channel }: { channel: Channel; }) {
     const [name, setName] = useState(() => active?.kind === "group" ? active.name : chatLabel(channel.id).slice(0, 64));
     const [busy, setBusy] = useState(false);
 
-    if (room) {
-        return (
-            <div className={cl("room-note")}>
-                <LockIcon width={14} height={14} />Secret room “{room.name}” · pings only through SecretChat
-            </div>
-        );
-    }
+    if (room) return <Note tone="ok">Secret room “{room.name}” · pings only through SecretChat</Note>;
 
     const create = async () => {
         if (!name.trim() || busy) return;
@@ -359,74 +324,65 @@ function RoomSection({ channel }: { channel: Channel; }) {
 
     return open ? (
         <div className={cl("panel")}>
-            <input
-                className={cl("input")}
+            <TextField
                 value={name}
                 autoFocus
                 placeholder="Room name (only you all see it)"
                 maxLength={64}
-                onChange={e => setName(e.currentTarget.value)}
+                onChange={setName}
                 onKeyDown={e => { if (e.key === "Enter") create(); }}
             />
-            <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!name.trim() || busy} onClick={create}>
-                {busy ? "Creating …" : "Make secret room"}
-            </button>
+            <Button wide color={SC_COLOR} disabled={!name.trim() || busy} onClick={create}>{busy ? "Creating …" : "Make secret room"}</Button>
         </div>
     ) : (
-        <button className={cl("chip")} onClick={() => setOpen(true)}>
-            <LockIcon width={16} height={16} />Make this chat a secret room
-        </button>
+        <Section>
+            <LinkRow icon={LOCK_PATH} onClick={() => setOpen(true)}>Make this chat a secret room</LinkRow>
+        </Section>
     );
 }
 
-function ChatModal({ modalProps, channel }: { modalProps: RenderModalProps; channel: Channel; }) {
+function ChatWindow({ channel, close }: { channel: Channel; close(): void; }) {
     useStore();
     const active = channelKey(channel.id);
     const [tab, setTab] = useState<"private" | "group">(active ? active.kind : channel.isDM?.() ? "private" : "group");
-
-    const tabs = [
-        { id: "private" as const, label: "1:1", Icon: PersonIcon },
-        { id: "group" as const, label: "Group", Icon: GroupIcon }
-    ];
+    const dot = (kind: "private" | "group") => active?.kind === kind && <span className={cl("tab-dot")} />;
 
     return (
-        <Modal {...modalProps} size="sm" title="SecretChat">
-            <div className={cl("window")}>
-                <div className={classes(cl("status"), active && cl("status-on"))}>
-                    {active ? <LockIcon width={20} height={20} /> : <UnlockIcon width={20} height={20} />}
-                    <span className={cl("status-text")}>
-                        {active ? <>Encrypted · <b>{active.name}</b></> : "Not encrypted"}
-                    </span>
-                    {active && <button className={cl("status-off")} onClick={() => setChannelKey(channel.id, null)}>Turn off</button>}
+        <Sheet
+            header={{
+                title: "SecretChat",
+                subtitle: active ? `Encrypted · ${active.name}` : "Not encrypted",
+                live: !!active,
+                icon: LOCK_PATH,
+                iconColor: SC_COLOR,
+                actions: active && <Button small variant="gray" onClick={() => setChannelKey(channel.id, null)}>Turn off</Button>
+            }}
+            onClose={close}
+            top={
+                <div className={cl("top")}>
+                    <Segmented<"private" | "group">
+                        value={tab}
+                        onChange={setTab}
+                        options={[
+                            { value: "private", label: <>1:1{dot("private")}</> },
+                            { value: "group", label: <>Group{dot("group")}</> }
+                        ]}
+                    />
                 </div>
+            }
+        >
+            {tab === "private"
+                ? <PrivateTab channel={channel} current={active?.id ?? null} />
+                : <GroupTab channel={channel} current={active?.id ?? null} />}
 
-                <div className={cl("tabs")}>
-                    {tabs.map(({ id, label, Icon }) => (
-                        <button key={id} className={classes(cl("tab"), tab === id && cl("tab-on"))} onClick={() => setTab(id)}>
-                            <Icon />
-                            {label}
-                            {active?.kind === id && <span className={cl("tab-dot")} />}
-                        </button>
-                    ))}
-                </div>
-
-                {tab === "private"
-                    ? <PrivateTab channel={channel} current={active?.id ?? null} />
-                    : <GroupTab channel={channel} current={active?.id ?? null} />}
-
-                <RoomSection channel={channel} />
-            </div>
-        </Modal>
+            <RoomSection channel={channel} />
+        </Sheet>
     );
 }
 
 export function openChatModal(channel: Channel) {
     void pruneStale();
-    openModal(props => (
-        <ErrorBoundary>
-            <ChatModal modalProps={props} channel={channel} />
-        </ErrorBoundary>
-    ));
+    openWindow(close => <ChatWindow channel={channel} close={close} />, { size: "small" });
 }
 
 export async function importCode(text: string, channelId?: string) {
@@ -467,9 +423,9 @@ export function MessageCard({ message }: { message: Message; }) {
         if (!code) return null;
         return (
             <div className={cl("card")}>
-                <GroupIcon width={18} height={18} />
+                <Icon path={GROUP_PATH} size={18} />
                 <span className={cl("card-text")}>Group key “{code.name || "Group key"}”</span>
-                <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => importCode(message.content)}>Add key</button>
+                <Button small color={SC_COLOR} onClick={() => importCode(message.content)}>Add key</Button>
             </div>
         );
     }
@@ -481,8 +437,8 @@ export function MessageCard({ message }: { message: Message; }) {
             text = <>{userName(hs.authorId)} wants an encrypted 1:1 chat</>;
             buttons = (
                 <>
-                    <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => acceptHandshake(hs)}>Accept</button>
-                    <button className={cl("btn")} onClick={() => ignoreHandshake(hs)}>Ignore</button>
+                    <Button small color={SC_COLOR} onClick={() => acceptHandshake(hs)}>Accept</Button>
+                    <Button small variant="gray" onClick={() => ignoreHandshake(hs)}>Ignore</Button>
                 </>
             );
         } else if (hs.to === me) {

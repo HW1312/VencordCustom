@@ -10,10 +10,11 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { Alerts, Modal, openModal, showToast, useEffect, useLayoutEffect, useRef, useState } from "@webpack/common";
+import { useEffect, useLayoutEffect, useRef, useState } from "@webpack/common";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-import { Tip } from "./ui";
+import { confirm, openWindow, Sheet, TextField } from "../_ui";
+import { OPSEC_COLOR, opsecNotify, Tip } from "./ui";
 
 const cl = classNameFactory("vc-opsec-");
 
@@ -46,6 +47,9 @@ const TOOLS: { id: Tool; label: string; icon: string; }[] = [
     { id: "arrow", label: "Arrow", icon: "M5 19 17.6 6.4V13h2V3h-10v2h6.6L3.6 17.6z" },
     { id: "text", label: "Text", icon: "M5 4v3h5.5v12h3V7H19V4z" }
 ];
+
+/** Header / prompt icon (brush) */
+const ERASER_ICON = "M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z";
 
 const COLORS = ["#ff3b30", "#ffcc00", "#34c759", "#0a84ff", "#ffffff", "#000000"];
 
@@ -380,9 +384,11 @@ function EditorCanvas({ source, ops, setOps, redo, setRedo }: EditorProps) {
                     </div>
                 )}
                 {tool === "text" && (
-                    <input className={cl("input")} value={text} maxLength={120} placeholder="Enter text, then click on the image" onChange={e => setText(e.currentTarget.value)} />
+                    <div className={cl("editor-text")}>
+                        <TextField value={text} maxLength={120} placeholder="Enter text, then click on the image" onChange={setText} />
+                    </div>
                 )}
-                <span className={cl("row-hint")}>
+                <span className={cl("hint")}>
                     {tool === "crop" && "Drag out the area to keep."}
                     {tool === "box" && "Safest method for names, passwords, addresses & tokens."}
                     {tool === "pixelate" && "Coarse blocks. For text use Redact instead – pixelated content can sometimes be reconstructed."}
@@ -429,47 +435,48 @@ export async function editImage(file: File, name = file.name): Promise<File | nu
             resolve(f);
         };
 
-        function EditorModal(props: { transitionState: number; onClose(): void; }) {
+        function EditorWindow({ close }: { close(): void; }) {
             const [ops, setOps] = useState<Op[]>([]);
             const [redo, setRedo] = useState<Op[]>([]);
             const [busy, setBusy] = useState(false);
 
+            // Closed by Esc / click outside = send the original
+            useEffect(() => () => finish(null), []);
+
             const apply = async () => {
                 if (!ops.length) {
                     finish(null);
-                    return props.onClose();
+                    return close();
                 }
                 setBusy(true);
                 const blob = await toBlob(render(source, ops), type).catch(() => null);
                 if (!blob) {
                     // Don't silently send the unredacted original
                     setBusy(false);
-                    showToast("OpSec: Failed to save image. Try again or \"Send original\".", "failure");
+                    opsecNotify("OpSec: Failed to save image. Try again or \"Send original\".", "error");
                     return;
                 }
                 finish(new File([blob], name, { type: blob.type || type, lastModified: Date.now() }));
-                props.onClose();
+                close();
             };
 
             return (
-                <Modal
-                    {...props}
-                    size="xxl"
-                    title="Edit image"
-                    subtitle={name}
+                <Sheet
+                    header={{ title: "Edit image", subtitle: name, icon: ERASER_ICON, iconColor: OPSEC_COLOR }}
+                    onClose={() => { finish(null); close(); }}
                     actions={[
-                        { text: "Send original", variant: "secondary", onClick: () => { finish(null); props.onClose(); } },
-                        { text: "Apply", variant: "primary", loading: busy, onClick: apply }
+                        { label: "Send original", onClick: () => { finish(null); close(); } },
+                        { label: busy ? "Saving…" : "Apply", disabled: busy, onClick: apply }
                     ]}
                 >
                     <ErrorBoundary>
                         <EditorCanvas source={source} ops={ops} setOps={setOps} redo={redo} setRedo={setRedo} />
                     </ErrorBoundary>
-                </Modal>
+                </Sheet>
             );
         }
 
-        openModal(props => <EditorModal {...props} />, { onCloseCallback: () => finish(null) });
+        openWindow(close => <EditorWindow close={close} />, { size: "large", className: cl("editor-window") });
     });
 }
 
@@ -483,21 +490,19 @@ export function askEdit(name: string, count: number): Promise<boolean> {
                 resolve(v);
             }
         };
-        Alerts.show({
+        confirm({
             title: "Edit image?",
+            icon: ERASER_ICON,
             body: (
                 <div className={classes(cl("link-warning"), "vc-keep-motion")}>
-                    <div className={cl("row-hint")}>
+                    <div className={cl("hint")}>
                         {count > 1 ? `${count} images were added. ` : ""}Crop or redact names, addresses & tokens before uploading?
                     </div>
                     <div className={cl("link-host")}>{name}</div>
                 </div>
             ),
             confirmText: "Edit",
-            cancelText: "Keep original",
-            onConfirm: () => finish(true),
-            onCancel: () => finish(false),
-            onCloseCallback: () => finish(false)
-        });
+            cancelText: "Keep original"
+        }).then(finish, () => finish(false));
     });
 }

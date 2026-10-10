@@ -65,8 +65,13 @@ mkdirSync(USERPLUGINS, { recursive: true });
 const previous = existsSync(MANAGED_FILE) ? JSON.parse(readFileSync(MANAGED_FILE, "utf-8")) : [];
 for (const name of previous) rmSync(join(USERPLUGINS, name), { recursive: true, force: true });
 
-for (const name of plugins) cpSync(join(ROOT, name), join(USERPLUGINS, name), { recursive: true });
-writeFileSync(MANAGED_FILE, JSON.stringify(plugins));
+// Gemeinsame Ordner (beginnen mit "_", Vencord lädt sie nicht als Plugin): z. B. _ui = Apple-UI-Kit aller Plugins
+const shared = readdirSync(ROOT, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^_[a-z]/i.test(d.name))
+    .map(d => d.name);
+
+for (const name of [...plugins, ...shared]) cpSync(join(ROOT, name), join(USERPLUGINS, name), { recursive: true });
+writeFileSync(MANAGED_FILE, JSON.stringify([...plugins, ...shared]));
 
 // Wann jedes Plugin dazukam (PluginHub sortiert danach und zeigt "NEW"):
 // frühestes Datum aus Ordner-Erstellung und erstem Git-Commit

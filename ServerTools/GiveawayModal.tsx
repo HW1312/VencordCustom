@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast, sendMessage } from "@utils/discord";
 import { classes } from "@utils/misc";
-import { ChannelStore, GuildRoleStore, Modal, openModal, showToast, useEffect, useMemo, useRef, useState } from "@webpack/common";
+import { ChannelStore, GuildRoleStore, showToast, useEffect, useMemo, useRef, useState } from "@webpack/common";
 
-import { Button, Card, cl, Icon, LogList, Notice, NumberField, ProgressBar, QueueBadge, Stat, ToggleRow, useJob } from "./components";
+import { Button as UiButton, confirm, openWindow, Pill, Pills, Row, Sheet, Stats } from "../_ui";
+import { Button, Card, cl, Icon, ICON_COLOR, ICONS, LogList, Notice, NumberField, ProgressBar, QueueBadge, ToggleRow, useJob } from "./components";
 import { applyFilters, draw, DrawResult, emojiKey, emojiLabel, emojiUrl, ensureMembers, fetchReactors, formatResult, GiveawayFilters, Participant, ReactionEmoji, verifyScript } from "./giveaway";
 import { describeError, isCancelled } from "./queue";
 
@@ -38,7 +38,6 @@ function GiveawayPanel({ message }: { message: any; }) {
     const [phase, setPhase] = useState<"setup" | "rolling" | "done">("setup");
     const [reel, setReel] = useState({ text: "", n: 0 });
     const [revealed, setRevealed] = useState(0);
-    const [confirmPost, setConfirmPost] = useState(false);
     const [showHow, setShowHow] = useState(false);
     const job = useJob();
 
@@ -101,7 +100,6 @@ function GiveawayPanel({ message }: { message: any; }) {
         timers.current = [];
         setPhase("rolling");
         setRevealed(0);
-        setConfirmPost(false);
 
         const nameOf = (id: string) => names.get(id) ?? id;
         const randomName = () => nameOf(candidates[Math.floor(Math.random() * candidates.length)]);
@@ -154,12 +152,8 @@ function GiveawayPanel({ message }: { message: any; }) {
 
     const resultText = latest && emoji ? formatResult(latest, emoji) : "";
 
-    const post = () => {
-        if (!confirmPost) {
-            setConfirmPost(true);
-            return;
-        }
-        setConfirmPost(false);
+    const post = async () => {
+        if (!await confirm({ title: "Really post?", body: "The result is posted in the channel and pings the winners.", confirmText: "Post in channel" })) return;
         if (resultText.length > 2000) {
             showToast("Result is longer than 2000 characters - please copy it instead", "failure");
             return;
@@ -173,24 +167,25 @@ function GiveawayPanel({ message }: { message: any; }) {
     const setFilter = <K extends keyof GiveawayFilters>(key: K, value: GiveawayFilters[K]) => setFilters(f => ({ ...f, [key]: value }));
 
     if (!reactions.length) {
-        return <div className={cl("modal")}><Notice tone="warn">This message has no reactions.</Notice></div>;
+        return <Notice tone="warn">This message has no reactions.</Notice>;
     }
 
     return (
-        <div className={cl("modal")}>
-            <Card title="Reaction & winners" icon="gift" right={<QueueBadge />}>
-                <div className={cl("emoji-picker")}>
-                    {reactions.map((r, i) => (
-                        <button
-                            key={i}
-                            disabled={locked}
-                            className={classes(cl("emoji-btn"), i === emojiIdx && cl("emoji-btn-active"))}
-                            onClick={() => setEmojiIdx(i)}
-                        >
-                            <EmojiView emoji={{ id: r.emoji.id ?? null, name: r.emoji.name, animated: r.emoji.animated }} />
-                            <span>{r.count}</span>
-                        </button>
-                    ))}
+        <>
+            <Card title="Reaction & winners" right={<QueueBadge />}>
+                <div className={classes(cl("pills"), locked && cl("disabled"))}>
+                    <Pills>
+                        {reactions.map((r, i) => (
+                            <Pill
+                                key={i}
+                                selected={i === emojiIdx}
+                                onClick={locked ? undefined : () => setEmojiIdx(i)}
+                                leading={<EmojiView emoji={{ id: r.emoji.id ?? null, name: r.emoji.name, animated: r.emoji.animated }} size={18} />}
+                            >
+                                {r.count}
+                            </Pill>
+                        ))}
+                    </Pills>
                 </div>
                 <div className={cl("row-inline")}>
                     <span>Number of winners</span>
@@ -198,50 +193,45 @@ function GiveawayPanel({ message }: { message: any; }) {
                 </div>
             </Card>
 
-            <Card title="Filter" icon="shield">
+            <Card title="Filter">
                 <ToggleRow checked={filters.excludeBots} disabled={locked} onChange={v => setFilter("excludeBots", v)} label="Exclude bots" />
                 <ToggleRow checked={filters.excludeSelf} disabled={locked} onChange={v => setFilter("excludeSelf", v)} label="Exclude myself" />
-                <div className={cl("row")}>
-                    <span className={cl("row-text")}>
-                        <span className={cl("row-label")}>Minimum account age</span>
-                        <span className={cl("row-hint")}>Calculated from the user ID (0 = off)</span>
-                    </span>
-                    <NumberField value={filters.minAccountDays} min={0} max={3650} onChange={v => setFilter("minAccountDays", v)} disabled={locked} suffix="days" />
-                </div>
+                <Row
+                    title="Minimum account age"
+                    subtitle="Calculated from the user ID (0 = off)"
+                    trailing={<NumberField value={filters.minAccountDays} min={0} max={3650} onChange={v => setFilter("minAccountDays", v)} disabled={locked} suffix="days" />}
+                />
                 {guildId && (
-                    <div className={cl("row")}>
-                        <span className={cl("row-text")}>
-                            <span className={cl("row-label")}>Minimum time in server</span>
-                            <span className={cl("row-hint")}>Join date from Discord's member cache (0 = off)</span>
-                        </span>
-                        <NumberField value={filters.minMemberDays} min={0} max={3650} onChange={v => setFilter("minMemberDays", v)} disabled={locked} suffix="days" />
-                    </div>
+                    <Row
+                        title="Minimum time in server"
+                        subtitle="Join date from Discord's member cache (0 = off)"
+                        trailing={<NumberField value={filters.minMemberDays} min={0} max={3650} onChange={v => setFilter("minMemberDays", v)} disabled={locked} suffix="days" />}
+                    />
                 )}
                 {guildId && roles.length > 0 && (
-                    <div className={cl("row-block")}>
-                        <span className={cl("row-label")}>Required role (at least one)</span>
-                        <div className={cl("chips")}>
-                            {roles.map((r: any) => {
-                                const active = filters.requiredRoles.includes(r.id);
-                                return (
-                                    <button
-                                        key={r.id}
-                                        disabled={locked}
-                                        className={classes(cl("chip"), active && cl("chip-active"))}
-                                        style={{ "--vc-st-role": r.colorString ?? "var(--text-muted)" } as React.CSSProperties}
-                                        onClick={() => setFilter("requiredRoles", active ? filters.requiredRoles.filter(x => x !== r.id) : [...filters.requiredRoles, r.id])}
-                                    >
-                                        <span className={cl("chip-dot")} />
-                                        {r.name}
-                                    </button>
-                                );
-                            })}
+                    <Row title="Required role (at least one)" align="top">
+                        <div className={classes(cl("pills"), locked && cl("disabled"))}>
+                            <Pills>
+                                {roles.map((r: any) => {
+                                    const active = filters.requiredRoles.includes(r.id);
+                                    return (
+                                        <Pill
+                                            key={r.id}
+                                            selected={active}
+                                            onClick={locked ? undefined : () => setFilter("requiredRoles", active ? filters.requiredRoles.filter(x => x !== r.id) : [...filters.requiredRoles, r.id])}
+                                            leading={<span className={cl("role-dot")} style={{ "--vc-st-role": r.colorString ?? "var(--vc-ui-gray)" } as React.CSSProperties} />}
+                                        >
+                                            {r.name}
+                                        </Pill>
+                                    );
+                                })}
+                            </Pills>
                         </div>
-                    </div>
+                    </Row>
                 )}
             </Card>
 
-            <Card title="Participants" icon="table">
+            <Card title="Participants">
                 {!loaded && !job.state.running && (
                     <div className={cl("hint")}>
                         Loads all {reaction?.count ?? ""} reactions (100 per request, throttled). The draw only happens afterwards.
@@ -251,11 +241,11 @@ function GiveawayPanel({ message }: { message: any; }) {
                 <LogList entries={job.state.log.filter(e => e.kind !== "ok")} />
                 {filtered && (
                     <>
-                        <div className={cl("stats")}>
-                            <Stat label="Reactions" value={participants!.length} />
-                            <Stat label="Valid" value={filtered.eligible.length} />
-                            <Stat label="Excluded" value={participants!.length - filtered.eligible.length} />
-                        </div>
+                        <Stats items={[
+                            { label: "Reactions", value: participants!.length },
+                            { label: "Valid", value: filtered.eligible.length, color: "green" },
+                            { label: "Excluded", value: participants!.length - filtered.eligible.length }
+                        ]} />
                         {Object.keys(filtered.excluded).length > 0 && (
                             <ul className={cl("notes")}>
                                 {Object.entries(filtered.excluded).map(([reason, n]) => <li key={reason}>{reason}: {n}</li>)}
@@ -286,7 +276,7 @@ function GiveawayPanel({ message }: { message: any; }) {
             </Card>
 
             {latest && (
-                <Card title={latest.round > 1 ? `Redraw ${latest.round - 1}` : "Draw"} icon="dice">
+                <Card title={latest.round > 1 ? `Redraw ${latest.round - 1}` : "Draw"}>
                     <div className={classes(cl("slot"), phase === "rolling" && cl("slot-rolling"), phase === "done" && cl("slot-done"))}>
                         <div className={cl("slot-window")}>
                             <span key={reel.n} className={cl("slot-name")}>{reel.text}</span>
@@ -314,17 +304,17 @@ function GiveawayPanel({ message }: { message: any; }) {
 
                             <div className={cl("actions")}>
                                 <Button icon="copy" variant="ghost" onClick={() => copyWithToast(resultText, "Result copied")}>Copy result</Button>
-                                <Button icon="send" variant={confirmPost ? "danger" : "primary"} onClick={post}>
-                                    {confirmPost ? "Really post? (pings the winners)" : "Post in channel"}
-                                </Button>
+                                <Button icon="send" onClick={post}>Post in channel</Button>
                                 <Button icon="refresh" variant="ghost" disabled={pool.length === 0} title="New draw excluding previous winners" onClick={() => doDraw(true)}>
                                     Redraw
                                 </Button>
                             </div>
 
-                            <button className={cl("link")} onClick={() => setShowHow(v => !v)}>
-                                {showHow ? "▾" : "▸"} How to verify it
-                            </button>
+                            <div>
+                                <UiButton variant="plain" small onClick={() => setShowHow(v => !v)}>
+                                    {showHow ? "▾" : "▸"} How to verify it
+                                </UiButton>
+                            </div>
                             {showHow && (
                                 <div className={cl("how")}>
                                     <ol>
@@ -358,17 +348,15 @@ function GiveawayPanel({ message }: { message: any; }) {
                     )}
                 </Card>
             )}
-            {emoji && <div className={cl("muted")}>Message {message.id} · Reaction <EmojiView emoji={emoji} size={14} /> · <Icon name="shield" size={12} /> nothing is posted automatically</div>}
-        </div>
+            {emoji && <div className={cl("footnote")}>Message {message.id} · Reaction <EmojiView emoji={emoji} size={14} /> · <Icon name="shield" size={12} /> nothing is posted automatically</div>}
+        </>
     );
 }
 
 export function openGiveawayModal(message: any) {
-    openModal(props => (
-        <Modal {...props} size="md" title="Draw giveaway" subtitle="Fair, verifiable and without a bot">
-            <ErrorBoundary>
-                <GiveawayPanel message={message} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => (
+        <Sheet header={{ title: "Draw giveaway", subtitle: "Fair, verifiable and without a bot", icon: ICONS.gift, iconColor: ICON_COLOR }} onClose={close}>
+            <GiveawayPanel message={message} />
+        </Sheet>
+    ), { size: "medium" });
 }

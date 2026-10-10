@@ -1,6 +1,12 @@
+/* ToolbarManager – only the toolbar editor; windows, lists, buttons, fields come from the shared _ui kit */
+
 /* Wrapper around Vencord chat buttons: itself invisible to the layout */
 .vc-toolbarmanager-contents {
     display: contents;
+}
+
+.vc-toolbarmanager-svg {
+    display: block;
 }
 
 /* ---------- ⋯ button in title bar ---------- */
@@ -10,73 +16,14 @@
     -webkit-app-region: no-drag;
 }
 
-.vc-toolbarmanager-dock .vc-toolbarmanager-dock-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-}
+/* ---------- Bar editor: zones & tiles ---------- */
 
-.vc-toolbarmanager-dock:hover .vc-toolbarmanager-dock-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-}
-
-/* ---------- Settings ---------- */
-
-.vc-toolbarmanager-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-}
-
-.vc-toolbarmanager-hint {
-    font-size: 13px;
-    line-height: 1.4;
-    padding: 8px 10px;
-    border-radius: 8px;
-    color: var(--text-muted);
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-}
-
-.vc-toolbarmanager-muted {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-toolbarmanager-empty {
-    font-size: 13px;
-    color: var(--text-muted);
-    padding: 6px 0;
-}
-
-.vc-toolbarmanager-card {
+.vc-toolbarmanager-editor {
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
 }
-
-.vc-toolbarmanager-card-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--text-muted);
-}
-
-.vc-toolbarmanager-count {
-    padding: 0 6px;
-    border-radius: 8px;
-    font-size: 11px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-}
-
-/* ---------- Bar editor: zones & tiles ---------- */
 
 .vc-toolbarmanager-icon {
     flex-shrink: 0;
@@ -85,7 +32,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--interactive-icon-default, var(--interactive-normal));
+    color: var(--vc-ui-text);
 }
 
 .vc-toolbarmanager-icon svg {
@@ -94,10 +41,10 @@
 }
 
 .vc-toolbarmanager-icon-letter {
-    border-radius: 50%;
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 700;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    background: var(--vc-ui-field);
 }
 
 /* One zone = label on the left, row of tiles on the right */
@@ -110,8 +57,8 @@
 
 .vc-toolbarmanager-zone-label {
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-weight: 500;
+    color: var(--vc-ui-dim);
 }
 
 /* Looks like the real bar: wraps instead of overflowing */
@@ -123,27 +70,27 @@
     min-height: 44px;
     padding: 4px 6px;
     box-sizing: border-box;
-    border-radius: 8px;
-    border: 1px dashed transparent;
-    background: var(--background-base-lower, var(--background-secondary));
-    transition: border-color 0.1s, background 0.1s;
+    border-radius: 10px;
+    border: 0.5px dashed transparent;
+    background: var(--vc-ui-field);
+    transition: border-color 0.15s var(--vc-ui-ease), background 0.15s var(--vc-ui-ease);
 }
 
 .vc-toolbarmanager-zone-row-menu,
 .vc-toolbarmanager-zone-row-hidden {
-    border-color: var(--border-subtle, var(--background-modifier-accent));
+    border-color: var(--vc-ui-edge);
     background: transparent;
 }
 
 .vc-toolbarmanager-zone-row-over {
-    border-color: var(--brand-500, #5865f2);
-    background: var(--background-modifier-hover, rgb(88 101 242 / 8%));
+    border: 1px dashed var(--vc-ui-blue);
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-toolbarmanager-zone-empty {
     padding: 0 4px;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     pointer-events: none;
 }
 
@@ -156,18 +103,19 @@
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 6px;
+    border-radius: 9px;
     background: transparent;
     cursor: grab;
+    transition: background 0.15s var(--vc-ui-ease);
 }
 
 .vc-toolbarmanager-tile:hover,
 .vc-toolbarmanager-tile:focus-visible {
-    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-toolbarmanager-tile:hover .vc-toolbarmanager-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
+    color: var(--vc-ui-title);
 }
 
 .vc-toolbarmanager-tile:active {
@@ -188,13 +136,13 @@
     height: 2px;
     border-radius: 1px;
     transform: rotate(-45deg);
-    background: var(--status-danger, #f23f43);
+    background: var(--vc-ui-red);
     pointer-events: none;
 }
 
 /* Not currently in Discord's DOM */
 .vc-toolbarmanager-tile-absent {
-    outline: 1px dashed var(--text-muted);
+    outline: 1px dashed var(--vc-ui-dim);
     outline-offset: -3px;
 }
 
@@ -211,7 +159,7 @@
     bottom: 3px;
     width: 2px;
     border-radius: 1px;
-    background: var(--brand-500, #5865f2);
+    background: var(--vc-ui-blue);
     pointer-events: none;
 }
 
@@ -238,129 +186,17 @@
     opacity: 0.7;
 }
 
-.vc-toolbarmanager-row-name {
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+/* ---------- Profiles & quick menu ---------- */
 
-.vc-toolbarmanager-icon-btn {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 11px;
-    cursor: pointer;
-}
-
-.vc-toolbarmanager-icon-btn:hover:not(:disabled) {
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
-}
-
-.vc-toolbarmanager-icon-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-
-.vc-toolbarmanager-icon-btn-danger:hover:not(:disabled) {
-    color: var(--status-danger, #f23f43);
-}
-
-/* ---------- Segmented control ---------- */
-
-.vc-toolbarmanager-segmented {
-    display: flex;
-    flex-shrink: 0;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 8px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-}
-
-.vc-toolbarmanager-segment {
-    flex: 1;
-    padding: 4px 8px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.vc-toolbarmanager-segment:hover {
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-toolbarmanager-segment-visible {
-    background: var(--brand-500, #5865f2);
-    color: #fff !important;
-}
-
-/* ---------- Profiles ---------- */
-
-.vc-toolbarmanager-profiles,
-.vc-toolbarmanager-save-row,
-.vc-toolbarmanager-custom-profile {
+.vc-toolbarmanager-profiles {
     display: flex;
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+    padding: 10px 12px;
+    border-bottom: 0.5px solid var(--vc-ui-sep);
 }
 
-.vc-toolbarmanager-custom-profiles {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.vc-toolbarmanager-custom-profile .vc-toolbarmanager-row-name {
-    flex: 1;
-}
-
-.vc-toolbarmanager-btn {
-    padding: 5px 12px;
-    border: none;
-    border-radius: 6px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-    color: var(--text-default, var(--text-normal));
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-toolbarmanager-btn:hover:not(:disabled) {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-}
-
-.vc-toolbarmanager-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-
-.vc-toolbarmanager-btn-danger:hover:not(:disabled) {
-    background: var(--status-danger, #f23f43);
-}
-
-.vc-toolbarmanager-input {
-    flex: 1;
-    min-width: 160px;
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-base-lowest, var(--background-tertiary));
-    color: var(--text-default, var(--text-normal));
-    font-size: 13px;
-}
-
-.vc-toolbarmanager-svg {
-    display: block;
+.vc-toolbarmanager-segmented {
+    padding: 8px;
 }

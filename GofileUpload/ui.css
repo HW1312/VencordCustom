@@ -1,3 +1,5 @@
+/* GofileUpload – upload progress cards (bottom right); colors from the shared _ui tokens */
+
 .vc-gofile-stack {
     position: fixed;
     right: 16px;
@@ -12,11 +14,14 @@
 
 .vc-gofile-card {
     pointer-events: auto;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--background-floating, #111214);
-    box-shadow: var(--elevation-high, 0 8px 16px rgb(0 0 0 / 24%));
-    color: var(--text-normal, #dbdee1);
+    padding: 11px 14px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 18px;
+    background: var(--vc-ui-glass-strong);
+    backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: var(--vc-ui-shadow);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
     font-size: 13px;
 }
 
@@ -32,49 +37,57 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 600;
+    color: var(--vc-ui-title);
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .vc-gofile-cancel {
+    display: grid;
     flex: none;
-    padding: 0 4px;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
     border: none;
-    background: none;
-    color: var(--interactive-normal, #b5bac1);
-    font-size: 16px;
-    line-height: 1;
+    border-radius: 50%;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-dim);
     cursor: pointer;
+    transition: color 0.15s, background 0.15s;
 }
 
 .vc-gofile-cancel:hover {
-    color: var(--interactive-hover, #fff);
+    background: var(--vc-ui-group-active);
+    color: var(--vc-ui-title);
 }
 
 .vc-gofile-status {
-    margin-top: 4px;
-    color: var(--text-muted, #949ba4);
+    margin-top: 3px;
+    color: var(--vc-ui-dim);
     font-size: 12px;
 }
 
 .vc-gofile-bar {
     height: 4px;
-    margin-top: 6px;
+    margin-top: 8px;
     overflow: hidden;
     border-radius: 2px;
-    background: var(--background-modifier-accent, rgb(255 255 255 / 10%));
+    background: var(--vc-ui-track);
 }
 
 .vc-gofile-fill {
     width: 0;
     height: 100%;
-    background: var(--brand-500, #5865f2);
+    border-radius: 2px;
+    background: var(--vc-ui-blue);
     transition: width 0.2s linear;
 }
 
 .vc-gofile-card[data-state="error"] .vc-gofile-fill {
-    background: var(--status-danger, #da373c);
+    background: var(--vc-ui-red);
 }
 
 .vc-gofile-card[data-state="done"] .vc-gofile-fill {
-    background: var(--status-positive, #23a55a);
+    background: var(--vc-ui-green);
 }

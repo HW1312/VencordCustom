@@ -4,13 +4,13 @@
  */
 
 import { openUserProfile } from "@utils/discord";
-import { classes } from "@utils/misc";
 import {
     GuildStore, RelationshipStore, showToast, useMemo, UserProfileStore,
     UserStore, useState, useStateFromStores
 } from "@webpack/common";
 
-import { Avatar, Button, Checkbox, Chip, cl, ConfirmItem, Icon, JobBar, Notice, NumberField, openConfirm, QueueBadge, Segmented, useJob } from "./components";
+import { Avatar, Badge, Button, Empty, Glyph, Group, IconButton, Note, Pill, Pills, Row, SearchField, Section, Segmented, Select } from "../_ui";
+import { APP_COLOR, Check, cl, ConfirmItem, ICONS, JobBar, NumberField, openConfirm, QueueBadge, TONE_COLOR, useJob } from "./components";
 import { acceptRequest, collectRequests, loadMutual, mutualCache, mutualTotal, relative, removeRequest, RequestEntry } from "./data";
 import { settings } from "./index";
 import { describeError, INTERVAL, isCancelled } from "./queue";
@@ -46,12 +46,12 @@ function scoreTone(score: number) {
 // ---------------------------------------------------------------- Row
 
 function MutualCell({ r, onLoad, busy }: { r: RequestEntry; onLoad(): void; busy: boolean; }) {
-    if (r.mutual === "error") return <button className={cl("link")} disabled={busy} onClick={onLoad} title="Failed to load - try again">Error · retry</button>;
-    if (!r.mutual) return <button className={cl("link")} disabled={busy} onClick={onLoad}>load</button>;
+    if (r.mutual === "error") return <Button small variant="plain" color="red" disabled={busy} onClick={onLoad} title="Failed to load - try again">Error · retry</Button>;
+    if (!r.mutual) return <Button small variant="plain" disabled={busy} onClick={onLoad}>load</Button>;
     const { guilds, friends } = r.mutual;
     const title = guilds.length ? guilds.map(g => guildName(g.id)).join("\n") : "No mutual servers";
     return (
-        <span className={classes(cl("mutual"), !guilds.length && !friends && cl("text-warn"))} title={title}>
+        <span className={!guilds.length && !friends ? cl("warn") : cl("dim")} title={title}>
             {guilds.length} servers · {friends} friends
         </span>
     );
@@ -68,37 +68,39 @@ function RequestRow({ r, selected, onSelect, onAccept, onRemove, onLoad, busy }:
 }) {
     const young = r.ageDays < settings.store.spamAccountDays;
     return (
-        <div className={classes(cl("item"), selected && cl("item-selected"))} onClick={() => onSelect(!selected)}>
-            <Checkbox checked={selected} onChange={onSelect} />
-            <Avatar src={r.avatar} name={r.name} />
-            <div className={cl("item-main")}>
-                <div className={cl("item-title")}>
-                    <span className={cl("ellipsis")}>{r.name}</span>
-                    <span className={cl("muted")}>@{r.username}</span>
-                </div>
-                <div className={cl("item-sub")}>
-                    {r.reasons.map(x => <Chip key={x.id} tone={x.tone}>{x.label}</Chip>)}
-                    {!r.reasons.length && <Chip tone="good">Looks fine</Chip>}
-                </div>
-            </div>
-            <div className={cl("item-date")}>
-                <span className={classes(young && cl("text-warn"))} title={`Account created on ${new Date(r.createdAt).toLocaleString()}`}>{ageLabel(r.ageDays)}</span>
-                <span className={cl("muted")} title={r.since ? new Date(r.since).toLocaleString() : undefined}>
-                    {r.since ? `Requested ${relative(r.since)}` : "Date unknown"}
+        <Row
+            className={selected ? cl("selected") : undefined}
+            onClick={() => onSelect(!selected)}
+            leading={<>
+                <Check checked={selected} onChange={onSelect} />
+                <Avatar src={r.avatar} size={36} />
+            </>}
+            title={<span className={cl("title")}>
+                <span className={cl("ellipsis")}>{r.name}</span>
+                <span className={cl("dim")}>@{r.username}</span>
+            </span>}
+            subtitle={<span className={cl("sub")}>
+                {r.reasons.map(x => <Badge key={x.id} color={TONE_COLOR[x.tone]}>{x.label}</Badge>)}
+                {!r.reasons.length && <Badge color="green">Looks fine</Badge>}
+            </span>}
+            trailing={<>
+                <span className={cl("date")}>
+                    <span className={young ? cl("warn") : undefined} title={`Account created on ${new Date(r.createdAt).toLocaleString()}`}>{ageLabel(r.ageDays)}</span>
+                    <span className={cl("dim")} title={r.since ? new Date(r.since).toLocaleString() : undefined}>
+                        {r.since ? `Requested ${relative(r.since)}` : "Date unknown"}
+                    </span>
                 </span>
-            </div>
-            <div className={cl("item-mutual")} onClick={e => e.stopPropagation()}>
-                <MutualCell r={r} onLoad={onLoad} busy={busy} />
-            </div>
-            <span className={classes(cl("score"), cl(`score-${scoreTone(r.score)}`))} title="Spam score (0-100)">{r.score}</span>
-            <div className={cl("item-actions")} onClick={e => e.stopPropagation()}>
-                {r.incoming && <Button small variant="success" icon="check" disabled={busy} onClick={onAccept}>Accept</Button>}
-                <Button small variant="ghost" icon="close" disabled={busy} onClick={onRemove}>{r.incoming ? "Ignore" : "Withdraw"}</Button>
-                <button className={cl("icon-btn")} title="Open profile" onClick={() => openUserProfile(r.id).catch(() => showToast("Could not open profile", "failure"))}>
-                    <Icon name="person" size={16} />
-                </button>
-            </div>
-        </div>
+                <span className={cl("mutual")} onClick={e => e.stopPropagation()}>
+                    <MutualCell r={r} onLoad={onLoad} busy={busy} />
+                </span>
+                <Badge color={TONE_COLOR[scoreTone(r.score)]} solid title="Spam score (0-100)">{r.score}</Badge>
+                <span className={cl("row-actions")} onClick={e => e.stopPropagation()}>
+                    {r.incoming && <Button small variant="tinted" color="green" icon={ICONS.check} disabled={busy} onClick={onAccept}>Accept</Button>}
+                    <Button small variant="gray" icon={ICONS.close} disabled={busy} onClick={onRemove}>{r.incoming ? "Ignore" : "Withdraw"}</Button>
+                    <IconButton icon={ICONS.person} label="Open profile" onClick={() => openUserProfile(r.id).catch(() => showToast("Could not open profile", "failure"))} />
+                </span>
+            </>}
+        />
     );
 }
 
@@ -208,7 +210,7 @@ export function RequestsTab() {
                     {accept
                         ? <div>Everyone listed below will be added to your friends.</div>
                         : <div>The requests will be removed. These people won't be notified, but they can send you a request again.</div>}
-                    <div className={cl("muted")}>Throttled to ~1 action / {INTERVAL.relationship / 1000} s, takes about {seconds} s. Can be cancelled at any time.</div>
+                    <div className={cl("dim")}>Throttled to ~1 action / {INTERVAL.relationship / 1000} s, takes about {seconds} s. Can be cancelled at any time.</div>
                 </>
             ),
             items: list.map(toItem),
@@ -240,114 +242,124 @@ export function RequestsTab() {
     const suspicious = current.filter(r => r.score >= 60).length;
 
     return (
-        <div className={cl("tab")}>
+        <>
             <div className={cl("toolbar")}>
-                <Segmented<Dir> value={dir} onChange={switchDir} options={[
-                    { value: "in", label: `Incoming · ${incoming.length}` },
-                    { value: "out", label: `Outgoing · ${outgoing.length}` }
+                <Segmented<Dir> small value={dir} onChange={switchDir} options={[
+                    { value: "in", label: "Incoming", count: incoming.length },
+                    { value: "out", label: "Outgoing", count: outgoing.length }
                 ]} />
-                <span className={cl("spacer")} />
+                <span className={cl("grow")} />
                 <QueueBadge />
             </div>
 
             <div className={cl("quick")}>
-                <div className={cl("quick-card")}>
-                    <Icon name="warning" size={20} />
-                    <div className={cl("quick-body")}>
-                        <b>{suspicious} suspicious</b>
-                        <span className={cl("muted")}>Spam score ≥ 60</span>
-                    </div>
-                    <Button small variant="ghost" disabled={!suspicious} onClick={() => addSel(current.filter(r => r.score >= 60), "Score ≥ 60")}>Select</Button>
-                </div>
-                <div className={cl("quick-card")}>
-                    <Icon name="person" size={20} />
-                    <div className={cl("quick-body")}>
-                        <b>{young} new accounts</b>
-                        <span className={cl("muted")}>{noAvatar} without avatar</span>
-                    </div>
-                </div>
-                <div className={cl("quick-card")}>
-                    <Icon name="group" size={20} />
-                    <div className={cl("quick-body")}>
-                        <b>{current.length - unloaded.length}/{current.length} checked</b>
-                        <span className={cl("muted")}>Mutuals</span>
-                    </div>
-                    <Button small variant="ghost" icon="refresh" disabled={busy || !unloaded.length} onClick={loadAll}
-                        title={`~${Math.ceil(unloaded.length * INTERVAL.profile / 1000)} s, throttled`}>
-                        {unloaded.length ? `Load ${unloaded.length}` : "All loaded"}
-                    </Button>
-                </div>
+                <Group>
+                    <Row
+                        leading={<Glyph path={ICONS.warning} color="red" />}
+                        title={`${suspicious} suspicious`}
+                        subtitle="Spam score ≥ 60"
+                        trailing={<Button small variant="gray" disabled={!suspicious} onClick={() => addSel(current.filter(r => r.score >= 60), "Score ≥ 60")}>Select</Button>}
+                    />
+                </Group>
+                <Group>
+                    <Row
+                        leading={<Glyph path={ICONS.person} color="orange" />}
+                        title={`${young} new accounts`}
+                        subtitle={`${noAvatar} without avatar`}
+                    />
+                </Group>
+                <Group>
+                    <Row
+                        leading={<Glyph path={ICONS.group} color={APP_COLOR} />}
+                        title={`${current.length - unloaded.length}/${current.length} checked`}
+                        subtitle="Mutuals"
+                        trailing={
+                            <Button small variant="gray" icon={ICONS.refresh} disabled={busy || !unloaded.length} onClick={loadAll}
+                                title={`~${Math.ceil(unloaded.length * INTERVAL.profile / 1000)} s, throttled`}>
+                                {unloaded.length ? `Load ${unloaded.length}` : "All loaded"}
+                            </Button>
+                        }
+                    />
+                </Group>
             </div>
 
             <JobBar job={job} />
 
             <div className={cl("toolbar")}>
-                <div className={cl("search")}>
-                    <Icon name="search" size={16} />
-                    <input className={cl("search-input")} placeholder="Name, username or ID ..." value={query} onChange={e => setQuery(e.currentTarget.value)} />
-                </div>
-                <Segmented<Sort> value={sort} options={SORTS} onChange={setSort} />
+                <SearchField className={cl("grow")} placeholder="Name, username or ID ..." value={query} onChange={setQuery} />
+                <Segmented<Sort> small value={sort} options={SORTS} onChange={setSort} />
             </div>
 
-            <div className={cl("filterbox")}>
-                <span className={cl("filter-title")}>Select by filter</span>
-                <button className={cl("chip-btn")} onClick={() => addSel(current.filter(r => r.mutual && r.mutual !== "error" && mutualTotal(r.mutual) === 0), "without mutuals")}
-                    title="Only requests whose mutuals are already loaded">
-                    All without mutual friends/servers
-                </button>
-                <span className={cl("chip-group")}>
-                    <button className={cl("chip-btn")} onClick={() => addSel(current.filter(r => r.ageDays < youngerThan), `younger than ${youngerThan} days`)}>Accounts younger than</button>
-                    <NumberField value={youngerThan} min={1} max={3650} onChange={setYoungerThan} suffix="days" />
-                </span>
-                <span className={cl("chip-group")}>
-                    <select className={cl("select")} value={guildFilter} onChange={e => setGuildFilter(e.currentTarget.value)} disabled={!guildOptions.length}>
-                        <option value="">{guildOptions.length ? "Select server ..." : "Server: load mutuals first"}</option>
-                        {guildOptions.map(g => <option key={g.id} value={g.id}>{g.name} ({g.n})</option>)}
-                    </select>
-                    <button className={cl("chip-btn")} disabled={!guildFilter}
-                        onClick={() => addSel(current.filter(r => r.mutual && r.mutual !== "error" && r.mutual.guilds.some(g => g.id === guildFilter)), `from ${guildName(guildFilter)}`)}>
-                        All from this server
-                    </button>
-                </span>
-            </div>
+            <Section title="Select by filter">
+                <div className={cl("filters")}>
+                    <Pills>
+                        <Pill onClick={() => addSel(current.filter(r => r.mutual && r.mutual !== "error" && mutualTotal(r.mutual) === 0), "without mutuals")}
+                            title="Only requests whose mutuals are already loaded">
+                            All without mutual friends/servers
+                        </Pill>
+                    </Pills>
+                    <span className={cl("filter-group")}>
+                        <Pill onClick={() => addSel(current.filter(r => r.ageDays < youngerThan), `younger than ${youngerThan} days`)}>Accounts younger than</Pill>
+                        <NumberField value={youngerThan} min={1} max={3650} onChange={setYoungerThan} suffix="days" />
+                    </span>
+                    <span className={cl("filter-group")}>
+                        <Select<string>
+                            value={guildFilter}
+                            onChange={setGuildFilter}
+                            disabled={!guildOptions.length}
+                            width={220}
+                            options={[
+                                { value: "", label: guildOptions.length ? "Select server ..." : "Server: load mutuals first" },
+                                ...guildOptions.map(g => ({ value: g.id, label: `${g.name} (${g.n})` }))
+                            ]}
+                        />
+                        <Button small variant="gray" disabled={!guildFilter}
+                            onClick={() => addSel(current.filter(r => r.mutual && r.mutual !== "error" && r.mutual.guilds.some(g => g.id === guildFilter)), `from ${guildName(guildFilter)}`)}>
+                            All from this server
+                        </Button>
+                    </span>
+                </div>
+            </Section>
 
             <div className={cl("selbar")}>
-                <span className={cl("muted")}>{selectedEntries.length} selected</span>
-                <button className={cl("link")} onClick={() => setSelected(new Set(visible.map(r => r.id)))}>Select visible</button>
-                <button className={cl("link")} onClick={() => setSelected(new Set())}>Clear selection</button>
-                <span className={cl("spacer")} />
+                <span className={cl("dim")}>{selectedEntries.length} selected</span>
+                <Button small variant="plain" onClick={() => setSelected(new Set(visible.map(r => r.id)))}>Select visible</Button>
+                <Button small variant="plain" onClick={() => setSelected(new Set())}>Clear selection</Button>
+                <span className={cl("grow")} />
                 {dir === "in" && (
-                    <Button small variant="success" icon="check" disabled={!selectedEntries.length || busy} onClick={() => bulk(true)}>
+                    <Button small variant="tinted" color="green" icon={ICONS.check} disabled={!selectedEntries.length || busy} onClick={() => bulk(true)}>
                         Accept ({selectedEntries.length})
                     </Button>
                 )}
-                <Button small variant="danger" icon="close" disabled={!selectedEntries.length || busy} onClick={() => bulk(false)}>
+                <Button small variant="destructive" icon={ICONS.close} disabled={!selectedEntries.length || busy} onClick={() => bulk(false)}>
                     {dir === "in" ? "Ignore" : "Withdraw"} ({selectedEntries.length})
                 </Button>
             </div>
 
             {dir === "in" && unloaded.length > 0 && current.length > 0 && (
-                <Notice tone="info">
+                <Note>
                     “No mutuals” only counts toward the spam score once the profiles are loaded. This only happens on click and is throttled (~1 profile / {INTERVAL.profile / 1000} s).
-                </Notice>
+                </Note>
             )}
 
-            <div className={cl("list")}>
-                {visible.map(r => (
-                    <RequestRow
-                        key={r.id}
-                        r={r}
-                        busy={busy}
-                        selected={selected.has(r.id)}
-                        onSelect={v => setSel(r.id, v)}
-                        onAccept={() => single(r, true)}
-                        onRemove={() => single(r, false)}
-                        onLoad={() => loadOne(r)}
-                    />
-                ))}
-                {!visible.length && <div className={cl("empty")}>{current.length ? "No matches." : dir === "in" ? "No pending requests." : "No outgoing requests."}</div>}
-            </div>
-            <div className={cl("muted")}>Accounts younger than {spamAccountDays} days are highlighted in yellow. Request date according to Discord (RelationshipStore).</div>
-        </div>
+            {visible.length > 0
+                ? (
+                    <Section footer={`Accounts younger than ${spamAccountDays} days are highlighted in yellow. Request date according to Discord (RelationshipStore).`}>
+                        {visible.map(r => (
+                            <RequestRow
+                                key={r.id}
+                                r={r}
+                                busy={busy}
+                                selected={selected.has(r.id)}
+                                onSelect={v => setSel(r.id, v)}
+                                onAccept={() => single(r, true)}
+                                onRemove={() => single(r, false)}
+                                onLoad={() => loadOne(r)}
+                            />
+                        ))}
+                    </Section>
+                )
+                : <Empty icon={ICONS.personAdd} title={current.length ? "No matches." : dir === "in" ? "No pending requests." : "No outgoing requests."} />}
+        </>
     );
 }

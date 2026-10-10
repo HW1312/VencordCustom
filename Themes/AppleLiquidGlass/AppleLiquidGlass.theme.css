@@ -1,7 +1,7 @@
 /**
  * @name Apple Liquid Glass
  * @author 5406
- * @version 1.1.1
+ * @version 1.1.2
  * @description Dark, frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window.
  */
 
@@ -485,8 +485,22 @@ html.custom-theme-background #app-mount {
     background-color: var(--alg-background-color);
 }
 
+/* Content area gets the same tinted glass as the channel / DM list, so the whole window matches */
 html.custom-theme-background :is([class^="page_"], [class*=" page_"]) {
-    background: rgba(28, 28, 30, 0.8);
+    background: var(--alg-glass-tint);
+}
+
+/* Friends page: its own opaque layers would cover the tint */
+html.custom-theme-background :is([class^="page_"], [class*=" page_"]) :is([class^="container_"], [class*=" container_"]):has(> :is([class^="tabBody_"], [class*=" tabBody_"])),
+html.custom-theme-background :is([class^="tabBody_"], [class*=" tabBody_"]),
+html.custom-theme-background :is([class^="container_"], [class*=" container_"]):has(> :is([class^="membersWrap_"], [class*=" membersWrap_"])),
+html.custom-theme-background :is([class^="membersWrap_"], [class*=" membersWrap_"]) > :is([class^="container_"], [class*=" container_"]),
+html.custom-theme-background :is([class^="nowPlayingColumn_"], [class*=" nowPlayingColumn_"]) {
+    background: transparent;
+}
+
+html.custom-theme-background :is([class^="nowPlayingColumn_"], [class*=" nowPlayingColumn_"]) :is([class^="itemCard_"], [class*=" itemCard_"]) {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 html.custom-theme-background :is([class^="callContainer_"], [class*=" callContainer_"]) {
@@ -676,8 +690,10 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
     background-color: var(--alg-fill-2);
 }
 
-/* DM list: transparent, the channel list panel already provides the glass */
-:is([class^="privateChannels_"], [class*=" privateChannels_"]) {
+/* DM list: transparent, the channel list panel already provides the glass.
+   Its scroller paints the opaque lowest background on its own, which turned the list black. */
+:is([class^="privateChannels_"], [class*=" privateChannels_"]),
+:is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="scroller_"], [class*=" scroller_"]) {
     background: transparent;
 }
 
@@ -1125,6 +1141,40 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 :is([class^="menu_"], [class*=" menu_"])[role="menu"] {
     border-radius: var(--alg-radius-md);
     padding: 5px 0;
+}
+
+/* Custom profile colors put a light scope (.theme-light) around profiles and their menus/tooltips.
+   Those stay dark glass in this theme, so they need the dark theme's light text back, or it turns
+   dark-on-dark. */
+.theme-light :is([role="menu"], [role="tooltip"]),
+:is([role="menu"], [role="tooltip"]).theme-light,
+.theme-light :is([class^="layer_"], [class*=" layer_"]) [role="menu"] {
+    color-scheme: dark;
+    color: var(--alg-text-primary);
+    --text-default: var(--alg-text-primary);
+    --text-normal: var(--alg-text-primary);
+    --text-strong: #ffffff;
+    --text-muted: var(--alg-text-secondary);
+    --text-subtle: var(--alg-text-secondary);
+    --header-primary: var(--alg-text-primary);
+    --header-secondary: var(--alg-text-secondary);
+    --interactive-normal: var(--alg-text-primary);
+    --interactive-hover: #ffffff;
+    --interactive-active: #ffffff;
+    --interactive-muted: var(--alg-text-tertiary);
+    --interactive-text-default: var(--alg-text-primary);
+    --interactive-text-hover: #ffffff;
+    --interactive-text-active: #ffffff;
+    --interactive-icon-default: var(--alg-text-secondary);
+    --interactive-icon-hover: #ffffff;
+    --interactive-icon-active: #ffffff;
+    --icon-default: var(--alg-text-secondary);
+    --icon-strong: var(--alg-text-primary);
+    --icon-muted: var(--alg-text-tertiary);
+    --text-feedback-critical: #ff6961;
+    --status-danger: #ff453a;
+    --text-danger: #ff6961;
+    --control-critical-secondary-text-default: #ff6961;
 }
 
 [role="menu"] [role="menuitem"],

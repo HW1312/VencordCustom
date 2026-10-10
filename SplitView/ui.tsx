@@ -7,17 +7,18 @@ import "./ui.css";
 
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
 import { getCurrentChannel } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
 import { createRoot, Popout, ReactDOM, useEffect, useLayoutEffect, useReducer, useRef, useState } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
+import { AppIcon, Avatar, Icon, IconButton, ICONS, LinkRow, Popover, Row, Section, Sheet, ToggleRow, UiColor } from "../_ui";
 import { closePanel, DEFAULT_WIDTH, MAX_PANELS, MIN_WIDTH, openPanel, parsePanels, parseWidths, setPanelWidth, settings, toggleVisible } from "./index";
-import { CLOSE_PATH, Icon, openInMain, Panel, useChannelInfo } from "./panel";
+import { openInMain, Panel, useChannelInfo } from "./panel";
 
 const cl = classNameFactory("vc-splitview-");
+export const ICON_COLOR: UiColor = "indigo";
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
 export const SPLIT_PATH = "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Zm2 0v14h7V5H5Zm9 0v14h5V5h-5Z";
@@ -70,7 +71,7 @@ function DropZone({ full }: { full: boolean; }) {
                 if (info) openPanel(info.channelId, info.guildId);
             }}
         >
-            <Icon path={SPLIT_PATH} size={36} />
+            <AppIcon path={SPLIT_PATH} color={ICON_COLOR} size={48} />
             <div className={cl("dropzone-title")}>{full ? `Maximum of ${MAX_PANELS} panels` : "Drop here"}</div>
             <div className={cl("dropzone-sub")}>{full ? "Close a panel first" : "Open channel in SplitView"}</div>
         </div>
@@ -247,80 +248,66 @@ function PanelRow({ channelId }: { channelId: string; }) {
     const guildId = info.channel?.guild_id ?? null;
 
     return (
-        <div className={cl("list-row")}>
-            {info.icon
-                ? <img className={cl("list-icon")} src={info.icon} alt="" />
-                : <div className={classes(cl("list-icon"), cl("header-icon-text"))}>{(info.subtitle || info.name || "?").slice(0, 1)}</div>}
-            <div className={cl("list-text")} onClick={() => openInMain(channelId, guildId)} title="Open in main window">
-                <div className={cl("list-name")}>{info.prefix}{info.name}</div>
-                {info.subtitle && <div className={cl("list-sub")}>{info.subtitle}</div>}
-            </div>
-            <button className={classes(cl("icon-btn"), cl("icon-btn-danger"))} title="Close" aria-label="Close" onClick={() => closePanel(channelId)}>
-                <Icon path={CLOSE_PATH} />
-            </button>
-        </div>
+        <Row
+            leading={<Avatar src={info.icon ?? undefined} size={28} fallback={SPLIT_PATH} />}
+            title={`${info.prefix}${info.name}`}
+            subtitle={info.subtitle || undefined}
+            onClick={() => openInMain(channelId, guildId)}
+            trailing={<IconButton icon={ICONS.close} label="Close" destructive onClick={() => closePanel(channelId)} />}
+        />
     );
 }
 
-function OpenPanels() {
+function OpenPanels({ footer }: { footer?: string; }) {
     const { panels, visible } = settings.use(["panels", "visible"]);
     const list = parsePanels(panels);
 
     return (
         <>
-            <label className={cl("option")}>
-                <span>Show SplitView</span>
-                <Switch checked={visible} onChange={v => settings.store.visible = v} />
-            </label>
-            <div className={cl("card")}>
-                <div className={cl("card-title")}>Open panels ({list.length}/{MAX_PANELS})</div>
+            <Section>
+                <ToggleRow icon={SPLIT_PATH} color={ICON_COLOR} title="Show SplitView" checked={visible} onChange={v => settings.store.visible = v} />
+            </Section>
+            <Section title={`Open panels (${list.length}/${MAX_PANELS})`} footer={footer}>
                 {list.length
                     ? list.map(p => <PanelRow key={p.channelId} channelId={p.channelId} />)
-                    : <div className={cl("muted")}>No panels open yet.</div>}
-                <button
-                    className={cl("button")}
-                    disabled={list.length >= MAX_PANELS}
-                    onClick={() => {
-                        const c = getCurrentChannel();
-                        if (c) openPanel(c.id, c.guild_id);
-                    }}
-                >
-                    Open current channel
-                </button>
-            </div>
+                    : <Row title="No panels open yet." dim />}
+                {list.length < MAX_PANELS && (
+                    <LinkRow
+                        icon={ICONS.plus}
+                        onClick={() => {
+                            const c = getCurrentChannel();
+                            if (c) openPanel(c.id, c.guild_id);
+                        }}
+                    >
+                        Open current channel
+                    </LinkRow>
+                )}
+            </Section>
         </>
     );
 }
 
 // ---------------------------------------------------------------- Settings
 
-function Option({ label, value, onChange }: { label: string; value: boolean; onChange(v: boolean): void; }) {
-    return (
-        <label className={cl("option")}>
-            <span>{label}</span>
-            <Switch checked={value} onChange={onChange} />
-        </label>
-    );
-}
-
 export const SettingsPanel = ErrorBoundary.wrap(() => {
     const s = settings.use(["showTitleBarButton", "shortcut", "dragDrop", "showTyping"]);
 
     return (
-        <div className={cl("settings")}>
+        <Sheet embedded header={{ title: "SplitView", subtitle: "Up to two more channels next to the main window", icon: SPLIT_PATH, iconColor: ICON_COLOR }}>
             <OpenPanels />
-            <Option label="Show icon in the title bar" value={s.showTitleBarButton} onChange={v => settings.store.showTitleBarButton = v} />
-            <Option label="Ctrl + Shift + S opens the current channel" value={s.shortcut} onChange={v => settings.store.shortcut = v} />
-            <Option label="Open channels via drag & drop" value={s.dragDrop} onChange={v => settings.store.dragDrop = v} />
-            <Option label="Show who is currently typing" value={s.showTyping} onChange={v => settings.store.showTyping = v} />
-            <button className={cl("button")} onClick={() => settings.store.widths = `[${DEFAULT_WIDTH},${DEFAULT_WIDTH}]`}>
-                Reset panel widths
-            </button>
-            <div className={cl("muted")}>
-                Open by right-clicking a channel/DM → "Open in SplitView", by dragging a channel to the right
-                edge or with Ctrl + Shift + S. Messages in the panels are not marked as read.
-            </div>
-        </div>
+            <Section
+                title="Options"
+                footer={'Open by right-clicking a channel/DM → "Open in SplitView", by dragging a channel to the right edge or with Ctrl + Shift + S. Messages in the panels are not marked as read.'}
+            >
+                <ToggleRow title="Show icon in the title bar" checked={s.showTitleBarButton} onChange={v => settings.store.showTitleBarButton = v} />
+                <ToggleRow title="Ctrl + Shift + S opens the current channel" checked={s.shortcut} onChange={v => settings.store.shortcut = v} />
+                <ToggleRow title="Open channels via drag & drop" checked={s.dragDrop} onChange={v => settings.store.dragDrop = v} />
+                <ToggleRow title="Show who is currently typing" checked={s.showTyping} onChange={v => settings.store.showTyping = v} />
+                <LinkRow icon={ICONS.refresh} onClick={() => settings.store.widths = `[${DEFAULT_WIDTH},${DEFAULT_WIDTH}]`}>
+                    Reset panel widths
+                </LinkRow>
+            </Section>
+        </Sheet>
     );
 }, { noop: true });
 
@@ -328,14 +315,11 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
 
 function PopoutPanel() {
     return (
-        <div className={cl("popout")}>
-            <div className={cl("popout-header")}>
-                <Icon path={SPLIT_PATH} size={22} />
-                <span className={cl("popout-title")}>SplitView</span>
-            </div>
-            <OpenPanels />
-            <div className={cl("muted")}>Right-click a channel → "Open in SplitView" · Ctrl + Shift + S</div>
-        </div>
+        <Popover width={320} className={cl("popout")}>
+            <Sheet header={{ title: "SplitView", icon: SPLIT_PATH, iconColor: ICON_COLOR }}>
+                <OpenPanels footer={'Right-click a channel → "Open in SplitView" · Ctrl + Shift + S'} />
+            </Sheet>
+        </Popover>
     );
 }
 
@@ -371,7 +355,7 @@ function TitleBarButton() {
                         toggleVisible();
                     }}
                     tooltip={isShown ? null : count ? `SplitView (${count} open)` : "SplitView"}
-                    icon={() => <Icon path={SPLIT_PATH} size={20} />}
+                    icon={() => <Icon path={SPLIT_PATH} size={20} className="vc-ui-tb-icon" />}
                     selected={isShown}
                 />
             )}

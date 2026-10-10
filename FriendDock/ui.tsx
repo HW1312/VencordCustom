@@ -9,7 +9,6 @@ import { plugins } from "@api/PluginManager";
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openPluginModal } from "@components/settings";
-import { Switch } from "@components/Switch";
 import { openPrivateChannel, openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
 import type { Activity } from "@vencord/discord-types";
@@ -18,7 +17,9 @@ import {
     ChannelStore, GuildStore, Popout, PresenceStore, RelationshipStore, SelectedChannelStore, useMemo, useRef,
     UserStore, useState, useStateFromStores, VoiceStateStore
 } from "@webpack/common";
+import type { CSSProperties } from "react";
 
+import { Avatar, Badge, Button, Empty, Glyph, Icon, IconButton, ICONS, Popover, RoundButton, Row, SearchField, Section, Sheet, ToggleRow } from "../_ui";
 import {
     addFavorite, getDisplayName, getJoinBlocker, getMyVoiceChannelId, getVoiceInfo, joinVoice, moveFavorite,
     removeFavorite, settings, stopFollowing, toggleFollow
@@ -26,24 +27,17 @@ import {
 
 const cl = classNameFactory("vc-frienddock-");
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
+const POPOUT_STYLE: CSSProperties = { maxHeight: "min(640px, calc(100vh - 72px))" };
 
 // ---------------------------------------------------------------- Icons
 
 const FRIENDS_PATH = "M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-8.5 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM13 12c-4 0-7 2-7 5v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2c0-3-3-5-7-5ZM4.5 12C2 12 0 13.5 0 15.5V17a1 1 0 0 0 1 1h3v-1c0-1.9.8-3.6 2.2-4.8-.5-.1-1.1-.2-1.7-.2Z";
 const SPEAKER_PATH = "M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z";
 const FOLLOW_PATH = "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z";
-const COG_PATH = "M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5-2.1-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z";
 const UP_PATH = "M12 7l-6 6h12l-6-6Z";
 const DOWN_PATH = "M12 17l6-6H6l6 6Z";
-const CLOSE_PATH = "M18.4 4.2 12 10.6 5.6 4.2 4.2 5.6l6.4 6.4-6.4 6.4 1.4 1.4 6.4-6.4 6.4 6.4 1.4-1.4-6.4-6.4 6.4-6.4-1.4-1.4Z";
-
-function Icon({ path, size = 20, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)}>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
+const SORT_PATH = "M3 18h6v-2H3v2ZM3 6v2h18V6H3Zm0 7h12v-2H3v2Z";
+const HIDE_PATH = "M12 7a5 5 0 0 1 4.65 6.83l2.92 2.92A11.8 11.8 0 0 0 23 12c-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16A4.85 4.85 0 0 1 12 7ZM2 4.27l2.28 2.28.46.46A11.8 11.8 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27ZM7.53 9.8l1.55 1.55A2.82 2.82 0 0 0 9 12a3 3 0 0 0 3 3c.22 0 .44-.03.65-.08l1.55 1.55A5 5 0 0 1 7.53 9.8Zm4.31-.78 3.15 3.15.02-.16a3 3 0 0 0-3-3l-.17.01Z";
 
 // ---------------------------------------------------------------- Status & activity
 
@@ -111,13 +105,11 @@ function useDockIds(): string[] {
 
 // ---------------------------------------------------------------- Friend row
 
-function Avatar({ id, status }: { id: string; status: Status; }) {
+function FriendAvatar({ id, status }: { id: string; status: Status; }) {
     const user = useStateFromStores([UserStore], () => UserStore.getUser(id));
     return (
         <div className={cl("avatar")} onClick={() => openUserProfile(id)} title="Open profile">
-            {user
-                ? <img src={user.getAvatarURL(undefined, 64, false)} alt="" />
-                : <div className={cl("avatar-fallback")} />}
+            <Avatar size={36} src={user?.getAvatarURL(undefined, 64, false)} />
             <span className={classes(cl("dot"), cl(`dot-${status}`))} title={STATUS_LABEL[status]} />
         </div>
     );
@@ -157,24 +149,21 @@ function VoiceLine({ id, onAction }: { id: string; onAction?(): void; }) {
 
             <div className={cl("voice-actions")}>
                 {channelId && !together && (
-                    <button
-                        className={classes(cl("btn"), cl("btn-brand"))}
-                        disabled={!info}
-                        title={blocker ?? "Join this voice channel"}
-                        onClick={() => { if (joinVoice(channelId)) onAction?.(); }}
-                    >
+                    <Button small disabled={!info} title={blocker ?? "Join this voice channel"} onClick={() => { if (joinVoice(channelId)) onAction?.(); }}>
                         Join
-                    </button>
+                    </Button>
                 )}
-                {together && <span className={cl("together")}>With you</span>}
-                <button
-                    className={classes(cl("btn"), isFollowing && cl("btn-following"))}
+                {together && <Badge color="green">With you</Badge>}
+                <Button
+                    small
+                    variant={isFollowing ? "filled" : "gray"}
+                    color={isFollowing ? "teal" : undefined}
+                    icon={FOLLOW_PATH}
                     title={isFollowing ? "Stop following" : "Follow: move along whenever they switch voice channels"}
                     onClick={() => toggleFollow(id)}
                 >
-                    <Icon path={FOLLOW_PATH} size={14} />
                     {isFollowing ? "Following" : "Follow"}
-                </button>
+                </Button>
             </div>
         </div>
     );
@@ -190,23 +179,16 @@ function FriendRow({ id, onNavigate }: { id: string; onNavigate?(): void; }) {
     const name = nick || getDisplayName(user, id);
 
     return (
-        <div className={classes(cl("row"), following === id && cl("row-following"), status === "offline" && cl("row-offline"))}>
-            <Avatar id={id} status={status} />
-            <div className={cl("row-main")}>
-                <div className={cl("row-head")}>
-                    <span
-                        className={cl("name")}
-                        title="Open DM"
-                        onClick={() => { openPrivateChannel(id); onNavigate?.(); }}
-                    >
-                        {name}
-                    </span>
-                    <span className={cl("status-text")}>{STATUS_LABEL[status]}</span>
-                </div>
-                {activity && <div className={cl("activity")} title={activity}>{activity}</div>}
-                <VoiceLine id={id} onAction={onNavigate} />
-            </div>
-        </div>
+        <Row
+            align="top"
+            className={classes(following === id && cl("row-following"), status === "offline" && cl("row-offline"))}
+            leading={<FriendAvatar id={id} status={status} />}
+            title={<span className={cl("name")} title="Open DM" onClick={() => { openPrivateChannel(id); onNavigate?.(); }}>{name}</span>}
+            subtitle={activity ? <span title={activity}>{activity}</span> : undefined}
+            trailing={<span className={cl("status-text")}>{STATUS_LABEL[status]}</span>}
+        >
+            <VoiceLine id={id} onAction={onNavigate} />
+        </Row>
     );
 }
 
@@ -218,11 +200,13 @@ function FollowBanner() {
     if (!following) return null;
 
     return (
-        <div className={cl("banner")}>
-            <Icon path={FOLLOW_PATH} size={16} />
-            <span>Following <b>{getDisplayName(user, following)}</b> in voice</span>
-            <button className={cl("btn")} onClick={() => stopFollowing()}>Stop</button>
-        </div>
+        <Section>
+            <Row
+                leading={<Glyph path={FOLLOW_PATH} color="teal" />}
+                title={<>Following <b>{getDisplayName(user, following)}</b> in voice</>}
+                trailing={<Button small variant="gray" onClick={() => stopFollowing()}>Stop</Button>}
+            />
+        </Section>
     );
 }
 
@@ -231,20 +215,22 @@ function Dock({ onNavigate }: { onNavigate?(): void; }) {
     const ids = useDockIds();
 
     return (
-        <div className={cl("dock")}>
+        <>
             <FollowBanner />
-            {ids.map(id => (
-                <ErrorBoundary noop key={id}>
-                    <FriendRow id={id} onNavigate={onNavigate} />
-                </ErrorBoundary>
-            ))}
-            {!favorites.length && (
-                <div className={cl("empty")}>
-                    No favorites yet. Right-click a friend and choose “Add to Friend Dock”, or add them in the settings.
-                </div>
+            {ids.length > 0 && (
+                <Section>
+                    {ids.map(id => (
+                        <ErrorBoundary noop key={id}>
+                            <FriendRow id={id} onNavigate={onNavigate} />
+                        </ErrorBoundary>
+                    ))}
+                </Section>
             )}
-            {favorites.length > 0 && !ids.length && <div className={cl("empty")}>All your favorites are offline.</div>}
-        </div>
+            {!favorites.length && (
+                <Empty icon={FRIENDS_PATH} title="No favorites yet" hint="Right-click a friend and choose “Add to Friend Dock”, or add them in the settings." />
+            )}
+            {favorites.length > 0 && !ids.length && <Empty icon={FRIENDS_PATH} title="All your favorites are offline." />}
+        </>
     );
 }
 
@@ -269,91 +255,87 @@ function FavoriteManager() {
     }, [query, friendIds, favorites]);
 
     return (
-        <div className={cl("manager")}>
-            <div className={cl("section-title")}>Favorites</div>
+        <>
+            <SearchField placeholder="Add a friend… (type a name)" value={query} onChange={setQuery} />
+            {query.trim() && (
+                <Section>
+                    {candidates.map(({ id, user }) => (
+                        <Row
+                            key={id}
+                            leading={<Avatar src={user?.getAvatarURL(undefined, 32, false)} />}
+                            title={getDisplayName(user, id)}
+                            trailing={<Button small icon={ICONS.plus} onClick={() => { addFavorite(id); setQuery(""); }}>Add</Button>}
+                        />
+                    ))}
+                    {!candidates.length && <Row dim title="No matching friends." />}
+                </Section>
+            )}
 
-            <input
-                className={cl("search")}
-                placeholder="Add a friend… (type a name)"
-                value={query}
-                onChange={e => setQuery(e.currentTarget.value)}
-            />
-            {candidates.map(({ id, user }) => (
-                <div key={id} className={cl("manage-row")}>
-                    {user && <img className={cl("mini-avatar")} src={user.getAvatarURL(undefined, 32, false)} alt="" />}
-                    <span className={cl("manage-name")}>{getDisplayName(user, id)}</span>
-                    <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => { addFavorite(id); setQuery(""); }}>Add</button>
-                </div>
-            ))}
-            {query.trim() && !candidates.length && <div className={cl("muted")}>No matching friends.</div>}
-
-            <div className={cl("manage-list")}>
+            <Section title="Favorites">
                 {favorites.map((id, i) => {
                     const user = UserStore.getUser(id);
                     return (
-                        <div key={id} className={cl("manage-row")}>
-                            {user && <img className={cl("mini-avatar")} src={user.getAvatarURL(undefined, 32, false)} alt="" />}
-                            <span className={cl("manage-name")}>{getDisplayName(user, id)}</span>
-                            <button className={cl("icon-btn")} title="Move up" disabled={i === 0} onClick={() => moveFavorite(id, -1)}>
-                                <Icon path={UP_PATH} size={18} />
-                            </button>
-                            <button className={cl("icon-btn")} title="Move down" disabled={i === favorites.length - 1} onClick={() => moveFavorite(id, 1)}>
-                                <Icon path={DOWN_PATH} size={18} />
-                            </button>
-                            <button className={classes(cl("icon-btn"), cl("icon-btn-danger"))} title="Remove" onClick={() => removeFavorite(id)}>
-                                <Icon path={CLOSE_PATH} size={16} />
-                            </button>
-                        </div>
+                        <Row
+                            key={id}
+                            leading={<Avatar src={user?.getAvatarURL(undefined, 32, false)} />}
+                            title={getDisplayName(user, id)}
+                            trailing={
+                                <div className={cl("manage-actions")}>
+                                    <IconButton icon={UP_PATH} label="Move up" disabled={i === 0} onClick={() => moveFavorite(id, -1)} />
+                                    <IconButton icon={DOWN_PATH} label="Move down" disabled={i === favorites.length - 1} onClick={() => moveFavorite(id, 1)} />
+                                    <IconButton icon={ICONS.close} label="Remove" destructive onClick={() => removeFavorite(id)} />
+                                </div>
+                            }
+                        />
                     );
                 })}
-                {!favorites.length && <div className={cl("muted")}>No favorites yet. You can also right-click any user → “Add to Friend Dock”.</div>}
-            </div>
-        </div>
+                {!favorites.length && <Row dim title="No favorites yet. You can also right-click any user → “Add to Friend Dock”." />}
+            </Section>
+        </>
     );
 }
 
-function Option({ label, setting }: { label: string; setting: "showTitleBarButton" | "sortByStatus" | "hideOffline" | "leaveWithFriend"; }) {
-    const value = settings.use([setting])[setting];
+const OPTIONS = [
+    ["showTitleBarButton", "Show icon in the title bar", FRIENDS_PATH, "teal"],
+    ["sortByStatus", "Sort by status (in voice first) instead of your own order", SORT_PATH, "blue"],
+    ["hideOffline", "Hide offline friends", HIDE_PATH, "gray"],
+    ["leaveWithFriend", "While following: leave voice when the friend leaves", FOLLOW_PATH, "orange"]
+] as const;
+
+function Options() {
+    const s = settings.use(["showTitleBarButton", "sortByStatus", "hideOffline", "leaveWithFriend"]);
     return (
-        <label className={cl("option")}>
-            <span>{label}</span>
-            <Switch checked={value} onChange={v => settings.store[setting] = v} />
-        </label>
+        <Section title="Options" footer="Following stops automatically when you switch or leave the voice channel yourself.">
+            {OPTIONS.map(([key, label, icon, color]) => (
+                <ToggleRow key={key} icon={icon} color={color} title={label} checked={s[key]} onChange={v => settings.store[key] = v} />
+            ))}
+        </Section>
     );
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => (
-    <div className={cl("settings")}>
+    <Sheet embedded header={{ title: "Friend Dock", subtitle: "Your favorite friends with live status and voice", icon: FRIENDS_PATH, iconColor: "teal" }}>
         <FavoriteManager />
-        <div className={cl("section-title")}>Options</div>
-        <Option label="Show icon in the title bar" setting="showTitleBarButton" />
-        <Option label="Sort by status (in voice first) instead of your own order" setting="sortByStatus" />
-        <Option label="Hide offline friends" setting="hideOffline" />
-        <Option label="While following: leave voice when the friend leaves" setting="leaveWithFriend" />
-        <div className={cl("muted")}>
-            Following stops automatically when you switch or leave the voice channel yourself.
-        </div>
-    </div>
+        <Options />
+    </Sheet>
 ), { noop: true });
 
 // ---------------------------------------------------------------- Title bar
 
 function PopoutPanel({ onClose }: { onClose(): void; }) {
     return (
-        <div className={cl("popout")}>
-            <div className={cl("header")}>
-                <Icon path={FRIENDS_PATH} size={22} />
-                <span className={cl("title")}>Friend Dock</span>
-                <button
-                    className={cl("icon-btn")}
-                    title="Settings"
-                    onClick={() => { onClose(); openPluginModal(plugins.FriendDock); }}
-                >
-                    <Icon path={COG_PATH} size={18} />
-                </button>
-            </div>
-            <Dock onNavigate={onClose} />
-        </div>
+        <Popover width={380} style={POPOUT_STYLE}>
+            <Sheet
+                header={{
+                    title: "Friend Dock",
+                    icon: FRIENDS_PATH,
+                    iconColor: "teal",
+                    actions: <RoundButton icon={ICONS.gear} label="Settings" onClick={() => { onClose(); openPluginModal(plugins.FriendDock); }} />
+                }}
+            >
+                <Dock onNavigate={onClose} />
+            </Sheet>
+        </Popover>
     );
 }
 
@@ -387,7 +369,7 @@ function TitleBarButton() {
                     className={classes(cl("titlebtn"), following && cl("titlebtn-active"))}
                     onClick={() => setShow(v => !v)}
                     tooltip={isShown ? null : tooltip}
-                    icon={() => <Icon path={FRIENDS_PATH} />}
+                    icon={() => <Icon path={FRIENDS_PATH} size={20} className="vc-ui-tb-icon" />}
                     selected={isShown}
                 />
             )}

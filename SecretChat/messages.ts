@@ -10,8 +10,9 @@ import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { User } from "@vencord/discord-types";
 import { findByProps } from "@webpack";
-import { showToast, UserStore } from "@webpack/common";
+import { UserStore } from "@webpack/common";
 
+import { notify } from "../_ui";
 import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
 import { isFileText, takeFile } from "./files";
 import { onRoomMessage, processRoomMessage } from "./rooms";
@@ -73,16 +74,13 @@ export async function startHandshake(user: User, channelId: string) {
     state.pending[hsid] = { to: user.id, channelId, privateJwk, created: Date.now() };
     await save();
     sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` }, false);
-    showToast(`Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, "message");
+    notify({ title: `Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, kind: "info", app: "SecretChat" });
 }
 
 async function finish(record: KeyRecord, isNew: boolean, channelId: string, partnerId: string) {
     await setChannelKey(channelId, record.id);
     retryLocked();
-    showToast(
-        `${isNew ? "Encrypted chat with" : "Already connected with"} ${userName(partnerId)} – safety code ${record.safety}`,
-        "success"
-    );
+    notify({ title: `${isNew ? "Encrypted chat with" : "Already connected with"} ${userName(partnerId)} – safety code ${record.safety}`, kind: "success", app: "SecretChat" });
 }
 
 export async function acceptHandshake(hs: Handshake) {
@@ -98,7 +96,7 @@ export async function acceptHandshake(hs: Handshake) {
         await finish(record, isNew, hs.channelId, hs.authorId);
     } catch (e) {
         logger.error("Accepting the handshake failed", e);
-        showToast("Could not accept the encrypted chat", "failure");
+        notify({ title: "Could not accept the encrypted chat", kind: "error", app: "SecretChat" });
     } finally {
         busy.delete(hs.hsid);
         emit();
@@ -124,7 +122,7 @@ async function completeHandshake(hs: Handshake) {
         await finish(record, isNew, pending.channelId, hs.authorId);
     } catch (e) {
         logger.error("Completing the handshake failed", e);
-        showToast("Could not finish the encrypted chat setup", "failure");
+        notify({ title: "Could not finish the encrypted chat setup", kind: "error", app: "SecretChat" });
     } finally {
         busy.delete(hs.hsid);
         emit();
@@ -182,7 +180,7 @@ function processMessage(m: any, live: boolean) {
     if (hs.type === "ack" && state.pending[hs.hsid]) {
         setTimeout(() => completeHandshake(hs), 0);
     } else if (live && hs.type === "hello" && hs.to === myId() && !state.handled.includes(hs.hsid)) {
-        showToast(`${userName(authorId)} wants an encrypted chat with you – accept it under their message`, "message");
+        notify({ title: `${userName(authorId)} wants an encrypted chat with you – accept it under their message`, kind: "info", app: "SecretChat" });
     }
 }
 
@@ -280,13 +278,13 @@ const isPrepared = (content: string) => content.startsWith("🔑 SC1") || parseM
 function outgoing(channelId: string, content: string): string | null {
     // The keyring loads a moment after start – never let an "on" chat slip out unencrypted
     if (!isLoaded()) {
-        showToast("SecretChat is still loading its keys – try again in a second", "failure");
+        notify({ title: "SecretChat is still loading its keys – try again in a second", kind: "error", app: "SecretChat" });
         return null;
     }
     const record = channelKey(channelId);
     if (!record) {
         if (containsInviteCode(content)) {
-            showToast("That's a secret key code – only send it in an encrypted chat (turn SecretChat on here first)", "failure");
+            notify({ title: "That's a secret key code – only send it in an encrypted chat (turn SecretChat on here first)", kind: "error", app: "SecretChat" });
             return null;
         }
         return content;
@@ -299,7 +297,7 @@ function outgoing(channelId: string, content: string): string | null {
 
     const encrypted = encryptMessage(record.id, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
-        showToast("Too long for one encrypted message (about 1,400 characters max) – split it up", "failure");
+        notify({ title: "Too long for one encrypted message (about 1,400 characters max) – split it up", kind: "error", app: "SecretChat" });
         return null;
     }
     return encrypted;
@@ -312,12 +310,12 @@ function outgoingEdit(messageId: string, content: string): string | null {
     const key = getKeyBytes(keyId);
     const me = myId();
     if (!key || !me) {
-        showToast(`The key "${getKey(keyId)?.name ?? keyId}" was deleted – this message can't be edited anymore`, "failure");
+        notify({ title: `The key "${getKey(keyId)?.name ?? keyId}" was deleted – this message can't be edited anymore`, kind: "error", app: "SecretChat" });
         return null;
     }
     const encrypted = encryptMessage(keyId, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
-        showToast("Too long for one encrypted message (about 1,400 characters max)", "failure");
+        notify({ title: "Too long for one encrypted message (about 1,400 characters max)", kind: "error", app: "SecretChat" });
         return null;
     }
     return encrypted;

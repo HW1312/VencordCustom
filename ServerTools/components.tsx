@@ -1,5 +1,5 @@
 /*
- * ServerTools – shared UI building blocks (icons, switches, progress, log, job hook)
+ * ServerTools – shared UI building blocks on top of the _ui kit (icons, progress, log, job hook)
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -10,10 +10,14 @@ import { classes } from "@utils/misc";
 import { useEffect, useRef, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { Badge, Button as UiButton, Icon as UiIcon, Note, Progress, Section, Segmented as UiSegmented, Spinner, ToggleRow as UiToggleRow, UiColor } from "../_ui";
 import type { JobHooks, LogKind } from "./backup";
 import { CancelToken, createToken, describeError, isCancelled, onQueueChange, queueState, releaseToken } from "./queue";
 
 export const cl = classNameFactory("vc-servertools-");
+
+/** App icon color of ServerTools in the kit */
+export const ICON_COLOR: UiColor = "orange";
 
 // ---------------------------------------------------------------- Icons
 
@@ -41,42 +45,32 @@ export const ICONS = {
 export type IconName = keyof typeof ICONS;
 
 export function Icon({ name, size = 18, className }: { name: IconName; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)} aria-hidden>
-            <path fill="currentColor" d={ICONS[name]} />
-        </svg>
-    );
+    return <UiIcon path={ICONS[name]} size={size} className={classes(cl("icon"), className)} />;
 }
 
-// ---------------------------------------------------------------- Building blocks
+// ---------------------------------------------------------------- Building blocks (thin wrappers around the kit)
+
+const VARIANTS = {
+    primary: { variant: "filled" },
+    ghost: { variant: "gray" },
+    danger: { variant: "destructive" },
+    success: { variant: "filled", color: "green" }
+} as const;
 
 export function Button({ children, icon, variant = "primary", small, disabled, onClick, title }: {
     children?: ReactNode;
     icon?: IconName;
-    variant?: "primary" | "ghost" | "danger" | "success";
+    variant?: keyof typeof VARIANTS;
     small?: boolean;
     disabled?: boolean;
     title?: string;
     onClick?(): void;
 }) {
+    const v = VARIANTS[variant];
     return (
-        <button
-            className={classes(cl("btn"), cl(`btn-${variant}`), small && cl("btn-small"))}
-            disabled={disabled}
-            onClick={onClick}
-            title={title}
-        >
-            {icon && <Icon name={icon} size={small ? 14 : 16} />}
+        <UiButton variant={v.variant} color={"color" in v ? v.color : undefined} icon={icon && ICONS[icon]} small={small} disabled={disabled} onClick={onClick} title={title}>
             {children}
-        </button>
-    );
-}
-
-export function Toggle({ checked, disabled }: { checked: boolean; disabled?: boolean; }) {
-    return (
-        <span className={classes(cl("switch"), checked && cl("switch-on"), disabled && cl("switch-disabled"))} aria-hidden>
-            <span className={cl("switch-knob")} />
-        </span>
+        </UiButton>
     );
 }
 
@@ -89,31 +83,18 @@ export function ToggleRow({ checked, onChange, label, hint, disabled, danger }: 
     disabled?: boolean;
     danger?: boolean;
 }) {
-    const toggle = () => !disabled && onChange(!checked);
     return (
-        <div
-            role="switch"
-            aria-checked={checked}
-            aria-disabled={disabled}
-            tabIndex={disabled ? -1 : 0}
-            className={classes(cl("row"), disabled && cl("row-disabled"), danger && cl("row-danger"))}
-            onClick={toggle}
-            onKeyDown={e => {
-                if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                    toggle();
-                }
-            }}
-        >
-            <span className={cl("row-text")}>
-                <span className={cl("row-label")}>{label}</span>
-                {hint && <span className={cl("row-hint")}>{hint}</span>}
-            </span>
-            <Toggle checked={checked} disabled={disabled} />
-        </div>
+        <UiToggleRow
+            title={danger ? <span className={cl("text-bad")}>{label}</span> : label}
+            subtitle={hint}
+            checked={checked}
+            disabled={disabled}
+            onChange={onChange}
+        />
     );
 }
 
+/** Kit segmented control for number values */
 export function Segmented<T extends string | number>({ value, options, onChange, disabled }: {
     value: T;
     options: { value: T; label: string; }[];
@@ -121,17 +102,12 @@ export function Segmented<T extends string | number>({ value, options, onChange,
     disabled?: boolean;
 }) {
     return (
-        <div className={classes(cl("seg"), disabled && cl("row-disabled"))}>
-            {options.map(o => (
-                <button
-                    key={String(o.value)}
-                    disabled={disabled}
-                    className={classes(cl("seg-item"), o.value === value && cl("seg-item-active"))}
-                    onClick={() => onChange(o.value)}
-                >
-                    {o.label}
-                </button>
-            ))}
+        <div className={classes(cl("seg"), disabled && cl("disabled"))}>
+            <UiSegmented
+                value={String(value)}
+                options={options.map(o => ({ value: String(o.value), label: o.label }))}
+                onChange={v => !disabled && onChange(options.find(o => String(o.value) === v)!.value)}
+            />
         </div>
     );
 }
@@ -156,7 +132,7 @@ export function NumberField({ value, onChange, min, max, disabled, suffix }: {
         <span className={cl("number")}>
             <input
                 type="number"
-                className={cl("input")}
+                className={classes("vc-ui-field", cl("number-input"))}
                 value={text}
                 min={min}
                 max={max}
@@ -170,37 +146,17 @@ export function NumberField({ value, onChange, min, max, disabled, suffix }: {
     );
 }
 
-export function Card({ title, icon, right, children, tone }: { title?: ReactNode; icon?: IconName; right?: ReactNode; children: ReactNode; tone?: "danger" | "warn"; }) {
+/** Kit section whose group holds free content (padded) and kit rows (full width) */
+export function Card({ title, right, children }: { title?: ReactNode; right?: ReactNode; children: ReactNode; }) {
     return (
-        <div className={classes(cl("card"), tone && cl(`card-${tone}`))}>
-            {title && (
-                <div className={cl("card-title")}>
-                    {icon && <Icon name={icon} size={16} />}
-                    <span>{title}</span>
-                    {right && <span className={cl("card-right")}>{right}</span>}
-                </div>
-            )}
-            {children}
-        </div>
+        <Section title={title} right={right}>
+            <div className={cl("card-body")}>{children}</div>
+        </Section>
     );
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "danger"; children: ReactNode; }) {
-    return (
-        <div className={classes(cl("notice"), cl(`notice-${tone}`))}>
-            <Icon name={tone === "info" ? "shield" : "warning"} size={16} />
-            <div>{children}</div>
-        </div>
-    );
-}
-
-export function Stat({ label, value }: { label: string; value: ReactNode; }) {
-    return (
-        <div className={cl("stat")}>
-            <span className={cl("stat-value")}>{value}</span>
-            <span className={cl("stat-label")}>{label}</span>
-        </div>
-    );
+    return <Note tone={tone === "info" ? undefined : tone === "warn" ? "warn" : "bad"}>{children}</Note>;
 }
 
 // ---------------------------------------------------------------- Progress & log
@@ -210,15 +166,11 @@ export function ProgressBar({ done, total, label, indeterminate }: { done: numbe
     return (
         <div className={cl("progress")}>
             <div className={cl("progress-head")}>
+                {indeterminate && <Spinner />}
                 <span className={cl("progress-label")}>{label}</span>
                 {!indeterminate && total > 0 && <span className={cl("muted")}>{pct} %</span>}
             </div>
-            <div className={cl("progress-track")}>
-                <div
-                    className={classes(cl("progress-fill"), indeterminate && cl("progress-indeterminate"))}
-                    style={indeterminate ? undefined : { width: `${pct}%` }}
-                />
-            </div>
+            {!indeterminate && <Progress value={pct} />}
         </div>
     );
 }
@@ -257,8 +209,8 @@ export function QueueBadge() {
         return () => clearInterval(id);
     }, []);
     const pause = Math.ceil((queueState.pausedUntil - Date.now()) / 1000);
-    if (pause > 0) return <span className={classes(cl("badge"), cl("badge-warn"))}>Rate limit - waiting {pause}s</span>;
-    if (queueState.pending > 0) return <span className={cl("badge")}>{queueState.pending} in queue</span>;
+    if (pause > 0) return <Badge color="orange">Rate limit - waiting {pause}s</Badge>;
+    if (queueState.pending > 0) return <Badge>{queueState.pending} in queue</Badge>;
     return null;
 }
 

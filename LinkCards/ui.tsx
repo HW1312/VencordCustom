@@ -7,14 +7,13 @@ import "./ui.css";
 
 import { updateMessage } from "@api/MessageUpdater";
 import { classNameFactory } from "@api/Styles";
-import { Button } from "@components/Button";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Link } from "@components/Link";
-import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { useForceUpdater, useIntersection } from "@utils/react";
 import { showToast, useEffect, useState } from "@webpack/common";
 
+import { IconButton, ICONS as UI_ICONS, LinkRow, Progress, Row, Section, Sheet, State, TextField, ToggleRow } from "../_ui";
 import { clearCache, getEntry, isFresh, isLoading, load, subscribe } from "./cache";
 import { ICONS } from "./icons";
 import { settings } from "./index";
@@ -51,15 +50,9 @@ function hideOriginalEmbed(message: any, key: string) {
 
 function RefreshButton({ loading, onClick }: { loading: boolean; onClick(): void; }) {
     return (
-        <button
-            className={cl("refresh")}
-            disabled={loading}
-            title="Refresh now"
-            aria-label="Refresh now"
-            onClick={onClick}
-        >
-            <Icon icon={ICONS.refresh} size={14} className={loading ? cl("spin") : undefined} />
-        </button>
+        <span className={classes("vc-linkcards-refresh", loading && "vc-linkcards-spin")}>
+            <IconButton icon={UI_ICONS.refresh} label="Refresh now" disabled={loading} onClick={onClick} />
+        </span>
     );
 }
 
@@ -214,17 +207,7 @@ export const LinkCardsAccessory = ErrorBoundary.wrap(Accessory, { noop: true });
 
 // ---------------------------------------------------------------- Settings
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode; }) {
-    return (
-        <label className={cl("option")}>
-            <span className={cl("option-text")}>
-                <span>{label}</span>
-                {hint && <span className={cl("muted")}>{hint}</span>}
-            </span>
-            {children}
-        </label>
-    );
-}
+const LINK_PATH = "M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12ZM8 13h8v-2H8v2Zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10Z";
 
 function RateLimitInfo() {
     const forceUpdate = useForceUpdater();
@@ -256,26 +239,24 @@ function RateLimitInfo() {
     const pct = rate ? Math.max(0, Math.min(100, rate.remaining / rate.limit * 100)) : 0;
 
     return (
-        <div className={cl("rate")}>
-            <div className={cl("rate-head")}>
-                <span>Rate limit</span>
-                <span className={cl("rate-value")}>
-                    {problem
-                        ? <span className={cl("bad")}>{problem}</span>
-                        : rate ? `${rate.remaining} / ${rate.limit} left` : "–"}
-                </span>
-                <RefreshButton loading={checking} onClick={check} />
-            </div>
-            <div className={cl("bar")}>
-                <div className={classes(cl("bar-fill"), pct < 15 && cl("bar-low"))} style={{ width: `${pct}%` }} />
-            </div>
-            <div className={cl("muted")}>
-                {rate && rate.reset > Date.now()
+        <Row
+            title="Rate limit"
+            subtitle={
+                (rate && rate.reset > Date.now()
                     ? `Resets ${timeAgo(rate.reset)} (${new Date(rate.reset).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}). `
-                    : ""}
-                Without a token 60 requests/hr, with a token 5000.
-            </div>
-        </div>
+                    : "") + "Without a token 60 requests/hr, with a token 5000."
+            }
+            trailing={
+                <>
+                    {problem
+                        ? <State tone="bad">{problem}</State>
+                        : <State>{rate ? `${rate.remaining} / ${rate.limit} left` : "–"}</State>}
+                    <RefreshButton loading={checking} onClick={check} />
+                </>
+            }
+        >
+            <Progress value={pct} color={pct < 15 ? "red" : "green"} />
+        </Row>
     );
 }
 
@@ -284,19 +265,16 @@ function TokenInput() {
     const [show, setShow] = useState(false);
 
     return (
-        <div className={cl("input-row")}>
-            <input
-                className={cl("input")}
+        <div className="vc-linkcards-input-row">
+            <TextField
                 type={show ? "text" : "password"}
                 placeholder="ghp_… or github_pat_… (optional)"
                 autoComplete="off"
                 spellCheck={false}
                 value={githubToken}
-                onChange={e => settings.store.githubToken = e.currentTarget.value.trim()}
+                onChange={v => settings.store.githubToken = v.trim()}
             />
-            <button className={cl("icon-btn")} title={show ? "Hide" : "Show"} onClick={() => setShow(v => !v)}>
-                <Icon icon={show ? ICONS.eyeOff : ICONS.eye} size={18} />
-            </button>
+            <IconButton icon={show ? ICONS.eyeOff.path : ICONS.eye.path} label={show ? "Hide" : "Show"} onClick={() => setShow(v => !v)} />
         </div>
     );
 }
@@ -307,13 +285,13 @@ function CountryInput() {
     const valid = /^[A-Z]{2}$/.test(value);
 
     return (
-        <input
-            className={classes(cl("input"), cl("country"), !valid && cl("input-bad"))}
+        <TextField
+            className={classes("vc-linkcards-country", !valid && "vc-linkcards-country-bad")}
             maxLength={2}
             value={value}
             spellCheck={false}
-            onChange={e => {
-                const v = e.currentTarget.value.toUpperCase().replace(/[^A-Z]/g, "");
+            onChange={raw => {
+                const v = raw.toUpperCase().replace(/[^A-Z]/g, "");
                 setValue(v);
                 if (/^[A-Z]{2}$/.test(v)) settings.store.steamCountry = v;
             }}
@@ -331,45 +309,50 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
     };
 
     return (
-        <div className={cl("settings")}>
-            <div className={cl("section")}>
-                <div className={cl("section-title")}>Services</div>
+        <Sheet embedded header={{ title: "LinkCards", subtitle: "Live status cards under messages", icon: LINK_PATH, iconColor: "teal" }}>
+            <Section title="Services">
                 {PROVIDERS.map(p => (
-                    <Row key={p.id} label={p.label} hint={p.static ? p.hint : `${p.hint} · Cache ${Math.round(p.ttl / 60_000)} min`}>
-                        <Switch checked={store[p.id]} onChange={v => settings.store[p.id] = v} />
-                    </Row>
+                    <ToggleRow
+                        key={p.id}
+                        title={p.label}
+                        subtitle={p.static ? p.hint : `${p.hint} · Cache ${Math.round(p.ttl / 60_000)} min`}
+                        checked={store[p.id]}
+                        onChange={v => settings.store[p.id] = v}
+                    />
                 ))}
-            </div>
+            </Section>
 
-            <div className={cl("section")}>
-                <div className={cl("section-title")}>GitHub token</div>
-                <div className={cl("muted")}>
-                    Optional, raises the rate limit. A token with no permissions (public data only) is enough.
-                    It is only sent to api.github.com.
-                </div>
-                <TokenInput />
+            <Section
+                title="GitHub token"
+                footer="Optional, raises the rate limit. A token with no permissions (public data only) is enough. It is only sent to api.github.com."
+            >
+                <Row title={<TokenInput />} />
                 <RateLimitInfo />
-            </div>
+            </Section>
 
-            <div className={cl("section")}>
-                <div className={cl("section-title")}>Steam</div>
-                <Row label="Country for prices" hint="Two-letter country code, e.g. US, GB, DE, CA">
-                    <CountryInput />
-                </Row>
-            </div>
+            <Section title="Steam">
+                <Row title="Country for prices" subtitle="Two-letter country code, e.g. US, GB, DE, CA" trailing={<CountryInput />} />
+            </Section>
 
-            <div className={cl("section")}>
-                <div className={cl("section-title")}>Behavior</div>
-                <Row label="Only load visible cards" hint="Only make requests once the message is on screen">
-                    <Switch checked={store.onlyVisible} onChange={v => settings.store.onlyVisible = v} />
-                </Row>
-                <Row label="Hide Discord embed" hint="Hides the frozen original embed once the card has data">
-                    <Switch checked={store.hideEmbeds} onChange={v => settings.store.hideEmbeds = v} />
-                </Row>
-                <div className={cl("actions")}>
-                    <Button size="small" variant="secondary" onClick={clear}>Clear cache</Button>
-                </div>
-            </div>
-        </div>
+            <Section title="Behavior">
+                <ToggleRow
+                    icon={ICONS.eye.path}
+                    color="teal"
+                    title="Only load visible cards"
+                    subtitle="Only make requests once the message is on screen"
+                    checked={store.onlyVisible}
+                    onChange={v => settings.store.onlyVisible = v}
+                />
+                <ToggleRow
+                    icon={LINK_PATH}
+                    color="gray"
+                    title="Hide Discord embed"
+                    subtitle="Hides the frozen original embed once the card has data"
+                    checked={store.hideEmbeds}
+                    onChange={v => settings.store.hideEmbeds = v}
+                />
+                <LinkRow icon={UI_ICONS.trash} destructive onClick={clear}>Clear cache</LinkRow>
+            </Section>
+        </Sheet>
     );
 }, { noop: true });

@@ -18,17 +18,18 @@
     width: 360px;
     max-height: 420px;
     overflow: hidden;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
-    background: var(--background-surface-higher, var(--background-floating, #232428));
-    box-shadow: var(--shadow-high, 0 8px 24px rgb(0 0 0 / 35%));
-    color: var(--text-default, var(--text-normal, #dbdee1));
-    font-family: var(--font-primary, inherit);
+    border-radius: 18px;
+    border: 0.5px solid var(--vc-ui-edge);
+    background: var(--vc-ui-glass-strong);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 40%), inset 0 0.5px 0 rgb(255 255 255 / 8%);
+    backdrop-filter: blur(40px) saturate(180%);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
     font-size: 13px;
     line-height: 1.35;
     pointer-events: auto;
     user-select: text;
-    animation: vc-peek-in 110ms ease-out;
+    animation: vc-peek-in 0.22s var(--vc-ui-spring);
     transform-origin: top left;
 }
 
@@ -43,7 +44,8 @@
 }
 
 .vc-peek-card-pinned {
-    border-color: var(--brand-500, #5865f2);
+    border-color: var(--vc-ui-blue);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 40%), 0 0 0 1px var(--vc-ui-blue);
 }
 
 @keyframes vc-peek-in {
@@ -71,9 +73,9 @@
     flex: none;
     align-items: center;
     gap: 6px;
-    min-height: 28px;
-    padding: 4px 6px 4px 8px;
-    border-bottom: 1px solid var(--border-subtle, rgb(255 255 255 / 6%));
+    min-height: 32px;
+    padding: 4px 6px 4px 12px;
+    border-bottom: 0.5px solid var(--vc-ui-sep);
     font-size: 12px;
 }
 
@@ -87,13 +89,13 @@
 
 .vc-peek-head-hash {
     flex: none;
-    color: var(--channel-icon, var(--text-muted));
+    color: var(--vc-ui-dim);
 }
 
 .vc-peek-head-name {
     overflow: hidden;
     font-weight: 600;
-    color: var(--header-primary, var(--text-strong, #fff));
+    color: var(--vc-ui-title);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -102,80 +104,41 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .vc-peek-head-name + .vc-peek-pin,
-.vc-peek-head-name + .vc-peek-head-btn {
+.vc-peek-head-name + .vc-ui-icon-btn,
+.vc-peek-head-sub + .vc-ui-icon-btn,
+.vc-peek-head-end {
     margin-left: auto;
 }
 
 .vc-peek-pin {
     display: inline-flex;
     flex: none;
-    color: var(--brand-500, #5865f2);
+    color: var(--vc-ui-blue);
 }
 
-.vc-peek-head-btn {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: none;
-    color: var(--interactive-normal, var(--text-muted));
-    cursor: pointer;
-}
 
-.vc-peek-head-btn:hover {
-    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
-    color: var(--interactive-hover, var(--text-default));
-}
 
-.vc-peek-head-btn-active {
-    color: var(--status-danger, #f23f43);
-}
 
 .vc-peek-live {
     flex: none;
     padding: 0 4px;
-    border-radius: 4px;
-    background: var(--status-danger, #f23f43);
+    border-radius: 5px;
+    background: var(--vc-ui-red);
     color: #fff;
     font-size: 10px;
     font-weight: 700;
     line-height: 16px;
 }
 
-.vc-peek-btn {
-    flex: none;
-    padding: 3px 10px;
-    border: none;
-    border-radius: 4px;
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-}
 
-.vc-peek-btn:hover {
-    filter: brightness(1.1);
-}
 
-.vc-peek-btn-active {
-    background: var(--status-warning, #f0b232);
-}
 
-.vc-peek-head > .vc-peek-btn {
-    margin-left: auto;
-}
 
 /* ---------- Chat ---------- */
 
@@ -201,13 +164,13 @@
 }
 
 .vc-peek-msg:hover {
-    background: var(--background-message-hover, rgb(0 0 0 / 6%));
+    background: var(--vc-ui-group);
 }
 
 .vc-peek-highlight,
 .vc-peek-highlight:hover {
-    background: var(--background-mentioned, rgb(250 168 26 / 10%));
-    box-shadow: inset 2px 0 0 var(--info-warning-foreground, #f0b232);
+    background: color-mix(in srgb, var(--vc-ui-yellow) 12%, transparent);
+    box-shadow: inset 2px 0 0 var(--vc-ui-yellow);
 }
 
 .vc-peek-msg-row {
@@ -241,15 +204,15 @@
 .vc-peek-name {
     overflow: hidden;
     font-weight: 600;
-    color: var(--header-primary, var(--text-strong, #fff));
+    color: var(--vc-ui-title);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .vc-peek-tag {
     padding: 0 3px;
-    border-radius: 3px;
-    background: var(--brand-500, #5865f2);
+    border-radius: 4px;
+    background: var(--vc-ui-blue);
     color: #fff;
     font-size: 9px;
     font-weight: 600;
@@ -257,7 +220,7 @@
 
 .vc-peek-time {
     flex: none;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     font-size: 11px;
 }
 
@@ -272,7 +235,7 @@
 
 .vc-peek-muted,
 .vc-peek-muted-line {
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-peek-muted-line {
@@ -290,7 +253,7 @@
     gap: 4px;
     overflow: hidden;
     margin-left: 32px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     font-size: 11px;
     white-space: nowrap;
 }
@@ -310,7 +273,7 @@
     max-width: 220px;
     max-height: 140px;
     margin-top: 4px;
-    border-radius: 4px;
+    border-radius: 10px;
     object-fit: contain;
 }
 
@@ -326,14 +289,14 @@
 .vc-peek-embed {
     margin-top: 4px;
     padding: 4px 8px;
-    border-left: 3px solid var(--background-modifier-accent, rgb(128 128 128 / 40%));
-    border-radius: 4px;
-    background: var(--background-secondary, rgb(0 0 0 / 15%));
+    border-left: 3px solid var(--vc-ui-gray);
+    border-radius: 6px;
+    background: var(--vc-ui-group);
     font-size: 12px;
 }
 
 .vc-peek-embed-author {
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     font-size: 11px;
 }
 
@@ -358,8 +321,8 @@
     align-items: center;
     gap: 3px;
     padding: 0 5px;
-    border-radius: 6px;
-    background: var(--background-secondary, rgb(0 0 0 / 15%));
+    border-radius: 999px;
+    background: var(--vc-ui-field);
     font-size: 11px;
 }
 
@@ -375,24 +338,11 @@
     justify-content: center;
     min-height: 80px;
     padding: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     text-align: center;
 }
 
-.vc-peek-spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgb(128 128 128 / 35%);
-    border-top-color: var(--brand-500, #5865f2);
-    border-radius: 50%;
-    animation: vc-peek-spin 0.7s linear infinite;
-}
 
-@keyframes vc-peek-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
 
 /* ---------- Stream ---------- */
 
@@ -453,12 +403,12 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: var(--interactive-muted, rgb(128 128 128 / 50%));
+    background: var(--vc-ui-track);
     cursor: pointer;
 }
 
 .vc-peek-dot-active {
-    background: var(--interactive-active, #fff);
+    background: var(--vc-ui-title);
 }
 
 /* ---------- Voice channel ---------- */
@@ -483,7 +433,7 @@
 }
 
 .vc-peek-voice-row-live:hover {
-    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-peek-voice-avatar {
@@ -503,24 +453,11 @@
 
 .vc-peek-voice-icon {
     flex: none;
-    color: var(--interactive-normal, var(--text-muted));
+    color: var(--vc-ui-dim);
 }
 
-/* ---------- Settings ---------- */
 
-.vc-peek-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    color: var(--text-default, var(--text-normal));
-}
 
-.vc-peek-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
 
 .vc-peek-option-right {
     display: inline-flex;
@@ -528,81 +465,16 @@
     gap: 6px;
 }
 
-.vc-peek-label {
-    margin-top: 6px;
-    color: var(--header-secondary, var(--text-muted));
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
 
-.vc-peek-select,
-.vc-peek-number {
-    padding: 5px 8px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    border-radius: 6px;
-    background: var(--input-background, var(--background-tertiary));
-    color: var(--text-default, var(--text-normal));
-    font-size: 13px;
-}
 
-.vc-peek-number {
-    width: 80px;
-}
 
-.vc-peek-hint {
-    color: var(--text-muted);
-    font-size: 12px;
-}
 
-/* ---------- Hold key picker (Discord-like segmented control) ---------- */
 
-.vc-peek-segmented {
-    display: inline-flex;
-    padding: 2px;
-    gap: 2px;
-    border-radius: 6px;
-    background: var(--background-tertiary, var(--background-secondary-alt, #1e1f22));
-}
 
-.vc-peek-segment {
-    padding: 3px 10px;
-    border: none;
-    border-radius: 4px;
-    background: none;
-    color: var(--interactive-normal, #b5bac1);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-}
 
-.vc-peek-segment:hover {
-    color: var(--interactive-hover, #dbdee1);
-    background: var(--background-modifier-hover, rgb(255 255 255 / 6%));
-}
 
-.vc-peek-segment-active,
-.vc-peek-segment-active:hover {
-    color: var(--interactive-active, #fff);
-    background: var(--background-modifier-selected, rgb(255 255 255 / 12%));
-}
 
-.vc-peek-small-btn {
-    padding: 3px 10px;
-    border: none;
-    border-radius: 4px;
-    background: var(--button-secondary-background, #4e5058);
-    color: #fff;
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-}
 
-.vc-peek-small-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
 
 /* ---------- Movable & resizable call stream preview ---------- */
 
@@ -632,7 +504,7 @@
     height: 14px;
     cursor: nwse-resize;
     z-index: 2;
-    background: linear-gradient(135deg, transparent 50%, rgb(255 255 255 / 35%) 50%, rgb(255 255 255 / 35%) 60%, transparent 60%, transparent 70%, rgb(255 255 255 / 35%) 70%, rgb(255 255 255 / 35%) 80%, transparent 80%);
+    background: linear-gradient(135deg, transparent 50%, var(--vc-ui-dim) 50%, var(--vc-ui-dim) 60%, transparent 60%, transparent 70%, var(--vc-ui-dim) 70%, var(--vc-ui-dim) 80%, transparent 80%);
     opacity: 0.6;
 }
 
@@ -665,7 +537,7 @@
 }
 
 .vc-peek-embed-title a {
-    color: var(--text-link, #00a8fc);
+    color: var(--vc-ui-blue);
     text-decoration: none;
 }
 
@@ -688,25 +560,30 @@
 
 .vc-peek-embed-field-name {
     font-weight: 600;
-    color: var(--header-primary, var(--text-normal));
+    color: var(--vc-ui-title);
 }
 
 .vc-peek-embed-thumb {
     width: 48px;
     height: 48px;
     flex: none;
-    border-radius: 4px;
+    border-radius: 6px;
     object-fit: cover;
 }
 
 .vc-peek-embed-footer {
     margin-top: 4px;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 /* ChatPopout's component renderer, scaled down for the compact preview */
 .vc-peek-components {
     font-size: 12px;
     zoom: 0.9;
+}
+
+/* Number fields in the settings */
+.vc-peek-number {
+    width: 80px;
 }

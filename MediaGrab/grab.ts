@@ -11,6 +11,7 @@ import { CloudUploadPlatform } from "@vencord/discord-types/enums";
 import { findLazy } from "@webpack";
 import { Constants, DraftType, RestAPI, SnowflakeUtils, UploadHandler, UserStore } from "@webpack/common";
 
+import { ICONS } from "../_ui";
 import type { JobState, SetupState } from "./native";
 import { settings } from "./settings";
 
@@ -142,14 +143,15 @@ function getStack() {
 
 function createCard(title: string, onCancel: () => void) {
     const card = document.createElement("div");
-    card.className = "vc-mediagrab-card";
+    // Same glass look as the _ui kit's notifications, but updated live
+    card.className = "vc-ui-notify vc-mediagrab-card";
     card.innerHTML = `
         <div class="vc-mediagrab-row">
             <div class="vc-mediagrab-name"></div>
-            <button class="vc-mediagrab-x" title="Cancel">✕</button>
+            <button class="vc-ui-icon-btn vc-mediagrab-x" title="Cancel"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="${ICONS.close}"/></svg></button>
         </div>
         <div class="vc-mediagrab-status"></div>
-        <div class="vc-mediagrab-bar"><div class="vc-mediagrab-fill"></div></div>`;
+        <div class="vc-ui-progress vc-mediagrab-bar"><div class="vc-mediagrab-fill"></div></div>`;
     const name = card.querySelector<HTMLElement>(".vc-mediagrab-name")!;
     const status = card.querySelector<HTMLElement>(".vc-mediagrab-status")!;
     const fill = card.querySelector<HTMLElement>(".vc-mediagrab-fill")!;
@@ -193,7 +195,7 @@ function createCard(title: string, onCancel: () => void) {
             x.onclick = close;
             if (action) {
                 const btn = document.createElement("button");
-                btn.className = "vc-mediagrab-action";
+                btn.className = "vc-ui-btn vc-ui-btn-plain vc-ui-btn-small vc-mediagrab-action";
                 btn.textContent = action.label;
                 btn.onclick = action.run;
                 status.append(" ", btn);

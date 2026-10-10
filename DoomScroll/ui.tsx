@@ -7,12 +7,12 @@ import "./ui.css";
 
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
 import { createRoot, Popout, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { Root } from "react-dom/client";
 
+import { Button, Popover, Row, Section, Segmented, Sheet, Slider, ToggleRow } from "../_ui";
 import { closeFeed, DoomState, getState, HANDLE_WIDTH, MIN_CHAT_WIDTH, MIN_SIDE_WIDTH, openFeed, refresh, sideAreaWidth, STRIP_HEIGHT, subscribe } from "./controller";
 import { BrandIcon } from "./icons";
 import { Native, settings } from "./index";
@@ -41,9 +41,9 @@ const LAYOUTS: { value: Layout; label: string; path: string; }[] = [
 const EXTERNAL_PATH = "M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7ZM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7Z";
 const CLOSE_PATH = "M18.4 4.2 12 10.6 5.6 4.2 4.2 5.6l6.4 6.4-6.4 6.4 1.4 1.4 6.4-6.4 6.4 6.4 1.4-1.4-6.4-6.4 6.4-6.4-1.4-1.4Z";
 
-function Icon({ path, size = 20 }: { path: string; size?: number; }) {
+function Icon({ path, size = 20, className }: { path: string; size?: number; className?: string; }) {
     return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={cl("icon")}>
+        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)}>
             <path fill="currentColor" fillRule="evenodd" d={path} />
         </svg>
     );
@@ -121,12 +121,12 @@ function setVolume(volume: number) {
     if (volume > 0 && settings.store.muted) setMuted(false);
 }
 
-function VolumeSlider({ wide }: { wide?: boolean; }) {
+function VolumeSlider() {
     const { muted, volume } = settings.use(["muted", "volume"]);
     const value = muted ? 0 : volume;
     return (
         <input
-            className={classes(cl("volume-slider"), wide && cl("volume-slider-wide"))}
+            className={cl("volume-slider")}
             type="range"
             min={0}
             max={100}
@@ -307,7 +307,7 @@ export function unmountRoot() {
 function PlatformMenu({ onClose }: { onClose(): void; }) {
     const { open, platform } = useDoomState();
     return (
-        <div className={cl("menu")} role="menu">
+        <Popover className={cl("menu")}>
             {PLATFORM_IDS.map(id => (
                 <Tooltip key={id} text={PLATFORMS[id].name}>
                     {({ onMouseEnter, onMouseLeave }) => (
@@ -327,7 +327,7 @@ function PlatformMenu({ onClose }: { onClose(): void; }) {
                     )}
                 </Tooltip>
             ))}
-        </div>
+        </Popover>
     );
 }
 
@@ -359,7 +359,7 @@ function TitleBarButton() {
                     className={classes(cl("titlebtn"), open && cl("titlebtn-active"))}
                     onClick={() => setShow(v => !v)}
                     tooltip={isShown ? null : "Doom scroll"}
-                    icon={() => <Icon path={FEED_PATH} />}
+                    icon={() => <Icon path={FEED_PATH} className="vc-ui-tb-icon" />}
                     selected={isShown || open}
                 />
             )}
@@ -382,98 +382,108 @@ type BoolKey = "muted" | "pauseWhenHidden" | "keepLoaded" | "showTitleBarButton"
 function Option({ label, setting, onChange }: { label: string; setting: BoolKey; onChange?(v: boolean): void; }) {
     const value = settings.use([setting])[setting];
     return (
-        <label className={cl("option")}>
-            <span>{label}</span>
-            <Switch checked={value} onChange={v => {
+        <ToggleRow
+            title={label}
+            checked={value}
+            onChange={v => {
                 settings.store[setting] = v;
                 onChange?.(v);
-            }} />
-        </label>
+            }}
+        />
     );
 }
 
-function NumberOption({ label, setting, min, max, step, onChange }: {
-    label: string; setting: "sideWidth" | "zoom"; min: number; max: number; step: number; onChange?(v: number): void;
+function NumberOption({ label, setting, min, max, step, unit, onChange }: {
+    label: string; setting: "sideWidth" | "zoom"; min: number; max: number; step: number; unit: string; onChange?(v: number): void;
 }) {
     const value = settings.use([setting])[setting];
     return (
-        <label className={cl("option")}>
-            <span>{label}</span>
-            <input
-                className={cl("number")}
-                type="number"
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={e => {
-                    const v = Math.max(min, Math.min(max, Math.round(Number(e.currentTarget.value) || min)));
-                    settings.store[setting] = v;
-                    onChange?.(v);
-                }}
-            />
-        </label>
+        <Row
+            title={label}
+            trailing={
+                <span className={cl("slider")}>
+                    <Slider
+                        value={value}
+                        min={min}
+                        max={max}
+                        step={step}
+                        format={v => `${v}${unit}`}
+                        onChange={v => {
+                            settings.store[setting] = v;
+                            onChange?.(v);
+                        }}
+                    />
+                </span>
+            }
+        />
     );
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
-    const { layout } = settings.use(["layout"]);
+    const { layout, muted, volume } = settings.use(["layout", "muted", "volume"]);
 
     return (
-        <div className={cl("settings")}>
-            <div className={cl("launch")}>
+        <Sheet embedded header={{ title: "DoomScroll", subtitle: "TikTok, Shorts and Reels right inside Discord", icon: FEED_PATH, iconColor: "pink" }}>
+            <Section title="Open a feed">
                 {PLATFORM_IDS.map(id => (
-                    <button
+                    <Row
                         key={id}
-                        className={cl("launch-btn")}
+                        leading={<span className={cl("brand-tile")}><BrandIcon id={id} size={18} /></span>}
+                        title={PLATFORMS[id].name}
+                        chevron
                         onClick={() => openFeed(id)}
-                    >
-                        <BrandIcon id={id} size={20} />
-                        {PLATFORMS[id].name}
-                    </button>
+                    />
                 ))}
-            </div>
+            </Section>
 
-            <div className={cl("option")}>
-                <span>Layout</span>
-                <div className={cl("segmented")}>
-                    {([["replace", "Cover all"], ["chat", "Only the chat"], ["side", "Next to chat"]] as const).map(([value, label]) => (
-                        <button
-                            key={value}
-                            className={classes(cl("segment"), layout === value && cl("segment-active"))}
-                            onClick={() => settings.store.layout = value}
+            <Section title="Layout">
+                <Row
+                    title="Layout"
+                    trailing={
+                        <Segmented<Layout>
+                            small
+                            value={layout as Layout}
+                            options={[{ value: "replace", label: "Cover all" }, { value: "chat", label: "Only the chat" }, { value: "side", label: "Next to chat" }]}
+                            onChange={v => settings.store.layout = v}
+                        />
+                    }
+                />
+                {layout === "side" && <NumberOption label="Panel width (px) - or drag the feed's left edge" setting="sideWidth" min={MIN_SIDE_WIDTH} max={1600} step={20} unit=" px" onChange={refresh} />}
+                <NumberOption label="Feed zoom (%)" setting="zoom" min={50} max={150} step={5} unit="%" onChange={v => Native?.setZoom(v / 100)} />
+                <Option label="Show the button in the title bar" setting="showTitleBarButton" />
+            </Section>
+
+            <Section title="Playback">
+                <Option label="Mute the feed" setting="muted" onChange={v => Native?.setMuted(v)} />
+                <Row
+                    title="Volume"
+                    trailing={
+                        <span className={cl("slider")}>
+                            <Slider value={muted ? 0 : volume} format={v => `${v}%`} onChange={setVolume} />
+                        </span>
+                    }
+                />
+                <Option label="Pause the video while the feed is hidden (menus, modals, closed)" setting="pauseWhenHidden" onChange={v => Native?.setPauseWhenHidden(v)} />
+                <Option label="Keep your place in the feed after closing it" setting="keepLoaded" />
+            </Section>
+
+            <Section footer="Logins stay saved in a separate browser session. Google may block signing in inside apps - YouTube Shorts works without an account.">
+                <Row
+                    title="Logins"
+                    trailing={
+                        <Button
+                            variant="destructive"
+                            small
+                            onClick={async () => {
+                                await Native?.clearData();
+                                showToast("Logged out of all feeds", "success");
+                            }}
                         >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            {layout === "side" && <NumberOption label="Panel width (px) - or drag the feed's left edge" setting="sideWidth" min={MIN_SIDE_WIDTH} max={1600} step={20} onChange={refresh} />}
-            <NumberOption label="Feed zoom (%)" setting="zoom" min={50} max={150} step={5} onChange={v => Native?.setZoom(v / 100)} />
-
-            <Option label="Show the button in the title bar" setting="showTitleBarButton" />
-            <Option label="Mute the feed" setting="muted" onChange={v => Native?.setMuted(v)} />
-            <label className={cl("option")}>
-                <span>Volume</span>
-                <VolumeSlider wide />
-            </label>
-            <Option label="Pause the video while the feed is hidden (menus, modals, closed)" setting="pauseWhenHidden" onChange={v => Native?.setPauseWhenHidden(v)} />
-            <Option label="Keep your place in the feed after closing it" setting="keepLoaded" />
-
-            <div className={cl("option")}>
-                <span>
-                    Logins stay saved in a separate browser session. Google may block signing in inside apps - YouTube Shorts works without an account.
-                </span>
-                <button
-                    className={cl("small-btn")}
-                    onClick={async () => {
-                        await Native?.clearData();
-                        showToast("Logged out of all feeds", "success");
-                    }}
-                >
-                    Log out everywhere
-                </button>
-            </div>
-        </div>
+                            Log out everywhere
+                        </Button>
+                    }
+                />
+            </Section>
+        </Sheet>
     );
 });

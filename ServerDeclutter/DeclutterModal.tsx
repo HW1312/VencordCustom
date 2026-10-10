@@ -4,12 +4,13 @@
  */
 
 import ErrorBoundary from "@components/ErrorBoundary";
-import { classes } from "@utils/misc";
-import { ConfirmModal, GuildReadStateStore, GuildStore, Modal, NavigationRouter, openModal, showToast, SortedGuildStore, useEffect, useMemo, UserGuildSettingsStore, useState } from "@webpack/common";
+import { GuildReadStateStore, GuildStore, NavigationRouter, showToast, SortedGuildStore, useEffect, useMemo, UserGuildSettingsStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { Badge, Button, classes, confirm as confirmAlert, Empty, Icon, IconButton, Note, notify, openWindow, Pill, Pills, Progress, RoundButton, SearchField, Sheet } from "../_ui";
+
 import { BulkResult, canWriteFolders, describeError, isOwnedGuild, leaveGuild, markGuildRead, moveToFolder, runBulk, setGuildMuted } from "./actions";
-import { Button, cl, GuildIcon, Icon, IconButton, IconName, LogEntry, Notice, ProgressBar, useJob } from "./components";
+import { cl, GuildIcon, ICON_COLOR, ICONS, LogEntry, useJob } from "./components";
 import { buildRows, buildSuggestions, FilterId, filterLabel, FILTERS, formatDate, GuildRow, matchesFilter, relative, SortKey, sortRows } from "./data";
 import { settings } from "./index";
 import { getActivity, onActivityChange } from "./store";
@@ -45,7 +46,7 @@ function useRows() {
         try {
             return buildRows();
         } catch (e) {
-            showToast(`Server list could not be read: ${describeError(e)}`, "failure");
+            notify({ title: "Server list could not be read", body: describeError(e), kind: "error", app: "ServerDeclutter" });
             return [];
         }
     }, [tick]);
@@ -70,38 +71,28 @@ function NameList({ rows }: { rows: GuildRow[]; }) {
     );
 }
 
-function confirm(opts: { title: string; subtitle?: string; confirmText: string; danger?: boolean; children?: ReactNode; }) {
-    return new Promise<boolean>(resolve => {
-        let done = false;
-        const finish = (v: boolean) => {
-            if (done) return;
-            done = true;
-            resolve(v);
-        };
-        openModal(props => (
-            <ConfirmModal
-                {...props}
-                title={opts.title}
-                subtitle={opts.subtitle}
-                confirmText={opts.confirmText}
-                cancelText="Cancel"
-                variant={opts.danger ? "critical-primary" : "primary"}
-                onConfirm={() => finish(true)}
-                onCancel={() => finish(false)}
-                onCloseCallback={() => finish(false)}
-            >
-                <ErrorBoundary noop>{opts.children}</ErrorBoundary>
-            </ConfirmModal>
-        ));
+async function confirm(opts: { title: string; subtitle?: string; confirmText: string; danger?: boolean; children?: ReactNode; }) {
+    return confirmAlert({
+        title: opts.title,
+        body: (
+            <ErrorBoundary noop>
+                {opts.subtitle && <div>{opts.subtitle}</div>}
+                {opts.children}
+            </ErrorBoundary>
+        ),
+        confirmText: opts.confirmText,
+        destructive: opts.danger,
+        icon: opts.danger ? ICONS.leave : ICONS.broom,
+        iconColor: opts.danger ? "red" : ICON_COLOR
     });
 }
 
-const ACTION_INFO: Record<ActionKind, { title: string; verb: string; icon: IconName; }> = {
-    mute: { title: "Mute", verb: "muted", icon: "bellOff" },
-    unmute: { title: "Unmute", verb: "unmuted", icon: "bell" },
-    read: { title: "Mark all as read", verb: "marked as read", icon: "check" },
-    archive: { title: "Move to archive folder", verb: "moved", icon: "folder" },
-    leave: { title: "Leave server", verb: "left", icon: "leave" }
+const ACTION_INFO: Record<ActionKind, { title: string; verb: string; icon: string; }> = {
+    mute: { title: "Mute", verb: "muted", icon: ICONS.bellOff },
+    unmute: { title: "Unmute", verb: "unmuted", icon: ICONS.bell },
+    read: { title: "Mark all as read", verb: "marked as read", icon: ICONS.check },
+    archive: { title: "Move to archive folder", verb: "moved", icon: ICONS.folder },
+    leave: { title: "Leave server", verb: "left", icon: ICONS.leave }
 };
 
 /** Which of the selected servers the action applies to at all */
@@ -150,7 +141,7 @@ function Row({ r, selected, onToggle, onAction, onOpen, busy, deadDays }: {
                         <GuildIcon id={r.id} icon={r.icon} name={r.name} />
                     </button>
                     <span className={cl("name")} title={r.name}>{r.name}</span>
-                    {r.owner && <span className={classes(cl("badge"), cl("badge-owner"))} title="Your server"><Icon name="crown" size={12} /></span>}
+                    {r.owner && <span className={cl("owner")} title="Your server"><Icon path={ICONS.crown} size={12} /></span>}
                 </div>
             </td>
             <td className={cl("num")}>{r.memberCount != null ? r.memberCount.toLocaleString() : "–"}</td>
@@ -168,10 +159,10 @@ function Row({ r, selected, onToggle, onAction, onOpen, busy, deadDays }: {
             <td title={r.lastActivity ? new Date(r.lastActivity).toLocaleString() : "No message known"}>
                 <span className={classes(dead && cl("text-bad"))}>{r.lastActivity ? relative(r.lastActivity) : "unknown"}</span>
             </td>
-            <td>{r.muted ? <span className={cl("badge")}>muted</span> : <span className={cl("muted")}>–</span>}</td>
+            <td>{r.muted ? <Badge>muted</Badge> : <span className={cl("muted")}>–</span>}</td>
             <td>
                 <div className={cl("unread-cell")}>
-                    {r.mentions > 0 && <span className={classes(cl("badge"), cl("badge-mention"))} title="Mentions">@{r.mentions}</span>}
+                    {r.mentions > 0 && <Badge color="red" solid title="Mentions">@{r.mentions}</Badge>}
                     {r.unreadChannels > 0
                         ? <span title="Channels with unread messages">{r.unreadChannels}</span>
                         : r.mentions === 0 && <span className={cl("muted")}>–</span>}
@@ -180,10 +171,10 @@ function Row({ r, selected, onToggle, onAction, onOpen, busy, deadDays }: {
             <td className={cl("folder")} title={r.folderName ?? undefined}>{r.folderName ?? <span className={cl("muted")}>–</span>}</td>
             <td className={cl("col-actions")}>
                 <div className={cl("row-actions")}>
-                    <IconButton disabled={busy} icon={r.muted ? "bell" : "bellOff"} title={r.muted ? "Unmute" : "Mute"} onClick={() => onAction(r.muted ? "unmute" : "mute", [r.id])} />
-                    <IconButton disabled={busy || (r.unreadChannels === 0 && r.mentions === 0)} icon="check" title="Mark as read" onClick={() => onAction("read", [r.id])} />
-                    <IconButton disabled={busy} icon="folder" title="Move to archive folder" onClick={() => onAction("archive", [r.id])} />
-                    <IconButton disabled={busy || r.owner} icon="leave" danger title={r.owner ? "You cannot leave servers you own" : "Leave server"} onClick={() => onAction("leave", [r.id])} />
+                    <IconButton disabled={busy} icon={r.muted ? ICONS.bell : ICONS.bellOff} label={r.muted ? "Unmute" : "Mute"} onClick={() => onAction(r.muted ? "unmute" : "mute", [r.id])} />
+                    <IconButton disabled={busy || (r.unreadChannels === 0 && r.mentions === 0)} icon={ICONS.check} label="Mark as read" onClick={() => onAction("read", [r.id])} />
+                    <IconButton disabled={busy} icon={ICONS.folder} label="Move to archive folder" onClick={() => onAction("archive", [r.id])} />
+                    <IconButton disabled={busy || r.owner} icon={ICONS.leave} destructive label={r.owner ? "You cannot leave servers you own" : "Leave server"} onClick={() => onAction("leave", [r.id])} />
                 </div>
             </td>
         </tr>
@@ -305,10 +296,10 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                 try {
                     await moveToFolder(ids2, archiveName);
                     hooks.onProgress({ done: 1, total: 1, label: "Done" });
-                    showToast(`${ids2.length} ${ids2.length === 1 ? "server" : "servers"} moved to "${archiveName}"`, "success");
+                    notify({ title: info.title, body: `${ids2.length} ${ids2.length === 1 ? "server" : "servers"} moved to "${archiveName}"`, kind: "success", app: "ServerDeclutter" });
                 } catch (e) {
                     hooks.onLog("error", describeError(e));
-                    showToast(`Move failed: ${describeError(e)}`, "failure");
+                    notify({ title: "Move failed", body: describeError(e), kind: "error", app: "ServerDeclutter" });
                 }
             });
             refresh();
@@ -328,7 +319,7 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
         try {
             result = await job.run(info.title, ids2.length, (token, hooks) => runBulk(ids2, worker, { token, interval, ...hooks }));
         } catch (e) {
-            showToast(`${info.title} failed: ${describeError(e)}`, "failure");
+            notify({ title: `${info.title} failed`, body: describeError(e), kind: "error", app: "ServerDeclutter" });
         }
         refresh();
         if (!result) return;
@@ -336,19 +327,20 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
         const parts = [`${result.ok.length} ${info.verb}`];
         if (result.failed.length) parts.push(`${result.failed.length} failed`);
         if (result.cancelled) parts.push("cancelled");
-        showToast(`${info.title}: ${parts.join(", ")}`, result.failed.length ? "failure" : "success");
+        notify({ title: info.title, body: parts.join(", "), kind: result.failed.length ? "error" : "success", app: "ServerDeclutter" });
         if (kind === "leave") setSelected(new Set());
     }
 
     const busy = job.state.running;
     const bulkIds = [...selected];
+    const pct = job.state.total > 0 ? Math.min(100, Math.round(job.state.done / job.state.total * 100)) : 0;
 
-    return (
-        <div className={cl("modal")}>
-            <Notice tone="info">
+    const top = (
+        <div className={cl("top")}>
+            <Note>
                 "Last opened" and "Last written" have only been tracked locally <b>since {new Date(since).toLocaleDateString()}</b> (installation or last reset).
                 Older values marked with "~" are estimates from Discord's read state; server activity comes from the newest known message.
-            </Notice>
+            </Note>
 
             {suggestions.length > 0 && (
                 <div className={cl("suggestions")}>
@@ -365,34 +357,27 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                 </div>
             )}
 
-            <div className={cl("toolbar")}>
-                <label className={cl("search")}>
-                    <Icon name="search" size={16} />
-                    <input placeholder="Search servers or folders …" value={search} onChange={e => setSearch(e.currentTarget.value)} />
-                    {search && <IconButton icon="close" title="Clear search" onClick={() => setSearch("")} />}
-                </label>
-                <div className={cl("chips")}>
-                    {FILTERS.map(f => (
-                        <button key={f} className={classes(cl("chip"), filter === f && cl("chip-active"))} onClick={() => setFilter(f)}>
-                            {filterLabel(f, thresholds)}
-                            <span className={cl("chip-count")}>{f === "all" ? rows.length : rows.filter(r => matchesFilter(r, f, thresholds)).length}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <SearchField placeholder="Search servers or folders …" value={search} onChange={setSearch} />
+            <Pills>
+                {FILTERS.map(f => (
+                    <Pill key={f} selected={filter === f} onClick={() => setFilter(f)}>
+                        {filterLabel(f, thresholds)}
+                        <span className={cl("pill-count")}>{f === "all" ? rows.length : rows.filter(r => matchesFilter(r, f, thresholds)).length}</span>
+                    </Pill>
+                ))}
+            </Pills>
 
             <div className={classes(cl("bulkbar"), selected.size > 0 && cl("bulkbar-active"))}>
                 <span className={cl("bulk-count")}>{selected.size ? `${selected.size} selected` : `${visible.length} of ${rows.length} servers`}</span>
-                {selected.size > 0 && <button className={cl("link")} onClick={() => setSelected(new Set())}>Clear selection</button>}
+                {selected.size > 0 && <Button small variant="plain" onClick={() => setSelected(new Set())}>Clear selection</Button>}
                 <span className={cl("spacer")} />
-                <Button small variant="ghost" icon="bellOff" disabled={busy || !selected.size} onClick={() => runAction("mute", bulkIds)}>Mute</Button>
-                <Button small variant="ghost" icon="bell" disabled={busy || !selected.size} onClick={() => runAction("unmute", bulkIds)}>Unmute</Button>
-                <Button small variant="ghost" icon="check" disabled={busy || !selected.size} onClick={() => runAction("read", bulkIds)}>Read</Button>
-                <Button small variant="ghost" icon="folder" disabled={busy || !selected.size || !folderWritable} title={folderWritable ? undefined : "Server folders cannot be written in this Discord version"} onClick={() => runAction("archive", bulkIds)}>
+                <Button small variant="gray" icon={ICONS.bellOff} disabled={busy || !selected.size} onClick={() => runAction("mute", bulkIds)}>Mute</Button>
+                <Button small variant="gray" icon={ICONS.bell} disabled={busy || !selected.size} onClick={() => runAction("unmute", bulkIds)}>Unmute</Button>
+                <Button small variant="gray" icon={ICONS.check} disabled={busy || !selected.size} onClick={() => runAction("read", bulkIds)}>Read</Button>
+                <Button small variant="gray" icon={ICONS.folder} disabled={busy || !selected.size || !folderWritable} title={folderWritable ? undefined : "Server folders cannot be written in this Discord version"} onClick={() => runAction("archive", bulkIds)}>
                     &quot;{archiveName}&quot;
                 </Button>
-                <Button small variant="danger" icon="leave" disabled={busy || !selected.size} onClick={() => runAction("leave", bulkIds)}>Leave</Button>
-                <IconButton icon="refresh" title="Reload" onClick={refresh} />
+                <Button small variant="destructive" icon={ICONS.leave} disabled={busy || !selected.size} onClick={() => runAction("leave", bulkIds)}>Leave</Button>
             </div>
 
             {(busy || job.state.log.length > 0) && (
@@ -401,14 +386,37 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                         <b>{job.state.title}</b>
                         <span className={cl("spacer")} />
                         {busy
-                            ? <Button small variant="danger" icon="stop" onClick={job.cancel}>Cancel</Button>
-                            : <Button small variant="ghost" icon="close" onClick={job.clearLog}>Close</Button>}
+                            ? <Button small variant="destructive" icon={ICONS.stop} onClick={job.cancel}>Cancel</Button>
+                            : <Button small variant="gray" icon={ICONS.close} onClick={job.clearLog}>Close</Button>}
                     </div>
-                    {busy && <ProgressBar done={job.state.done} total={job.state.total} label={job.state.label} />}
+                    {busy && (
+                        <>
+                            <div className={cl("progress-head")}>
+                                <span className={cl("progress-label")}>{job.state.label}</span>
+                                <span className={cl("muted")}>{job.state.done} / {job.state.total} · {pct}%</span>
+                            </div>
+                            <Progress value={pct} color={ICON_COLOR} />
+                        </>
+                    )}
                     <LogList entries={job.state.log.filter(e => e.kind !== "ok")} />
                 </div>
             )}
+        </div>
+    );
 
+    return (
+        <Sheet
+            header={{
+                title: "Declutter servers",
+                subtitle: "Overview of all servers – mute, archive or leave",
+                icon: ICONS.broom,
+                iconColor: ICON_COLOR,
+                actions: <RoundButton icon={ICONS.refresh} label="Reload" onClick={refresh} />
+            }}
+            onClose={onCloseModal}
+            top={top}
+            notice={folderWritable ? undefined : "Server folders cannot be written in this Discord version – \"Move to archive\" is disabled."}
+        >
             <div className={cl("table-wrap")}>
                 <table className={cl("table")}>
                     <thead>
@@ -420,7 +428,7 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                                 <th key={c.key} className={classes(c.num && cl("num"), sort.key === c.key && cl("th-active"))} title={c.title} onClick={() => sortBy(c.key)}>
                                     <span className={cl("th")}>
                                         {c.label}
-                                        {sort.key === c.key && <Icon name={sort.dir === 1 ? "arrowUp" : "arrowDown"} size={14} />}
+                                        {sort.key === c.key && <Icon path={sort.dir === 1 ? ICONS.arrowUp : ICONS.arrowDown} size={14} />}
                                     </span>
                                 </th>
                             ))}
@@ -442,22 +450,12 @@ function DeclutterPanel({ onCloseModal, initialGuildId }: { onCloseModal(): void
                         ))}
                     </tbody>
                 </table>
-                {visible.length === 0 && <div className={cl("empty")}>No servers match this filter.</div>}
+                {visible.length === 0 && <Empty icon={ICONS.search} title="No servers match this filter." />}
             </div>
-
-            {!folderWritable && (
-                <Notice tone="warn">Server folders cannot be written in this Discord version – "Move to archive" is disabled.</Notice>
-            )}
-        </div>
+        </Sheet>
     );
 }
 
 export function openDeclutterModal(guildId?: string) {
-    openModal(props => (
-        <Modal {...props} size="xl" title="Declutter servers" subtitle="Overview of all servers – mute, archive or leave">
-            <ErrorBoundary>
-                <DeclutterPanel initialGuildId={guildId} onCloseModal={props.onClose} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => <DeclutterPanel initialGuildId={guildId} onCloseModal={close} />, { size: "large", className: cl("window") });
 }

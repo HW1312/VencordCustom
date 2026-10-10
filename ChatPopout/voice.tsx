@@ -8,6 +8,7 @@ import { classes } from "@utils/misc";
 import { findByPropsLazy, findStoreLazy } from "@webpack";
 import { GuildChannelStore, MediaEngineStore, PermissionsBits, PermissionStore, RestAPI, SelectedChannelStore, showToast, UserStore, useState, useStateFromStores, VoiceStateStore } from "@webpack/common";
 
+import { Slider } from "../_ui";
 import { isInCall, openCallPopout, settings } from "./index";
 import { MenuItem } from "./menu";
 import { CALL_PATH, CHEVRON_PATH, cl, DEAF_PATH, displayName, Icon, log, MUTE_PATH, SPEAKER_PATH, tip, userAvatar } from "./shared";
@@ -145,16 +146,11 @@ export function VolumeSlider({ userId, context = "default", label = "User Volume
                 <span>{label}</span>
                 <span className={cl("volume-value")}>{value}%</span>
             </div>
-            <input
-                className={cl("volume-slider")}
-                type="range"
+            <Slider
+                value={value}
                 min={0}
                 max={200}
-                step={1}
-                value={value}
-                style={{ "--fill": `${value / 2}%` } as React.CSSProperties}
-                onChange={e => {
-                    const v = Number(e.currentTarget.value);
+                onChange={v => {
                     setValue(v);
                     setUserVolume(userId, v, context);
                 }}

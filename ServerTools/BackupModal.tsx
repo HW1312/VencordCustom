@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { chooseFile, saveFile } from "@utils/web";
-import { ChannelStore, GuildRoleStore, GuildStore, Modal, openModal, showToast, useMemo, UserStore, useState } from "@webpack/common";
+import { ChannelStore, GuildRoleStore, GuildStore, showToast, useMemo, UserStore, useState } from "@webpack/common";
 
+import { openWindow, Segmented, Sheet, Stats, Toggle } from "../_ui";
 import { BackupBundle, backupFileName, buildZip, collectBackup, estimateRequests, getOwnedGuilds, readBackupZip, RestoreSections, runRestore, summarize } from "./backup";
-import { Button, Card, cl, Icon, LogList, Notice, ProgressBar, QueueBadge, Segmented, Stat, ToggleRow, useJob } from "./components";
+import { Button, Card, cl, Icon, ICON_COLOR, ICONS, LogList, Notice, ProgressBar, QueueBadge, ToggleRow, useJob } from "./components";
 import { describeError, isCancelled, queueConfig } from "./queue";
 
 type Tab = "export" | "restore";
@@ -32,7 +32,7 @@ export function GuildSelect({ guilds, value, onChange, disabled, placeholder }: 
     placeholder?: string;
 }) {
     return (
-        <select className={cl("select")} value={value ?? ""} disabled={disabled} onChange={e => onChange(e.currentTarget.value)}>
+        <select className={classes("vc-ui-field", "vc-ui-select", cl("select"))} value={value ?? ""} disabled={disabled} onChange={e => onChange(e.currentTarget.value)}>
             <option value="" disabled>{placeholder ?? "Select server …"}</option>
             {guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
@@ -80,7 +80,7 @@ function ExportTab({ initialGuildId }: { initialGuildId: string | null; }) {
 
     return (
         <div className={cl("stack")}>
-            <Card title="Source" icon="archive">
+            <Card title="Source">
                 <div className={cl("row-inline")}>
                     {guild && <GuildIcon guild={guild} />}
                     <GuildSelect guilds={guilds} value={guildId} disabled={job.state.running} onChange={id => { setGuildId(id); setBundle(null); }} />
@@ -99,22 +99,22 @@ function ExportTab({ initialGuildId }: { initialGuildId: string | null; }) {
             </Card>
 
             {(job.state.running || job.state.log.length > 0) && (
-                <Card title="Progress" icon="pulse" right={<QueueBadge />}>
+                <Card title="Progress" right={<QueueBadge />}>
                     {job.state.running && <ProgressBar done={job.state.done} total={job.state.total} label={job.state.label} indeterminate={job.state.total <= 1} />}
                     <LogList entries={job.state.log} />
                 </Card>
             )}
 
             {bundle && sum && (
-                <Card title="Summary" icon="check">
-                    <div className={cl("stats")}>
-                        <Stat label="Roles" value={sum.roles} />
-                        <Stat label="Categories" value={sum.categories} />
-                        <Stat label="Channels" value={sum.channels} />
-                        <Stat label="Emojis" value={sum.emojis} />
-                        <Stat label="Sticker" value={sum.stickers} />
-                        <Stat label="Webhooks" value={sum.webhooks} />
-                    </div>
+                <Card title="Summary">
+                    <Stats items={[
+                        { label: "Roles", value: sum.roles },
+                        { label: "Categories", value: sum.categories },
+                        { label: "Channels", value: sum.channels },
+                        { label: "Emojis", value: sum.emojis },
+                        { label: "Sticker", value: sum.stickers },
+                        { label: "Webhooks", value: sum.webhooks }
+                    ]} />
                     <div className={cl("hint")}>
                         {Object.keys(bundle.files).length} image files ({formatBytes(fileBytes)}) · Server “{bundle.backup.source.name}”
                     </div>
@@ -204,7 +204,7 @@ function RestoreTab() {
 
     return (
         <div className={cl("stack")}>
-            <Card title="Backup file" icon="upload">
+            <Card title="Backup file">
                 <div className={cl("row-inline")}>
                     <Button icon="upload" variant={bundle ? "ghost" : "primary"} disabled={job.state.running} onClick={pick}>
                         {bundle ? "Choose another file" : "Choose backup (.zip)"}
@@ -218,7 +218,7 @@ function RestoreTab() {
             </Card>
 
             {bundle && (
-                <Card title="Target server" icon="shield">
+                <Card title="Target server">
                     {owned.length === 0
                         ? <Notice tone="warn">You don't own any server. Create a new, empty server first.</Notice>
                         : (
@@ -240,7 +240,7 @@ function RestoreTab() {
             )}
 
             {bundle && (
-                <Card title="What will be created?" icon="table">
+                <Card title="What will be created?">
                     {(Object.keys(SECTION_LABELS) as (keyof RestoreSections)[]).map(key => (
                         <ToggleRow
                             key={key}
@@ -267,7 +267,7 @@ function RestoreTab() {
                                 messages and <b>{existingRoles} roles</b> will be permanently deleted. Nobody can undo this.
                             </div>
                             <label className={cl("confirm")}>
-                                <input type="checkbox" checked={deleteConfirmed} disabled={!target || job.state.running} onChange={e => setDeleteConfirmed(e.currentTarget.checked)} />
+                                <Toggle color="red" checked={deleteConfirmed} disabled={!target || job.state.running} onChange={setDeleteConfirmed} label="Confirm deletion" />
                                 <span>Yes, I want to delete everything in “{target?.name ?? "…"}”.</span>
                             </label>
                         </div>
@@ -276,7 +276,7 @@ function RestoreTab() {
             )}
 
             {bundle && (
-                <Card title="Start" icon="play" right={<QueueBadge />}>
+                <Card title="Start" right={<QueueBadge />}>
                     <Notice tone="info">
                         The restore sends about <b>{requests} API requests</b> from your account. They are throttled on purpose
                         (roughly one per {queueConfig.interval / 1000 === 1 ? "second" : `${queueConfig.interval / 1000} s`}),
@@ -311,31 +311,32 @@ function RestoreTab() {
 
 // ---------------------------------------------------------------- Window
 
-function BackupPanel({ guildId, initialTab }: { guildId: string | null; initialTab: Tab; }) {
+function BackupWindow({ guildId, initialTab, close }: { guildId: string | null; initialTab: Tab; close(): void; }) {
     const [tab, setTab] = useState<Tab>(initialTab);
     return (
-        <div className={cl("modal")}>
-            <Segmented<Tab>
-                value={tab}
-                onChange={setTab}
-                options={[
-                    { value: "export", label: "Create backup" },
-                    { value: "restore", label: "Restore" }
-                ]}
-            />
+        <Sheet
+            header={{ title: "ServerBackup", subtitle: "Back up a server and restore it into a server of your own", icon: ICONS.archive, iconColor: ICON_COLOR }}
+            onClose={close}
+            top={
+                <div className={cl("tabs")}>
+                    <Segmented<Tab>
+                        value={tab}
+                        onChange={setTab}
+                        options={[
+                            { value: "export", label: "Create backup" },
+                            { value: "restore", label: "Restore" }
+                        ]}
+                    />
+                </div>
+            }
+        >
             {/* Both tabs stay mounted so a running job keeps going when switching */}
             <div hidden={tab !== "export"}><ExportTab initialGuildId={guildId} /></div>
             <div hidden={tab !== "restore"}><RestoreTab /></div>
-        </div>
+        </Sheet>
     );
 }
 
 export function openBackupModal(guildId: string | null, tab: Tab = "export") {
-    openModal(props => (
-        <Modal {...props} size="lg" title="ServerBackup" subtitle="Back up a server and restore it into a server of your own">
-            <ErrorBoundary>
-                <BackupPanel guildId={guildId} initialTab={tab} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => <BackupWindow guildId={guildId} initialTab={tab} close={close} />, { size: "large" });
 }

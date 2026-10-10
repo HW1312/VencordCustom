@@ -10,7 +10,6 @@
 import "./ui.css";
 
 import { definePluginSettings, Settings } from "@api/Settings";
-import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
@@ -20,9 +19,11 @@ import { checkForUpdates, update } from "@utils/updater";
 import { findComponentByCodeLazy } from "@webpack";
 import { Popout, useEffect, useRef, useState } from "@webpack/common";
 
+import { Badge, Button, Icon, ICONS, Popover, Row, Section, Sheet, Spinner, useListener } from "../_ui";
+
 import gitHash from "~git-hash";
 
-const cl = classNameFactory("vc-updatebtn-");
+const cl = (name: string) => `vc-updatebtn-${name}`;
 const logger = new Logger("UpdateButton");
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
@@ -65,16 +66,6 @@ const listeners = new Set<() => void>();
 function set(patch: Partial<typeof state>) {
     Object.assign(state, patch);
     listeners.forEach(l => l());
-}
-
-function useUpdateState() {
-    const [, setTick] = useState(0);
-    useEffect(() => {
-        const l = () => setTick(t => t + 1);
-        listeners.add(l);
-        return () => void listeners.delete(l);
-    }, []);
-    return state;
 }
 
 /** The friends' package (standalone build from GitHub releases) – your own dev build is updated via npm run build */
@@ -207,9 +198,6 @@ function restart() {
 
 // ---------------------------------------------------------------- UI
 
-const DOWNLOAD_PATH = "M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 0 1 1-1h16a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1Z";
-const REFRESH_PATH = "M4 12a8 8 0 0 1 14.32-4.9V5a1 1 0 1 1 2 0v5a1 1 0 0 1-1 1h-5a1 1 0 1 1 0-2h2.6A6 6 0 1 0 18 12a1 1 0 1 1 2 0A8 8 0 1 1 4 12Z";
-
 /** Like a diff: + added, - removed, ✓ fixed */
 const SIGN: Record<Exclude<Kind, null>, string> = { new: "+", removed: "−", fix: "✓", improved: "↑" };
 const ORDER: Kind[] = ["new", "improved", "fix", "removed", null];
@@ -223,14 +211,6 @@ const PREVIEW_NOTES: Release = {
     ]
 };
 
-function Svg({ path, size = 20 }: { path: string; size?: number; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
-
 function ago(ts: number) {
     if (!ts) return "Not checked yet";
     const s = Math.round((Date.now() - ts) / 1000);
@@ -240,13 +220,11 @@ function ago(ts: number) {
     return `Checked ${Math.round(m / 60)} h ago`;
 }
 
-
 function Changelog({ release, ready }: { release: Release | null; ready: boolean; }) {
     if (!release) return null;
     const items = [...release.items].sort((x, y) => ORDER.indexOf(x.kind) - ORDER.indexOf(y.kind));
     return (
-        <div className={cl("changes")}>
-            <div className={cl("changes-head")}>{ready ? "What's new" : "In this version"}</div>
+        <Section title={ready ? "What's new" : "In this version"}>
             <div className={cl("changes-list")}>
                 {items.map((it, i) => (
                     <div key={i} className={cl("change")}>
@@ -255,12 +233,13 @@ function Changelog({ release, ready }: { release: Release | null; ready: boolean
                     </div>
                 ))}
             </div>
-        </div>
+        </Section>
     );
 }
 
 function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
-    const s = useUpdateState();
+    useListener(listeners);
+    const s = state;
 
     // Opening the panel checks right away if nothing has been checked yet (otherwise only refreshes the notes)
     useEffect(() => {
@@ -275,42 +254,43 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
                     : "You're up to date";
 
     const release = preview ? PREVIEW_NOTES : notesToShow(ready);
+    const tone = ready ? "purple" : busy() ? "orange" : s.status === "error" ? "red" : "green";
 
     return (
-        <div className={cl("panel")}>
-            <div className={cl("head")}>
-                <div className={cl("title")}>VencordCustom</div>
-                <button className={cl("version")} onClick={() => window.open(`https://github.com/${REPO}/releases`, "_blank")} title="All releases on GitHub">{gitHash}</button>
-            </div>
-
-            <div className={cl("status")}>
-                <span className={classes(cl("dot"), ready ? cl("dot-ready") : busy() ? cl("dot-busy") : s.status === "error" ? cl("dot-error") : cl("dot-idle"))} />
-                <div className={cl("status-text")}>
-                    <div className={cl("status-label")}>{status}</div>
-                    <div className={cl("status-sub")}>{s.status === "error" ? s.error : ago(s.lastCheck)}</div>
-                </div>
-            </div>
-
-            <Changelog release={release} ready={ready} />
-
-            <div className={cl("actions")}>
-                <button className={classes(cl("btn"), cl("btn-secondary"))} disabled={busy() || ready} onClick={() => check()}>
-                    <span className={classes(cl("btn-icon"), busy() && cl("spin"))}><Svg path={REFRESH_PATH} size={16} /></span>
-                    {busy() ? "Checking …" : "Check for updates"}
-                </button>
-                {ready && (
-                    <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => !preview && restart()}>
-                        <Svg path={DOWNLOAD_PATH} size={16} /> Restart now
-                    </button>
-                )}
-            </div>
-        </div>
+        <Popover width={320}>
+            <Sheet
+                header={{
+                    title: "VencordCustom",
+                    icon: ICONS.download,
+                    iconColor: "purple",
+                    actions: <Badge color="purple" title="All releases on GitHub" onClick={() => window.open(`https://github.com/${REPO}/releases`, "_blank")}>{gitHash}</Badge>
+                }}
+                footer={
+                    <div className={cl("actions")}>
+                        <Button variant="gray" wide icon={busy() ? undefined : ICONS.refresh} disabled={busy() || ready} onClick={() => check()}>
+                            {busy() && <Spinner />}{busy() ? "Checking …" : "Check for updates"}
+                        </Button>
+                        {ready && <Button wide color="purple" icon={ICONS.download} onClick={() => !preview && restart()}>Restart now</Button>}
+                    </div>
+                }
+            >
+                <Section>
+                    <Row
+                        leading={<span className={classes(cl("dot"), cl(`dot-${tone}`), ready && cl("dot-ready"), busy() && cl("dot-busy"))} />}
+                        title={status}
+                        subtitle={s.status === "error" ? s.error : ago(s.lastCheck)}
+                    />
+                </Section>
+                <Changelog release={release} ready={ready} />
+            </Sheet>
+        </Popover>
     );
 }
 
 function UpdateButton() {
     const { preview } = settings.use(["preview"]);
-    const s = useUpdateState();
+    useListener(listeners);
+    const s = state;
     const ref = useRef(null);
     const [show, setShow] = useState(false);
     const ready = s.status === "ready" || preview;
@@ -332,7 +312,7 @@ function UpdateButton() {
                     ref={ref}
                     className={classes("vc-updatebtn", ready && "vc-updatebtn-ready")}
                     tooltip={isShown ? null : tooltip}
-                    icon={() => <Svg path={DOWNLOAD_PATH} />}
+                    icon={() => <Icon path={ICONS.download} size={20} className="vc-ui-tb-icon" />}
                     selected={isShown}
                     onClick={() => setShow(v => !v)}
                 />

@@ -1,322 +1,86 @@
 /* ---------- Window ---------- */
 
-.vc-formathub-hub {
+/* The tabs scroll inside their own columns, the window body itself stays fixed */
+.vc-formathub-window .vc-ui-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
+    overflow: hidden;
 }
 
 .vc-formathub-tabs {
-    display: flex;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 10px;
+    flex: none;
     overflow-x: auto;
     scrollbar-width: none;
-    background: var(--background-mod-subtle, var(--background-modifier-accent, rgb(128 128 128 / 12%)));
 }
 
-.vc-formathub-tab {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1 0 auto;
-    justify-content: center;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 0.12s, color 0.12s;
+.vc-formathub-tabs .vc-ui-segmented {
+    min-width: 760px;
 }
 
-.vc-formathub-tab:hover {
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-mod-subtle, rgb(128 128 128 / 12%));
-}
-
-.vc-formathub-tab-active,
-.vc-formathub-tab-active:hover {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-}
-
-.vc-formathub-content {
-    height: min(620px, calc(100vh - 280px));
-    min-height: 320px;
+.vc-formathub-split,
+.vc-formathub-decoder,
+.vc-formathub-columns {
+    display: grid;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
 }
 
 .vc-formathub-split {
-    display: grid;
     grid-template-columns: minmax(250px, 320px) 1fr;
-    gap: 14px;
-    height: 100%;
 }
 
-.vc-formathub-side {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px;
+.vc-formathub-decoder {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
 }
 
 .vc-formathub-columns {
-    display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    height: 100%;
     overflow-y: auto;
+}
+
+.vc-formathub-side,
+.vc-formathub-decoder-input {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.vc-formathub-side .vc-ui-section,
+.vc-formathub-decoder-input .vc-ui-section {
+    margin: 0;
 }
 
 .vc-formathub-muted {
     font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-formathub-bad {
-    font-size: 12px;
-    color: var(--text-feedback-critical, var(--status-danger, #f23f43));
-}
-
-.vc-formathub-info {
-    font-size: 12px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    color: var(--text-default, var(--text-normal));
-    background: rgb(88 101 242 / 12%);
-    border: 1px solid rgb(88 101 242 / 35%);
-}
-
-.vc-formathub-empty {
-    padding: 16px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-formathub-row {
     display: flex;
     align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
-    gap: 8px;
-}
-
-/* ---------- Sections & fields ---------- */
-
-.vc-formathub-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.vc-formathub-section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--text-muted);
 }
 
 .vc-formathub-fields {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-}
-
-.vc-formathub-field {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-formathub-input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 7px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border-default, var(--border-subtle, transparent));
-    background: var(--input-background-default, var(--background-base-lowest, var(--background-tertiary)));
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-}
-
-.vc-formathub-input:focus {
-    border-color: var(--border-focus, var(--brand-500, #5865f2));
+    gap: 8px;
 }
 
 .vc-formathub-mono {
-    font-family: var(--font-code, monospace);
-    font-size: 13px;
+    font-family: var(--vc-ui-mono);
 }
 
-.vc-formathub-search {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 6px 0 10px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border-default, var(--border-subtle, transparent));
-    background: var(--input-background-default, var(--background-base-lowest, var(--background-tertiary)));
-    color: var(--text-muted);
-}
-
-.vc-formathub-search:focus-within {
-    border-color: var(--border-focus, var(--brand-500, #5865f2));
-}
-
-.vc-formathub-search input {
-    flex: 1;
-    min-width: 0;
-    padding: 7px 0;
-    border: none;
-    background: transparent;
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-    outline: none;
-}
-
-/* ---------- Buttons ---------- */
-
-.vc-formathub-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border: none;
-    border-radius: 6px;
-    background: var(--control-secondary-background-default, var(--background-mod-strong, rgb(128 128 128 / 20%)));
-    color: var(--text-default, var(--text-normal));
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 0.12s, filter 0.12s;
-}
-
-.vc-formathub-btn:hover:not(:disabled) {
-    background: var(--control-secondary-background-hover, var(--background-mod-strong, rgb(128 128 128 / 30%)));
-}
-
-.vc-formathub-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.vc-formathub-btn-brand,
-.vc-formathub-btn-brand:hover:not(:disabled) {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-}
-
-.vc-formathub-btn-brand:hover:not(:disabled) {
-    filter: brightness(1.1);
-}
-
-.vc-formathub-btn-danger,
-.vc-formathub-btn-danger:hover:not(:disabled) {
-    background: var(--control-critical-primary-background-default, var(--status-danger, #f23f43));
-    color: var(--control-critical-primary-text-default, #fff);
-}
-
-.vc-formathub-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--interactive-icon-default, var(--interactive-normal));
-    cursor: pointer;
-}
-
-.vc-formathub-icon-btn:hover {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-    background: var(--background-mod-subtle, rgb(128 128 128 / 15%));
-}
-
-.vc-formathub-star-on,
-.vc-formathub-star-on:hover {
-    color: var(--status-warning, #f0b232);
-}
-
-.vc-formathub-link-btn {
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--text-link, #00a8fc);
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    cursor: pointer;
-}
-
-.vc-formathub-link-btn:hover {
-    text-decoration: underline;
-}
-
-.vc-formathub-chips,
-.vc-formathub-quick {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
-.vc-formathub-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    border-radius: 999px;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-formathub-chip:hover {
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-mod-subtle, rgb(128 128 128 / 12%));
-}
-
-.vc-formathub-chip-active,
-.vc-formathub-chip-active:hover {
-    border-color: var(--brand-500, #5865f2);
-    background: rgb(88 101 242 / 18%);
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-formathub-chip-count {
-    min-width: 16px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: var(--background-mod-strong, rgb(128 128 128 / 25%));
-    font-size: 11px;
-    line-height: 16px;
-    text-align: center;
-}
-
-.vc-formathub-tab-active .vc-formathub-chip-count {
-    background: rgb(255 255 255 / 25%);
+.vc-formathub-datetime {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 6px;
 }
 
 /* ---------- Picker list ---------- */
@@ -324,7 +88,7 @@
 .vc-formathub-picker {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-height: 0;
 }
 
@@ -334,10 +98,10 @@
     gap: 1px;
     max-height: 300px;
     overflow-y: auto;
-    padding: 3px;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-base-lower, var(--background-secondary));
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    scrollbar-width: thin;
 }
 
 .vc-formathub-picker-grid {
@@ -350,11 +114,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 8px;
+    padding: 6px 8px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     background: transparent;
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
     text-align: left;
     cursor: pointer;
 }
@@ -365,13 +130,13 @@
 }
 
 .vc-formathub-item:hover {
-    background: var(--background-mod-subtle, rgb(128 128 128 / 15%));
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-formathub-item-selected,
 .vc-formathub-item-selected:hover {
-    background: rgb(88 101 242 / 22%);
-    box-shadow: inset 0 0 0 1px var(--brand-500, #5865f2);
+    background: color-mix(in srgb, var(--vc-ui-blue) 18%, transparent);
+    box-shadow: inset 0 0 0 1px var(--vc-ui-blue);
 }
 
 .vc-formathub-item-avatar {
@@ -392,7 +157,7 @@
     flex-shrink: 0;
     text-align: center;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-formathub-item-text {
@@ -411,36 +176,44 @@
 .vc-formathub-item-name {
     font-size: 14px;
     font-weight: 500;
+    color: var(--vc-ui-title);
 }
 
 .vc-formathub-item-sub {
-    font-size: 11px;
-    color: var(--text-muted);
+    font-size: 12px;
+    color: var(--vc-ui-dim);
 }
 
 /* ---------- Entries ---------- */
 
-.vc-formathub-entries {
+.vc-formathub-entries,
+.vc-formathub-tokens {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-height: 0;
     overflow-y: auto;
     padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.vc-formathub-entry,
+.vc-formathub-token {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    border: 0.5px solid var(--vc-ui-edge);
+    transition: background 0.15s;
 }
 
 .vc-formathub-entry {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-base-lower, var(--background-secondary));
+    gap: 8px;
 }
 
 .vc-formathub-entry:hover {
-    border-color: var(--background-mod-strong, var(--interactive-muted, rgb(128 128 128 / 40%)));
+    background: var(--vc-ui-group-hover);
 }
 
 .vc-formathub-entry-head {
@@ -451,8 +224,9 @@
 }
 
 .vc-formathub-entry-label {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--vc-ui-title);
     white-space: nowrap;
 }
 
@@ -463,15 +237,23 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-formathub-entry-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     margin-left: auto;
     flex-shrink: 0;
+}
+
+.vc-formathub-star-on {
+    color: var(--vc-ui-yellow);
+}
+
+.vc-formathub-star-on .vc-ui-icon-btn {
+    color: var(--vc-ui-yellow);
 }
 
 .vc-formathub-entry-body {
@@ -483,11 +265,11 @@
 
 .vc-formathub-syntax {
     display: block;
-    padding: 5px 8px;
-    border-radius: 6px;
-    background: var(--background-base-lowest, var(--background-tertiary));
-    color: var(--text-default, var(--text-normal));
-    font-family: var(--font-code, monospace);
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-mono);
     font-size: 12.5px;
     white-space: pre-wrap;
     word-break: break-all;
@@ -499,7 +281,7 @@
     padding: 3px 4px;
     font-size: 15px;
     line-height: 1.375;
-    word-wrap: break-word;
+    overflow-wrap: break-word;
     user-select: text;
     white-space: pre-wrap;
 }
@@ -510,75 +292,46 @@
 
 /* ---------- Decoder ---------- */
 
-.vc-formathub-decoder {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: 14px;
-    height: 100%;
-}
-
-.vc-formathub-decoder-input {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-height: 0;
-    overflow-y: auto;
-}
-
 .vc-formathub-textarea {
     min-height: 160px;
     resize: vertical;
-    font-family: var(--font-code, monospace);
+    font-family: var(--vc-ui-mono);
     font-size: 13px;
-}
-
-.vc-formathub-tokens {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px;
 }
 
 .vc-formathub-token {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    border-left-width: 4px;
-    background: var(--background-base-lower, var(--background-secondary));
+    border-left: 4px solid var(--vc-ui-gray);
 }
 
 .vc-formathub-token-ok {
-    border-left-color: var(--status-positive, #23a55a);
+    border-left-color: var(--vc-ui-green);
 }
 
 .vc-formathub-token-warn {
-    border-left-color: var(--status-warning, #f0b232);
+    border-left-color: var(--vc-ui-orange);
 }
 
 .vc-formathub-token-bad {
-    border-color: rgb(242 63 67 / 45%);
-    border-left-color: var(--status-danger, #f23f43);
-    background: rgb(242 63 67 / 8%);
+    border-left-color: var(--vc-ui-red);
+    background: color-mix(in srgb, var(--vc-ui-red) 10%, transparent);
 }
 
 .vc-formathub-token-bad .vc-formathub-token-title {
-    color: var(--text-feedback-critical, var(--status-danger, #f23f43));
+    color: var(--vc-ui-red);
 }
 
 .vc-formathub-token-kind {
     flex-shrink: 0;
     width: 110px;
+    padding-top: 2px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    color: var(--text-muted);
-    padding-top: 2px;
+    color: var(--vc-ui-dim);
 }
 
 .vc-formathub-token-main {
@@ -590,83 +343,13 @@
 }
 
 .vc-formathub-token-title {
-    font-weight: 600;
+    font-weight: 500;
+    color: var(--vc-ui-title);
     overflow-wrap: anywhere;
 }
 
 .vc-formathub-token-detail {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     overflow-wrap: anywhere;
-}
-
-/* ---------- Settings ---------- */
-
-.vc-formathub-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-formathub-settings-hero {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: linear-gradient(135deg, rgb(88 101 242 / 18%), transparent 70%);
-}
-
-.vc-formathub-settings-hero > .vc-formathub-option-text {
-    flex: 1;
-}
-
-.vc-formathub-settings-title {
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.vc-formathub-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-mod-subtle, rgb(128 128 128 / 8%));
-}
-
-.vc-formathub-card .vc-formathub-row {
-    justify-content: space-between;
-}
-
-.vc-formathub-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.vc-formathub-option-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-/* ---------- Narrow windows ---------- */
-
-@media (width <= 900px) {
-    .vc-formathub-split,
-    .vc-formathub-decoder,
-    .vc-formathub-columns {
-        grid-template-columns: 1fr;
-        overflow-y: auto;
-    }
-
-    .vc-formathub-entry-body {
-        grid-template-columns: 1fr;
-    }
 }

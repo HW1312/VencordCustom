@@ -16,13 +16,12 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
-import { ModalRoot, ModalSize } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
 import { findByCodeLazy, findComponentByCodeLazy, findStoreLazy } from "@webpack";
-import { ChannelStore, FluxDispatcher, GuildChannelStore, NavigationRouter, openModal, RestAPI, Tooltip, useEffect, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, FluxDispatcher, GuildChannelStore, NavigationRouter, RestAPI, Tooltip, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
-import { showQuestToast, ToastKind, unmountToasts } from "./toast";
+import { AppIcon, Button, Empty, Icon, ICONS, notify as showNotification, NotifyKind, openWindow, Progress, RoundButton, Row as UiRow, Section, Segmented, Sheet, State as StateLabel, Stats, Toggle, ToggleRow, UiColor, useListener } from "../_ui";
 
 const cl = classNameFactory("vc-autoquest-");
 const logger = new Logger("AutoQuest");
@@ -234,9 +233,9 @@ function tileOf(quest: any) {
 }
 
 /** Own toast at the top right – with the quest's picture and reward */
-function notify(quest: any, kind: ToastKind, title: string, body: string, onClick?: () => void) {
+function notify(quest: any, kind: NotifyKind, title: string, body: string, onClick?: () => void) {
     if (!settings.store.notify) return;
-    showQuestToast({ title, body, kind, image: tileOf(quest), side: <RewardChip reward={rewardOf(quest)} />, onClick });
+    showNotification({ title, body, kind, app: "AutoQuest", image: tileOf(quest), side: <RewardChip reward={rewardOf(quest)} />, onClick });
 }
 
 const openQuests = () => NavigationRouter.transitionTo("/quest-home");
@@ -553,20 +552,13 @@ const TASK_TEXT: Record<TaskName, string> = {
 };
 
 const KIND_PATH: Record<Lane, string> = {
-    video: "M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14Z",
+    video: ICONS.play,
     game: "M6 7h12a5 5 0 0 1 4.8 6.4l-1 3.4a2.5 2.5 0 0 1-4.3.9L15.6 15H8.4l-1.9 2.7a2.5 2.5 0 0 1-4.3-.9l-1-3.4A5 5 0 0 1 6 7Zm1 3v1.5H5.5v1.5H7v1.5h1.5V13H10v-1.5H8.5V10H7Zm9.5 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm-2 2a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z",
     stream: "M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6v2h3a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2h3v-2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm6 4v6l5-3-5-3Z",
     activity: "M12 2c3 2 5 5.5 5 9.5 0 1-.1 2-.4 3l2.4 2.5v3l-3.5-1.5-.5 1h-6l-.5-1L5 20v-3l2.4-2.5c-.3-1-.4-2-.4-3C7 7.5 9 4 12 2Zm0 6.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"
 };
-const CHECK_PATH = "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z";
-const REFRESH_PATH = "M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z";
 const GIFT_PATH = "M20 7h-2.2A3 3 0 0 0 12 3.8 3 3 0 0 0 6.2 7H4a2 2 0 0 0-2 2v2a1 1 0 0 0 1 1h8V7h2v5h8a1 1 0 0 0 1-1V9a2 2 0 0 0-2-2ZM9 7a1 1 0 1 1 1-1v1H9Zm6 0h-1V6a1 1 0 1 1 1 1ZM4 14v5a2 2 0 0 0 2 2h5v-7H4Zm9 7h5a2 2 0 0 0 2-2v-5h-7v7Z";
-
 const QUEST_PATH = "M7.5 2h9A1.5 1.5 0 0 1 18 3.5V5h2.5A1.5 1.5 0 0 1 22 6.5V8a5 5 0 0 1-4.6 5 6 6 0 0 1-4.4 3.9V19h3a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1h3v-2.1A6 6 0 0 1 6.6 13 5 5 0 0 1 2 8V6.5A1.5 1.5 0 0 1 3.5 5H6V3.5A1.5 1.5 0 0 1 7.5 2ZM6 7H4v1a3 3 0 0 0 2.1 2.9A6 6 0 0 1 6 10V7Zm12 0v3l-.1.9A3 3 0 0 0 20 8V7h-2Z";
-
-function Icon({ path, size = 16 }: { path: string; size?: number; }) {
-    return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden><path fill="currentColor" d={path} /></svg>;
-}
 
 /** Discord's own Orbs icon (OrbsIcon in Discord's icon set) */
 const ORB_SPARK = "M11.75 7.57a5.12 5.12 0 0 1-3.86 3.87.42.42 0 0 0 0 .82 5.1 5.1 0 0 1 3.86 3.86.42.42 0 0 0 .81 0 5.12 5.12 0 0 1 3.87-3.86.42.42 0 0 0 0-.82 5.15 5.15 0 0 1-3.87-3.86.42.42 0 0 0-.81-.01Z";
@@ -581,14 +573,7 @@ function OrbIcon({ size = 14 }: { size?: number; }) {
     );
 }
 
-function useStatus() {
-    const [, setTick] = useState(0);
-    useEffect(() => {
-        const l = () => setTick(t => t + 1);
-        listeners.add(l);
-        return () => void listeners.delete(l);
-    }, []);
-}
+const useStatus = () => useListener(listeners);
 
 interface Row {
     id: string;
@@ -649,7 +634,7 @@ const time = (s: number) => s >= 60 ? `${Math.floor(s / 60)}:${String(Math.floor
 function Tile({ row }: { row: Row; }) {
     const [broken, setBroken] = useState(false);
     if (row.tile && !broken) return <img className={cl("tile")} src={row.tile} alt="" onError={() => setBroken(true)} />;
-    return <div className={classes(cl("tile"), cl("tile-icon"))}><Icon path={KIND_PATH[row.lane ?? "game"]} size={18} /></div>;
+    return <AppIcon path={KIND_PATH[row.lane ?? "game"]} color="indigo" size={40} />;
 }
 
 function RewardChip({ reward }: { reward: Reward | null; }) {
@@ -662,31 +647,6 @@ function RewardChip({ reward }: { reward: Reward | null; }) {
     );
 }
 
-/** iOS style switch */
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange(v: boolean): void; label: string; }) {
-    return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={checked}
-            aria-label={label}
-            className={classes(cl("toggle"), checked && cl("toggle-on"))}
-            onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(!checked); }}
-        >
-            <span className={cl("toggle-knob")} />
-        </button>
-    );
-}
-
-/** iOS activity indicator */
-function Spinner() {
-    return (
-        <span className={cl("spinner")} aria-hidden>
-            {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ transform: `rotate(${i * 45}deg)`, animationDelay: `${(i - 8) * 0.1}s` }} />)}
-        </span>
-    );
-}
-
 function QuestRow({ row }: { row: Row; }) {
     const pct = row.target ? Math.min(100, row.done / row.target * 100) : 0;
     const showProgress = !!row.target && !["unsupported", "available", "claimed", "done", "claimable"].includes(row.state);
@@ -694,85 +654,66 @@ function QuestRow({ row }: { row: Row; }) {
     let side: ReactNode;
     switch (row.state) {
         case "running":
-            side = <span className={cl("state")}><Spinner />{Math.round(pct)}%</span>;
+            side = <StateLabel spinner>{Math.round(pct)}%</StateLabel>;
             break;
         case "claimable":
-            side = <button className={cl("pill")} onClick={openQuests}>Claim</button>;
+            side = <Button small onClick={openQuests}>Claim</Button>;
             break;
         case "claimed":
         case "done":
-            side = <span className={classes(cl("state"), cl("state-ok"))}><span className={cl("check")}><Icon path={CHECK_PATH} size={11} /></span>{STATE_TEXT[row.state]}</span>;
+            side = <StateLabel tone="ok" check>{STATE_TEXT[row.state]}</StateLabel>;
             break;
         case "waiting":
-            side = <span className={classes(cl("state"), cl("state-warn"))}>Needs you</span>;
+            side = <StateLabel tone="warn">Needs you</StateLabel>;
             break;
         case "failed":
-            side = <span className={classes(cl("state"), cl("state-bad"))}>Failed</span>;
+            side = <StateLabel tone="bad">Failed</StateLabel>;
             break;
         case "queued":
-            side = <span className={cl("state")}>Up next</span>;
+            side = <StateLabel>Up next</StateLabel>;
             break;
         default:
-            side = <span className={cl("state")}>{STATE_TEXT[row.state]}</span>;
+            side = <StateLabel>{STATE_TEXT[row.state]}</StateLabel>;
     }
 
     return (
-        <div className={classes(cl("item"), cl(`item-${row.state}`))}>
-            <Tile row={row} />
-            <div className={cl("item-main")}>
-                <div className={cl("item-title")}>{row.name}</div>
-                <div className={cl("item-sub")}>
-                    <RewardChip reward={row.reward} />
-                    {row.task && <span>{TASK_TEXT[row.task]}</span>}
-                    {showProgress && <span>{time(Math.min(row.done, row.target))} of {time(row.target)}</span>}
-                </div>
-                {showProgress && <div className={cl("progress")}><div style={{ width: `${pct}%` }} /></div>}
-                {row.note && <div className={cl("item-note")}>{row.note}</div>}
-            </div>
-            <div className={cl("item-side")}>{side}</div>
-        </div>
+        <UiRow
+            leading={<Tile row={row} />}
+            title={row.name}
+            dim={["claimed", "unsupported", "failed"].includes(row.state)}
+            subtitle={<>
+                {row.reward && <RewardChip reward={row.reward} />}
+                {row.task && <span>{TASK_TEXT[row.task]}</span>}
+                {showProgress && <span>{time(Math.min(row.done, row.target))} of {time(row.target)}</span>}
+            </>}
+            note={row.note}
+            trailing={side}
+        >
+            {showProgress && <Progress value={pct} />}
+        </UiRow>
     );
 }
 
-function Section({ title, children, footer }: { title?: string; children: ReactNode; footer?: string; }) {
-    return (
-        <section className={cl("section")}>
-            {title && <h3 className={cl("section-title")}>{title}</h3>}
-            <div className={cl("group")}>{children}</div>
-            {footer && <p className={cl("section-footer")}>{footer}</p>}
-        </section>
-    );
-}
-
-function Stats({ rows }: { rows: Row[]; }) {
+function QuestStats({ rows }: { rows: Row[]; }) {
     const running = rows.filter(r => r.state === "running").length;
     const needsYou = rows.filter(r => r.state === "waiting" || r.state === "claimable").length;
     const orbs = rows.filter(r => ACTIVE.includes(r.state)).reduce((n, r) => n + (r.reward?.orbs ?? 0), 0);
     const claimedOrbs = rows.filter(r => r.state === "claimed").reduce((n, r) => n + (r.reward?.orbs ?? 0), 0);
 
     return (
-        <div className={cl("stats")}>
-            <div className={classes(cl("stat"), running > 0 && cl("stat-blue"))}>
-                <span className={cl("stat-value")}>{running}</span>
-                <span className={cl("stat-label")}>Running</span>
-            </div>
-            <div className={classes(cl("stat"), needsYou > 0 && cl("stat-orange"))}>
-                <span className={cl("stat-value")}>{needsYou}</span>
-                <span className={cl("stat-label")}>Need you</span>
-            </div>
-            <div className={classes(cl("stat"), cl("stat-purple"))} title={`${claimedOrbs.toLocaleString()} Orbs claimed so far`}>
-                <span className={cl("stat-value")}><OrbIcon size={18} />{orbs.toLocaleString()}</span>
-                <span className={cl("stat-label")}>Orbs to earn</span>
-            </div>
-        </div>
+        <Stats items={[
+            { value: running, label: "Running", color: running ? "blue" : undefined },
+            { value: needsYou, label: "Need you", color: needsYou ? "orange" : undefined },
+            { value: <><OrbIcon size={18} />{orbs.toLocaleString()}</>, label: "Orbs to earn", color: "purple", title: `${claimedOrbs.toLocaleString()} Orbs claimed so far` }
+        ]} />
     );
 }
 
-const SETTING_GROUPS: { title: string; footer?: string; items: { key: keyof typeof settings.store; label: string; sub: string; icon: string; color: string; }[]; }[] = [
+const SETTING_GROUPS: { title: string; footer?: string; items: { key: keyof typeof settings.store; label: string; sub: string; icon: string; color: UiColor; }[]; }[] = [
     {
         title: "Automation",
         items: [
-            { key: "autoEnroll", label: "Accept new quests", sub: "As soon as Discord offers them", icon: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2Z", color: "blue" },
+            { key: "autoEnroll", label: "Accept new quests", sub: "As soon as Discord offers them", icon: ICONS.plus, color: "blue" },
             { key: "autoClaim", label: "Claim rewards", sub: "A captcha means you claim it yourself", icon: GIFT_PATH, color: "green" },
             { key: "orbsOnly", label: "Only quests with Orbs", sub: "Leaves other rewards alone", icon: ORB_FRAME, color: "purple" }
         ]
@@ -790,27 +731,20 @@ const SETTING_GROUPS: { title: string; footer?: string; items: { key: keyof type
     {
         title: "Appearance",
         items: [
-            { key: "notify", label: "Notifications", sub: "Popups at the top right", icon: "M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z", color: "red" },
+            { key: "notify", label: "Notifications", sub: "Popups at the top right", icon: ICONS.bell, color: "red" },
             { key: "showTitleBarButton", label: "Title bar icon", sub: "The trophy next to the other icons", icon: QUEST_PATH, color: "yellow" }
         ]
     }
 ];
 
 function SettingsTab() {
-    const s = settings.use(SETTING_GROUPS.flatMap(g => g.items.map(i => i.key)) as any);
+    const s = settings.use(SETTING_GROUPS.flatMap(g => g.items.map(i => i.key)) as any) as any;
     return (
         <>
             {SETTING_GROUPS.map(g => (
                 <Section key={g.title} title={g.title} footer={g.footer}>
                     {g.items.map(i => (
-                        <div key={i.key} className={classes(cl("item"), cl("item-setting"))} onClick={() => (settings.store as any)[i.key] = !(s as any)[i.key]}>
-                            <span className={classes(cl("glyph"), cl(`glyph-${i.color}`))}><Icon path={i.icon} size={16} /></span>
-                            <div className={cl("item-main")}>
-                                <div className={cl("item-title")}>{i.label}</div>
-                                <div className={cl("item-sub")}><span>{i.sub}</span></div>
-                            </div>
-                            <Toggle label={i.label} checked={!!(s as any)[i.key]} onChange={v => (settings.store as any)[i.key] = v} />
-                        </div>
+                        <ToggleRow key={i.key} icon={i.icon} color={i.color} title={i.label} subtitle={i.sub} checked={!!s[i.key]} onChange={v => (settings.store as any)[i.key] = v} />
                     ))}
                 </Section>
             ))}
@@ -828,13 +762,9 @@ function QuestSections({ rows, tab }: { rows: Row[]; tab: Tab; }) {
 
     const shown = groups.map(([title, states]) => [title, rows.filter(r => states.includes(r.state))] as const).filter(([, list]) => list.length);
     if (!shown.length) {
-        return (
-            <div className={cl("empty")}>
-                <span className={cl("empty-icon")}><Icon path={QUEST_PATH} size={28} /></span>
-                <b>{tab === "active" ? "All caught up" : "Nothing here yet"}</b>
-                <span>{tab === "active" ? "New quests are picked up automatically." : "Finished quests show up here."}</span>
-            </div>
-        );
+        return tab === "active"
+            ? <Empty icon={QUEST_PATH} title="All caught up" hint="New quests are picked up automatically." />
+            : <Empty icon={QUEST_PATH} title="Nothing here yet" hint="Finished quests show up here." />;
     }
     return <>{shown.map(([title, list]) => <Section key={title} title={title}>{list.map(r => <QuestRow key={r.id} row={r} />)}</Section>)}</>;
 }
@@ -852,93 +782,67 @@ function QuestWindow({ onClose }: { onClose(): void; }) {
             : needsYou ? `${needsYou} quest${needsYou === 1 ? "" : "s"} need${needsYou === 1 ? "s" : ""} you`
                 : "Waiting for new quests";
 
-    const tabs: { id: Tab; label: string; count?: number; }[] = [
-        { id: "active", label: "Quests", count: rows.filter(r => ACTIVE.includes(r.state)).length },
-        { id: "done", label: "Done", count: rows.filter(r => !ACTIVE.includes(r.state)).length },
-        { id: "settings", label: "Settings" }
-    ];
-    const index = tabs.findIndex(t => t.id === tab);
-
     return (
-        <div className={classes(cl("sheet"), !active && cl("sheet-paused"))}>
-            <header className={cl("header")}>
-                <span className={cl("app-icon")}><Icon path={QUEST_PATH} size={22} /></span>
-                <div className={cl("header-text")}>
-                    <h2 className={cl("title")}>AutoQuest</h2>
-                    <span className={classes(cl("subtitle"), active && running.length > 0 && cl("subtitle-live"))}>{subtitle}</span>
-                </div>
-                <Tooltip text="Check for new quests">
-                    {(tip: any) => (
-                        <button
-                            {...tip}
-                            className={classes(cl("round-btn"), spin && cl("spin"))}
-                            disabled={!alive}
-                            onClick={() => {
-                                setSpin(true);
-                                setTimeout(() => setSpin(false), 700);
-                                skip.clear();
-                                claimTried.clear();
-                                request(fetchQuests).then(() => check()).catch(() => { });
-                            }}
-                        >
-                            <Icon path={REFRESH_PATH} size={16} />
-                        </button>
-                    )}
-                </Tooltip>
-                <Tooltip text={active ? "Pause AutoQuest" : "Turn AutoQuest on"}>
-                    {({ onMouseEnter, onMouseLeave }: any) => (
-                        <span onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
-                            <Toggle label="AutoQuest on" checked={active} onChange={setActive} />
-                        </span>
-                    )}
-                </Tooltip>
-                <button className={classes(cl("round-btn"), cl("close"))} aria-label="Close" onClick={onClose}>
-                    <Icon path="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" size={14} />
-                </button>
-            </header>
-
-            <Stats rows={rows} />
-
-            <div className={cl("segmented")} style={{ "--vc-aq-seg": index, "--vc-aq-segs": tabs.length } as any}>
-                <span className={cl("segmented-thumb")} />
-                {tabs.map(t => (
-                    <button key={t.id} className={classes(cl("segment"), tab === t.id && cl("segment-on"))} onClick={() => setTab(t.id)}>
-                        {t.label}
-                        {!!t.count && <span className={cl("segment-count")}>{t.count}</span>}
-                    </button>
-                ))}
-            </div>
-
-            <div className={cl("scroll")}>
-                {tab === "settings" ? <SettingsTab /> : <QuestSections rows={rows} tab={tab} />}
-            </div>
-        </div>
+        <Sheet
+            height="min(680px, 82vh)"
+            paused={!active}
+            onClose={onClose}
+            header={{
+                title: "AutoQuest",
+                subtitle,
+                live: active && running.length > 0,
+                icon: QUEST_PATH,
+                iconColor: "orange",
+                actions: <>
+                    <RoundButton
+                        icon={ICONS.refresh}
+                        label="Check for new quests"
+                        className={spin ? cl("spin") : undefined}
+                        disabled={!alive}
+                        onClick={() => {
+                            setSpin(true);
+                            setTimeout(() => setSpin(false), 700);
+                            skip.clear();
+                            claimTried.clear();
+                            request(fetchQuests).then(() => check()).catch(() => { });
+                        }}
+                    />
+                    <Tooltip text={active ? "Pause AutoQuest" : "Turn AutoQuest on"}>
+                        {({ onMouseEnter, onMouseLeave }: any) => (
+                            <span onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+                                <Toggle label="AutoQuest on" checked={active} onChange={setActive} />
+                            </span>
+                        )}
+                    </Tooltip>
+                </>
+            }}
+            top={<>
+                <QuestStats rows={rows} />
+                <Segmented<Tab>
+                    value={tab}
+                    onChange={setTab}
+                    options={[
+                        { value: "active", label: "Quests", count: rows.filter(r => ACTIVE.includes(r.state)).length },
+                        { value: "done", label: "Done", count: rows.filter(r => !ACTIVE.includes(r.state)).length },
+                        { value: "settings", label: "Settings" }
+                    ]}
+                />
+            </>}
+        >
+            {tab === "settings" ? <SettingsTab /> : <QuestSections rows={rows} tab={tab} />}
+        </Sheet>
     );
 }
 
-/** Vencord types it as never */
-const Root = ModalRoot as any;
-
 export function openQuestWindow() {
-    openModal(props => (
-        <Root {...props} size={ModalSize.MEDIUM} className={cl("modal")}>
-            <ErrorBoundary noop>
-                <QuestWindow onClose={props.onClose} />
-            </ErrorBoundary>
-        </Root>
-    ));
+    openWindow(close => <QuestWindow onClose={close} />);
 }
 
 function SettingsButton() {
-    return (
-        <button className={cl("pill")} onClick={openQuestWindow}>
-            Open AutoQuest
-        </button>
-    );
+    return <Button onClick={openQuestWindow}>Open AutoQuest</Button>;
 }
 
 // ---------------------------------------------------------------- Title bar
-
 
 function TitleBarButton() {
     const { showTitleBarButton } = settings.use(["showTitleBarButton"]);
@@ -958,11 +862,7 @@ function TitleBarButton() {
                 className={cl("tb-btn")}
                 onClick={openQuestWindow}
                 tooltip={tooltip}
-                icon={() => (
-                    <svg viewBox="0 0 24 24" width={20} height={20} className={cl("tb-icon")}>
-                        <path fill="currentColor" d={QUEST_PATH} />
-                    </svg>
-                )}
+                icon={() => <Icon path={QUEST_PATH} size={20} className={classes("vc-ui-tb-icon", cl("tb-icon"))} />}
             />
         </div>
     );
@@ -1054,6 +954,5 @@ export default definePlugin({
     stop() {
         enabled = false;
         halt();
-        unmountToasts();
     }
 });

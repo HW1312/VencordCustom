@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
-import { classes } from "@utils/misc";
 import { saveFile } from "@utils/web";
-import { GuildStore, Modal, openModal, showToast, useEffect, useMemo, useState } from "@webpack/common";
+import { GuildStore, showToast, useEffect, useMemo, useState } from "@webpack/common";
 
+import { Badge, Empty, openWindow, Sheet, Stats } from "../_ui";
 import { formatDuration, GuildIcon, GuildSelect } from "./BackupModal";
-import { Button, Card, cl, LogList, Notice, NumberField, ProgressBar, QueueBadge, Segmented, Stat, useJob } from "./components";
+import { Button, Card, cl, ICON_COLOR, ICONS, LogList, Notice, NumberField, ProgressBar, QueueBadge, Segmented, useJob } from "./components";
 import { buildSuggestions, getScanChannels, HealthResult, loadCachedHealth, saveCachedHealth, scanGuild, toCsv, WEEKDAYS } from "./health";
 import { settings } from "./index";
 import { describeError, isCancelled, queueConfig } from "./queue";
@@ -50,9 +49,9 @@ function ChannelTable({ result }: { result: HealthResult; }) {
                             <td>
                                 <div className={cl("channel-cell")}>
                                     <span className={cl("channel-name")}>#{c.name}</span>
-                                    {c.messages === 0 && !c.error && <span className={classes(cl("badge"), cl("badge-dead"))}>dead</span>}
-                                    {c.truncated && <span className={cl("badge")} title={`Limit of ${result.maxPerChannel} reached`}>≥</span>}
-                                    {c.error && <span className={classes(cl("badge"), cl("badge-warn"))} title={c.error}>Error</span>}
+                                    {c.messages === 0 && !c.error && <Badge color="red">dead</Badge>}
+                                    {c.truncated && <Badge title={`Limit of ${result.maxPerChannel} reached`}>≥</Badge>}
+                                    {c.error && <Badge color="orange" title={c.error}>Error</Badge>}
                                 </div>
                                 {c.category && <div className={cl("muted")}>{c.category}</div>}
                                 <div className={cl("bar")}><div className={cl("bar-fill")} style={{ width: `${c.messages / max * 100}%` }} /></div>
@@ -114,28 +113,28 @@ function Results({ result }: { result: HealthResult; }) {
 
     return (
         <>
-            <Card title={`Results - last ${result.days} days`} icon="pulse" right={<Button small variant="ghost" icon="download" onClick={exportCsv}>CSV</Button>}>
-                <div className={cl("stats")}>
-                    <Stat label="Messages" value={result.totalMessages.toLocaleString()} />
-                    <Stat label="Active authors" value={result.uniqueAuthors} />
-                    <Stat label="Channels" value={result.channels.length} />
-                    <Stat label="Dead channels" value={dead} />
-                </div>
+            <Card title={`Results - last ${result.days} days`} right={<Button small variant="ghost" icon="download" onClick={exportCsv}>CSV</Button>}>
+                <Stats items={[
+                    { label: "Messages", value: result.totalMessages.toLocaleString() },
+                    { label: "Active authors", value: result.uniqueAuthors },
+                    { label: "Channels", value: result.channels.length },
+                    { label: "Dead channels", value: dead, color: dead ? "red" : undefined }
+                ]} />
                 <div className={cl("hint")}>As of {new Date(result.scannedAt).toLocaleString()} ({relative(result.scannedAt)}) · {result.requests} requests</div>
             </Card>
 
-            <Card title="Channels by activity" icon="table">
+            <Card title="Channels by activity">
                 <ChannelTable result={result} />
             </Card>
 
-            <Card title="When is it busiest?" icon="pulse">
+            <Card title="When is it busiest?">
                 <Heatmap data={result.heatmap} />
             </Card>
 
             <div className={cl("grid-2")}>
-                <Card title="Top 10 members" icon="gift">
+                <Card title="Top 10 members">
                     {result.topMembers.length === 0
-                        ? <div className={cl("muted")}>No messages in the period.</div>
+                        ? <Empty title="No messages in the period." />
                         : (
                             <ol className={cl("top")}>
                                 {result.topMembers.map(m => (
@@ -150,9 +149,9 @@ function Results({ result }: { result: HealthResult; }) {
                     <div className={cl("muted")}>Excluding bots and webhooks.</div>
                 </Card>
 
-                <Card title="Suggestions" icon="tools">
+                <Card title="Suggestions">
                     {suggestions.length === 0
-                        ? <div className={cl("muted")}>All healthy - nothing unusual.</div>
+                        ? <Empty icon={ICONS.check} title="All healthy - nothing unusual." />
                         : (
                             <ul className={cl("suggestions")}>
                                 {suggestions.map((s, i) => (
@@ -217,8 +216,8 @@ function HealthPanel({ initialGuildId }: { initialGuildId: string | null; }) {
     const worstCase = channelCount * Math.ceil(maxPer / 100);
 
     return (
-        <div className={cl("modal")}>
-            <Card title="Server & time range" icon="pulse" right={<QueueBadge />}>
+        <>
+            <Card title="Server & time range" right={<QueueBadge />}>
                 <div className={cl("row-inline")}>
                     {guild && <GuildIcon guild={guild} />}
                     <GuildSelect guilds={guilds} value={guildId} disabled={job.state.running} onChange={setGuildId} />
@@ -245,16 +244,14 @@ function HealthPanel({ initialGuildId }: { initialGuildId: string | null; }) {
                 <Notice tone="info">Cached result from {new Date(result.scannedAt).toLocaleString()} - “Analyze again” for current numbers.</Notice>
             )}
             {result && <Results result={result} />}
-        </div>
+        </>
     );
 }
 
 export function openHealthModal(guildId: string | null) {
-    openModal(props => (
-        <Modal {...props} size="xl" title="Channel Health" subtitle="Which channels are alive - and which are not?">
-            <ErrorBoundary>
-                <HealthPanel initialGuildId={guildId} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => (
+        <Sheet header={{ title: "Channel Health", subtitle: "Which channels are alive - and which are not?", icon: ICONS.pulse, iconColor: ICON_COLOR }} onClose={close}>
+            <HealthPanel initialGuildId={guildId} />
+        </Sheet>
+    ), { size: "large" });
 }

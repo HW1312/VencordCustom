@@ -1,27 +1,27 @@
 /*
- * MediaGrab – Window: paste a link, choose video / MP3, quality and where it goes
+ * MediaGrab – Window: paste a link, choose video / MP3, quality and where it goes (built from the shared _ui kit)
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import "./ui.css";
 
-import { classNameFactory } from "@api/Styles";
-import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
-import { Channel, RenderModalProps } from "@vencord/discord-types";
-import { Modal, openModal, useEffect, useReducer, useState } from "@webpack/common";
-import type { ReactNode } from "react";
+import { Channel } from "@vencord/discord-types";
+import { useEffect, useReducer, useRef, useState } from "@webpack/common";
 
+import { Field, Glyph, ICONS, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, TextField, ToggleRow } from "../_ui";
 import { getRunning, grab, isInstalled, isSoundLink, isUrl, needsRestart, shortUrl, subscribeRunning } from "./grab";
 import { settings } from "./settings";
 
-const cl = classNameFactory("vc-mediagrab-");
+const GRAB_PATH = "M5 3a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h5.1a6.97 6.97 0 0 1 .9-2H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4.1c.71.26 1.39.62 2 1.06V6a3 3 0 0 0-3-3H5Zm4.5 4.13v5.74a.5.5 0 0 0 .75.43l4.92-2.87a.5.5 0 0 0 0-.86L10.25 6.7a.5.5 0 0 0-.75.43ZM17 12a1 1 0 0 1 1 1v4.59l1.3-1.3a1 1 0 0 1 1.4 1.42l-3 3a1 1 0 0 1-1.4 0l-3-3a1 1 0 1 1 1.4-1.42l1.3 1.3V13a1 1 0 0 1 1-1Z";
+const MUSIC_PATH = "M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z";
+const LINK_PATH = "M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4l-3.5 3.5a1 1 0 0 1-1.4 0Zm-3.3 6.2a4.5 4.5 0 0 1-3.2-7.7l2.5-2.5a1 1 0 0 1 1.4 1.4l-2.5 2.5a2.5 2.5 0 0 0 3.5 3.5l2.5-2.5a1 1 0 0 1 1.4 1.4l-2.5 2.5a4.5 4.5 0 0 1-3.1 1.4Zm9.3-5.6a1 1 0 0 1-.7-1.7l2.5-2.5a2.5 2.5 0 0 0-3.5-3.5l-2.5 2.5a1 1 0 0 1-1.4-1.4l2.5-2.5a4.5 4.5 0 0 1 6.4 6.4l-2.5 2.5a1 1 0 0 1-.8.2Z";
 
 export const GrabIcon: IconComponent = ({ width = 24, height = 24, className }) => {
     return (
         <svg width={width} height={height} viewBox="0 0 24 24" className={className} fill="currentColor">
-            <path d="M5 3a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h5.1a6.97 6.97 0 0 1 .9-2H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v4.1c.71.26 1.39.62 2 1.06V6a3 3 0 0 0-3-3H5Zm4.5 4.13v5.74a.5.5 0 0 0 .75.43l4.92-2.87a.5.5 0 0 0 0-.86L10.25 6.7a.5.5 0 0 0-.75.43ZM17 12a1 1 0 0 1 1 1v4.59l1.3-1.3a1 1 0 0 1 1.4 1.42l-3 3a1 1 0 0 1-1.4 0l-3-3a1 1 0 1 1 1.4-1.42l1.3 1.3V13a1 1 0 0 1 1-1Z" />
+            <path d={GRAB_PATH} />
         </svg>
     );
 };
@@ -38,20 +38,20 @@ const RING = 2 * Math.PI * 10;
 export function ChatBarIcon() {
     const { count, progress } = useRunning();
     return (
-        <span className={cl("bar-icon")}>
+        <span className="vc-mediagrab-bar-icon">
             <GrabIcon width={20} height={20} />
             {count > 0 && (
-                <svg className={classes(cl("ring"), progress < 0 && cl("ring-spin"))} viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" className={cl("ring-track")} />
+                <svg className={classes("vc-mediagrab-ring", progress < 0 && "vc-mediagrab-ring-spin")} viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" className="vc-mediagrab-ring-track" />
                     <circle
                         cx="12" cy="12" r="10"
-                        className={cl("ring-fill")}
+                        className="vc-mediagrab-ring-fill"
                         strokeDasharray={RING}
                         strokeDashoffset={progress < 0 ? RING * 0.7 : RING * (1 - progress)}
                     />
                 </svg>
             )}
-            {count > 1 && <span className={cl("badge")}>{count}</span>}
+            {count > 1 && <span className="vc-mediagrab-badge">{count}</span>}
         </span>
     );
 }
@@ -62,38 +62,14 @@ export function chatBarTooltip(count: number, progress: number) {
     return progress >= 0 ? `${what} · ${Math.round(progress * 100)}%` : `${what} …`;
 }
 
-function Segmented<T extends string | number>({ value, options, onChange }: { value: T; options: { value: T; label: string; }[]; onChange(v: T): void; }) {
-    return (
-        <div className={cl("segmented")}>
-            {options.map(o => (
-                <button key={o.value} className={classes(cl("segment"), o.value === value && cl("segment-on"))} onClick={() => onChange(o.value)}>
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
+/** Quality picker; the kit's Segmented works with strings */
+const QUALITIES = [{ value: "0", label: "Best" }, { value: "1080", label: "1080p" }, { value: "720", label: "720p" }, { value: "480", label: "480p" }];
+
+function QualityPicker({ value, onChange, small }: { value: number; onChange(v: number): void; small?: boolean; }) {
+    return <Segmented value={String(value)} options={QUALITIES} onChange={v => onChange(Number(v))} small={small} />;
 }
 
-function Toggle({ on, disabled, label, hint, onChange }: { on: boolean; disabled?: boolean; label: string; hint?: string; onChange(v: boolean): void; }) {
-    return (
-        <button className={classes(cl("toggle"), on && !disabled && cl("toggle-on"))} disabled={disabled} onClick={() => onChange(!on)}>
-            <span className={cl("check")}>{on && !disabled ? "✓" : ""}</span>
-            <span>
-                <div>{label}</div>
-                {hint && <div className={cl("muted")}>{hint}</div>}
-            </span>
-        </button>
-    );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode; }) {
-    return (
-        <div className={cl("field")}>
-            <div className={cl("label")}>{label}</div>
-            {children}
-        </div>
-    );
-}
+const RESTART_TEXT = "Quit Discord completely once (tray icon → Quit) and start it again. Ctrl+R is not enough to install MediaGrab.";
 
 async function readClipboardUrl() {
     try {
@@ -104,7 +80,7 @@ async function readClipboardUrl() {
     }
 }
 
-function GrabModal({ modalProps, channel, links }: { modalProps: RenderModalProps; channel?: Channel | null; links: string[]; }) {
+function GrabWindow({ close, channel, links }: { close(): void; channel?: Channel | null; links: string[]; }) {
     const s = settings.store;
     const [url, setUrl] = useState(links[0] ?? "");
     const [kind, setKind] = useState<"video" | "audio">(s.lastKind === "audio" ? "audio" : "video");
@@ -126,39 +102,34 @@ function GrabModal({ modalProps, channel, links }: { modalProps: RenderModalProp
         s.lastQuality = quality;
         if (channel) s.lastToChat = toChat;
         s.lastToDisk = toDisk;
-        modalProps.onClose();
+        close();
         grab({ url: url.trim(), kind, maxHeight: quality, toChat: toChat && !!channel, toDisk, channel });
     };
 
     return (
-        <Modal
-            {...modalProps}
-            size="md"
-            title="MediaGrab"
-            subtitle="Video or MP3 from TikTok, YouTube, Instagram, X, Reddit and many more"
+        <Sheet
+            header={{ title: "MediaGrab", subtitle: "Video or MP3 from TikTok, YouTube, Instagram, X, Reddit and many more", icon: GRAB_PATH, iconColor: "pink" }}
+            onClose={close}
             actions={[
-                { text: "Cancel", variant: "secondary", onClick: modalProps.onClose },
-                { text: "Download", variant: "primary", onClick: start, disabled: !valid }
+                { label: "Cancel", onClick: close },
+                { label: "Download", onClick: start, disabled: !valid }
             ]}
         >
-            <div className={cl("form")}>
+            <div className="vc-mediagrab-form">
                 <Field label="Link">
-                    <input
-                        className={cl("input")}
+                    <TextField
                         value={url}
                         autoFocus
                         placeholder="https://www.tiktok.com/@…/video/…"
-                        onChange={e => setUrl(e.currentTarget.value)}
+                        onChange={setUrl}
                         onKeyDown={e => { if (e.key === "Enter") start(); }}
                     />
                     {links.length > 1 && (
-                        <div className={cl("links")}>
+                        <Pills>
                             {links.map(l => (
-                                <button key={l} className={classes(cl("chip"), l === url && cl("chip-on"))} title={l} onClick={() => setUrl(l)}>
-                                    {shortUrl(l)}
-                                </button>
+                                <Pill key={l} selected={l === url} title={l} onClick={() => setUrl(l)}>{shortUrl(l)}</Pill>
                             ))}
-                        </div>
+                        </Pills>
                     )}
                 </Field>
 
@@ -168,103 +139,90 @@ function GrabModal({ modalProps, channel, links }: { modalProps: RenderModalProp
 
                 {kind === "video" && (
                     <Field label="Quality">
-                        <Segmented<number>
-                            value={quality}
-                            onChange={setQuality}
-                            options={[{ value: 0, label: "Best" }, { value: 1080, label: "1080p" }, { value: 720, label: "720p" }, { value: 480, label: "480p" }]}
-                        />
+                        <QualityPicker value={quality} onChange={setQuality} />
                     </Field>
                 )}
 
-                <Field label="Send to">
-                    <div className={cl("toggles")}>
-                        <Toggle
-                            on={toChat}
-                            disabled={!channel}
-                            label="Into the chat"
-                            hint={channel ? "Attached to your message box. Too large → Gofile link." : "Open a chat first"}
-                            onChange={setToChat}
-                        />
-                        <Toggle on={toDisk} label="Downloads folder" hint="Saved on this PC" onChange={setToDisk} />
-                    </div>
-                </Field>
+                <Section title="Send to">
+                    <ToggleRow
+                        icon={ICONS.play}
+                        color="pink"
+                        title="Into the chat"
+                        subtitle={channel ? "Attached to your message box. Too large → Gofile link." : "Open a chat first"}
+                        checked={toChat && !!channel}
+                        disabled={!channel}
+                        onChange={setToChat}
+                    />
+                    <ToggleRow icon={ICONS.download} color="blue" title="Downloads folder" subtitle="Saved on this PC" checked={toDisk} onChange={setToDisk} />
+                </Section>
 
-                {needsRestart() && (
-                    <div className={classes(cl("notice"), cl("notice-error"))}>
-                        Quit Discord completely once (tray icon → Quit) and start it again. Ctrl+R is not enough to install MediaGrab.
-                    </div>
-                )}
+                {needsRestart() && <Note tone="bad">{RESTART_TEXT}</Note>}
 
                 {!installed && !needsRestart() && (
-                    <div className={cl("notice")}>
-                        The first download installs yt-dlp and ffmpeg (about 100 MB, only once).
-                    </div>
+                    <Note>The first download installs yt-dlp and ffmpeg (about 100 MB, only once).</Note>
                 )}
             </div>
-        </Modal>
+        </Sheet>
     );
 }
 
 export function openGrabModal(channel?: Channel | null, links: string[] = []) {
-    openModal(props => (
-        <ErrorBoundary>
-            <GrabModal modalProps={props} channel={channel} links={links} />
-        </ErrorBoundary>
-    ));
+    openWindow(close => <GrabWindow close={close} channel={channel} links={links} />);
 }
 
 // ---------------------------------------------------------------- Asked when a message is only a video link
 
 export type LinkChoice = { kind: "link"; } | { kind: "video"; quality: number; } | { kind: "audio"; };
 
-const QUALITIES = [{ value: 0, label: "Best" }, { value: 1080, label: "1080p" }, { value: 720, label: "720p" }, { value: 480, label: "480p" }];
-
-function ChoiceButton({ label, hint, autoFocus, onClick }: { label: string; hint: string; autoFocus?: boolean; onClick(): void; }) {
-    return (
-        <button className={cl("choice")} autoFocus={autoFocus} onClick={onClick}>
-            <span className={cl("choice-label")}>{label}</span>
-            <span className={cl("muted")}>{hint}</span>
-        </button>
-    );
-}
-
-function LinkChoiceModal({ modalProps, url, onChoice }: { modalProps: RenderModalProps; url: string; onChoice(c: LinkChoice): void; }) {
+function LinkChoiceWindow({ close, url, onChoice, onDone }: { close(): void; url: string; onChoice(c: LinkChoice): void; onDone(): void; }) {
     const s = settings.store;
     const [quality, setQuality] = useState<number>(s.lastQuality);
+    const list = useRef<HTMLDivElement>(null);
+
+    // "Send link" has the focus, so Enter sends the link as usual; closing the window in any way reports the result
+    useEffect(() => {
+        list.current?.querySelector<HTMLElement>(".vc-ui-row-click")?.focus();
+        return onDone;
+    }, []);
+
     const choose = (c: LinkChoice) => {
         onChoice(c);
-        modalProps.onClose();
+        close();
     };
 
     return (
-        <Modal {...modalProps} size="sm" title="Send as link or as file?" subtitle={shortUrl(url)}>
-            <div className={cl("choices")}>
-                <ChoiceButton label="Send link" hint="As usual" autoFocus onClick={() => choose({ kind: "link" })} />
-                {!isSoundLink(url) && <div className={cl("choice-group")}>
-                    <ChoiceButton
-                        label="Video (MP4)"
-                        hint="Download and send the video"
-                        onClick={() => {
-                            s.lastQuality = quality;
-                            choose({ kind: "video", quality });
-                        }}
-                    />
-                    <div className={cl("choice-quality")}>
-                        <span className={cl("muted")}>Quality</span>
-                        <Segmented<number> value={quality} onChange={setQuality} options={QUALITIES} />
-                    </div>
-                </div>}
-                <ChoiceButton label="Audio (MP3)" hint="Download and send the sound" onClick={() => choose({ kind: "audio" })} />
+        <Sheet
+            header={{ title: "Send as link or as file?", subtitle: shortUrl(url), icon: GRAB_PATH, iconColor: "pink" }}
+            onClose={close}
+            footer={<span className="vc-mediagrab-hint">Esc keeps the link in the message box. You can turn this question off in the MediaGrab settings.</span>}
+        >
+            <div ref={list} className="vc-mediagrab-form">
+                <Section>
+                    <Row leading={<Glyph path={LINK_PATH} color="blue" />} title="Send link" subtitle="As usual" chevron onClick={() => choose({ kind: "link" })} />
+                    {!isSoundLink(url) && (
+                        <Row
+                            leading={<Glyph path={ICONS.play} color="pink" />}
+                            title="Video (MP4)"
+                            subtitle="Download and send the video"
+                            chevron
+                            onClick={() => {
+                                s.lastQuality = quality;
+                                choose({ kind: "video", quality });
+                            }}
+                        >
+                            <div className="vc-mediagrab-quality" onClick={e => e.stopPropagation()}>
+                                <span>Quality</span>
+                                <QualityPicker value={quality} onChange={setQuality} small />
+                            </div>
+                        </Row>
+                    )}
+                    <Row leading={<Glyph path={MUSIC_PATH} color="orange" />} title="Audio (MP3)" subtitle="Download and send the sound" chevron onClick={() => choose({ kind: "audio" })} />
+                </Section>
+                {needsRestart() && (
+                    <Note tone="bad">Quit Discord completely once (tray icon → Quit) and start it again – until then only “Send link” works.</Note>
+                )}
             </div>
-            {needsRestart() && (
-                <div className={classes(cl("notice"), cl("notice-error"))} style={{ marginTop: 12 }}>
-                    Quit Discord completely once (tray icon → Quit) and start it again – until then only “Send link” works.
-                </div>
-            )}
-            <div className={cl("muted")} style={{ margin: "12px 0 8px" }}>
-                Esc keeps the link in the message box. You can turn this question off in the MediaGrab settings.
-            </div>
-        </Modal>
+        </Sheet>
     );
 }
 
@@ -272,10 +230,6 @@ function LinkChoiceModal({ modalProps, url, onChoice }: { modalProps: RenderModa
 export function askLinkChoice(url: string) {
     return new Promise<LinkChoice | null>(resolve => {
         let result: LinkChoice | null = null;
-        openModal(props => (
-            <ErrorBoundary>
-                <LinkChoiceModal modalProps={props} url={url} onChoice={c => result = c} />
-            </ErrorBoundary>
-        ), { onCloseCallback: () => resolve(result) });
+        openWindow(close => <LinkChoiceWindow close={close} url={url} onChoice={c => result = c} onDone={() => resolve(result)} />, { size: "small" });
     });
 }

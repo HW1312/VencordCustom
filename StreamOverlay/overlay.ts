@@ -10,17 +10,27 @@ import { DEFAULTS, ENUMS, PARAMS, RANGES } from "./config";
 
 const CSS = String.raw`
 :root {
+    /* Minimal copy of the _ui kit's dark tokens – this page runs in OBS, outside Discord, so the kit CSS is not loaded */
+    --vc-ui-title: rgb(255 255 255 / 92%);
+    --vc-ui-text: rgb(255 255 255 / 72%);
+    --vc-ui-red: #ff453a;
+    --vc-ui-glass: rgb(32 32 36 / 80%);
+    --vc-ui-surface: rgb(28 28 30);
+    --vc-ui-track: rgb(120 120 128 / 32%);
+    --vc-ui-spring: cubic-bezier(0.3, 1.3, 0.5, 1);
+    --vc-ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
     --size: 48px;
     --accent: #43b581;
     --font: 16px;
     --radius: 50%;
     --text: #fff;
-    --muted: rgba(255, 255, 255, .72);
-    --danger: #f23f43;
-    --pill: rgba(18, 19, 22, .62);
-    --card: rgba(18, 19, 22, .72);
-    --spring: cubic-bezier(.34, 1.45, .5, 1);
-    --ease: cubic-bezier(.22, 1, .36, 1);
+    --muted: var(--vc-ui-text);
+    --danger: var(--vc-ui-red);
+    --pill: rgb(32 32 36 / 62%);
+    --card: var(--vc-ui-glass);
+    --spring: var(--vc-ui-spring);
+    --ease: var(--vc-ui-ease);
 }
 * { box-sizing: border-box; }
 html, body {
@@ -38,7 +48,7 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 /* Demo preview in a regular browser: dark background so you can see something */
-html.demo, html.demo body { background: #1e1f22 !important; min-height: 100vh; }
+html.demo, html.demo body { background: var(--vc-ui-surface) !important; min-height: 100vh; }
 body.shape-rounded { --radius: 28%; }
 body.shape-square { --radius: 6%; }
 
@@ -106,7 +116,7 @@ body.bg-card.layout-grid .user { padding: 8px 6px; width: calc(var(--size) + 40p
     height: 100%;
     border-radius: var(--radius);
     object-fit: cover;
-    background: rgba(128, 128, 128, .25);
+    background: var(--vc-ui-track);
     transition: filter .3s, opacity .3s;
 }
 .user.deaf .av, .user.srv-deaf .av { filter: grayscale(.6); opacity: .6; }
@@ -161,7 +171,7 @@ body.layout-grid .icon {
     min-height: 16px;
     padding: 2px;
     border-radius: 50%;
-    background: #1e1f22;
+    background: var(--vc-ui-surface);
 }
 .live {
     padding: .05em .4em;

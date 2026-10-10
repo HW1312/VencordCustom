@@ -6,6 +6,7 @@
 import { classNameFactory } from "@api/Styles";
 import type { CSSProperties, ReactNode } from "react";
 
+import { Row } from "../_ui";
 import { Aggregate, DayPoint, fmtDuration, fmtHour, fmtNum, Metric, WEEKDAYS } from "./stats";
 
 export const cl = classNameFactory("vc-wrapped-");
@@ -46,12 +47,6 @@ export function BarChart({ days, metric }: { days: DayPoint[]; metric: Metric; }
         <div className={cl("bars")}>
             <div className={cl("bars-max")}>{fmtMetric(metric, max)}</div>
             <svg viewBox={`0 0 ${width} ${H}`} preserveAspectRatio="none" className={cl("bars-svg")}>
-                <defs>
-                    <linearGradient id="vc-wrapped-bar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stopColor="var(--wr-c1)" />
-                        <stop offset="1" stopColor="var(--wr-c2)" />
-                    </linearGradient>
-                </defs>
                 {data.map((b, i) => {
                     const h = b.value ? Math.max(1.5, b.value / max * (H - 2)) : 0;
                     return (
@@ -65,7 +60,7 @@ export function BarChart({ days, metric }: { days: DayPoint[]; metric: Metric; }
                                 width={W - GAP}
                                 height={h}
                                 rx={Math.min(2, (W - GAP) / 2)}
-                                fill="url(#vc-wrapped-bar)"
+                                fill="var(--vc-ui-purple)"
                                 className={cl("bar")}
                             >
                                 <title>{b.title}</title>
@@ -128,18 +123,10 @@ export function MeterRow({ icon, name, sub, value, max, label }: {
     label: string;
 }) {
     return (
-        <div className={cl("meter")}>
-            {icon}
-            <div className={cl("meter-body")}>
-                <div className={cl("meter-head")}>
-                    <span className={cl("meter-name")}>{name}</span>
-                    <span className={cl("meter-value")}>{label}</span>
-                </div>
-                <div className={cl("meter-track")}>
-                    <div className={cl("meter-fill")} style={{ width: `${Math.max(2, value / Math.max(1, max) * 100)}%` }} />
-                </div>
-                {sub && <div className={cl("meter-sub")}>{sub}</div>}
+        <Row leading={icon} title={name} subtitle={sub} trailing={<span className={cl("meter-value")}>{label}</span>}>
+            <div className={cl("meter-track")}>
+                <div className={cl("meter-fill")} style={{ width: `${Math.max(2, value / Math.max(1, max) * 100)}%` }} />
             </div>
-        </div>
+        </Row>
     );
 }

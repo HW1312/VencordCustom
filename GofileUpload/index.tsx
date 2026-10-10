@@ -16,6 +16,7 @@ import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { Channel } from "@vencord/discord-types";
 import { showToast, UserStore } from "@webpack/common";
 
+import { ICONS, notify } from "../_ui";
 import { randomFilename, stripMetadata } from "../opsec/metadata";
 import type { Provider } from "./native";
 
@@ -133,7 +134,7 @@ function createCard(title: string, onCancel: () => void) {
     card.innerHTML = `
         <div class="vc-gofile-row">
             <div class="vc-gofile-name"></div>
-            <button class="vc-gofile-cancel" title="Cancel">✕</button>
+            <button class="vc-gofile-cancel" title="Cancel" aria-label="Cancel"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="${ICONS.close}"/></svg></button>
         </div>
         <div class="vc-gofile-status"></div>
         <div class="vc-gofile-bar"><div class="vc-gofile-fill"></div></div>`;
@@ -366,7 +367,7 @@ async function uploadFiles(files: File[], channel: Channel) {
         }
         logger.error("Upload failed", e);
         card.finish("error", `Failed – ${e instanceof Error ? e.message : e}`);
-        showToast(`Upload failed: ${title}`, "failure");
+        notify({ title: "Upload failed", body: title, kind: "error", app: "GofileUpload" });
     }
 }
 
@@ -545,11 +546,11 @@ async function compressOversized(list: File[], limit: number) {
 
     if (done.length === 1) {
         const [d] = done;
-        showToast(`Compressed ${d.name} (${formatSize(d.from)} → ${formatSize(d.to)})`, "success");
+        notify({ title: `Compressed ${d.name}`, body: `${formatSize(d.from)} → ${formatSize(d.to)}`, kind: "success", app: "GofileUpload" });
     } else if (done.length > 1) {
         const from = done.reduce((n, d) => n + d.from, 0);
         const to = done.reduce((n, d) => n + d.to, 0);
-        showToast(`Compressed ${done.length} images (${formatSize(from)} → ${formatSize(to)})`, "success");
+        notify({ title: `Compressed ${done.length} images`, body: `${formatSize(from)} → ${formatSize(to)}`, kind: "success", app: "GofileUpload" });
     }
 }
 
@@ -570,7 +571,7 @@ function splitOff(list: File[], limit: number, channel: Channel, options?: { fil
     });
     if (options?.filesMetadata) options.filesMetadata = keepMeta;
 
-    showToast(`${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord – uploading to a file host`, "message");
+    notify({ title: `${big.length === 1 ? "File is" : `${big.length} files are`} too large for Discord`, body: "Uploading to a file host", kind: "info", app: "GofileUpload" });
     void uploadFiles(big, channel);
     return keep;
 }

@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { RenderModalProps } from "@vencord/discord-types";
-import { ChannelStore, GuildChannelStore, GuildStore, IconUtils, Modal, openModal, RelationshipStore, RunningGameStore, SelectedChannelStore, showToast, UserStore, useState, VoiceStateStore } from "@webpack/common";
-import type { ComponentType } from "react";
+import { ChannelStore, GuildChannelStore, GuildStore, IconUtils, RelationshipStore, RunningGameStore, SelectedChannelStore, showToast, UserStore, useState, VoiceStateStore } from "@webpack/common";
+import type { ComponentType, ReactNode } from "react";
 
-import { cl, Field, Icon, IconButton, MultiPicker, PickerOption, SectionTitle, Segmented, TagInput, ToggleRow } from "./components";
+import { Button, Field, Glyph, Group, IconButton, ICONS, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, Slider, TextField, ToggleRow, UiColor } from "../_ui";
+import { ACTION_COLOR, cl, MultiPicker, PickerOption, RadarIcon, RI, TagInput, TRIGGER_COLOR } from "./components";
 import { ACTIONS, avatarUrl, regexError, STATUS_OPTIONS, testRule, TRIGGERS, userName, WEEKDAYS } from "./engine";
 import { playSound, SOUND_OPTIONS } from "./sounds";
 import { ActionConfig, ActionType, DEFAULT_CONDITIONS, Rule, TriggerConfig, TriggerType, uid, upsertRule } from "./store";
@@ -67,11 +66,11 @@ function resolveUser(id: string): PickerOption {
 }
 
 const GuildPicker = ({ value, onChange, placeholder }: { value: string[]; onChange(v: string[]): void; placeholder?: string; }) => (
-    <MultiPicker value={value} onChange={onChange} options={guildOptions} resolve={resolveGuild} placeholder={placeholder ?? "Search servers…"} fallbackIcon="server" />
+    <MultiPicker value={value} onChange={onChange} options={guildOptions} resolve={resolveGuild} placeholder={placeholder ?? "Search servers…"} fallbackIcon={RI.server} />
 );
 
 const ChannelPicker = ({ value, onChange }: { value: string[]; onChange(v: string[]): void; }) => (
-    <MultiPicker value={value} onChange={onChange} options={channelOptions} resolve={resolveChannel} placeholder="Search channels or servers…" fallbackIcon="hash" />
+    <MultiPicker value={value} onChange={onChange} options={channelOptions} resolve={resolveChannel} placeholder="Search channels or servers…" fallbackIcon={RI.hash} />
 );
 
 const UserPicker = ({ value, onChange }: { value: string[]; onChange(v: string[]): void; }) => (
@@ -81,11 +80,22 @@ const UserPicker = ({ value, onChange }: { value: string[]; onChange(v: string[]
         options={userOptions}
         resolve={resolveUser}
         placeholder="Search friends or paste a user ID…"
-        fallbackIcon="user"
+        fallbackIcon={ICONS.user}
         allowIds
         emptyText="No friends found - you can also paste a user ID"
     />
 );
+
+// ---------------------------------------------------------------- Small parts
+
+/** Colored square for a trigger type, used in lists and the editor */
+export function TriggerGlyph({ type, size }: { type: TriggerType; size?: number; }) {
+    return <Glyph path={RI[TRIGGERS[type]?.icon ?? "search"]} color={TRIGGER_COLOR[type] ?? "gray"} size={size} />;
+}
+
+function Stack({ children }: { children: ReactNode; }) {
+    return <div className={cl("stack")}>{children}</div>;
+}
 
 // ---------------------------------------------------------------- Trigger editors
 
@@ -120,7 +130,7 @@ const KeywordEditor: TriggerEditor = ({ value, patch }) => {
             {value.useRegex
                 ? (
                     <Field label="Pattern" hint={error ? <span className={cl("text-bad")}>{error}</span> : "Example: (release|update)\\s+v?\\d+"}>
-                        <input className={classes(cl("input"), error && cl("input-bad"))} value={value.regex ?? ""} placeholder="e.g. giveaway|raffle" onChange={e => patch({ regex: e.currentTarget.value })} />
+                        <TextField className={classes(cl("mono"), error && cl("field-bad"))} value={value.regex ?? ""} placeholder="e.g. giveaway|raffle" onChange={regex => patch({ regex })} />
                     </Field>
                 )
                 : (
@@ -128,20 +138,20 @@ const KeywordEditor: TriggerEditor = ({ value, patch }) => {
                         <TagInput value={value.words ?? []} onChange={words => patch({ words })} placeholder="e.g. giveaway, my name, Project X" />
                     </Field>
                 )}
-            <div className={cl("card")}>
-                <ToggleRow checked={!value.caseSensitive} onChange={v => patch({ caseSensitive: !v })} label="Ignore upper/lower case" />
-                <ToggleRow checked={!!value.wholeWord} onChange={v => patch({ wholeWord: v })} label="Whole words only" hint="“tea” then won’t match “teatime”" />
-                <ToggleRow checked={!!value.ignoreSelf} onChange={v => patch({ ignoreSelf: v })} label="Ignore my own messages" />
-            </div>
+            <Section>
+                <ToggleRow checked={!value.caseSensitive} onChange={v => patch({ caseSensitive: !v })} title="Ignore upper/lower case" />
+                <ToggleRow checked={!!value.wholeWord} onChange={v => patch({ wholeWord: v })} title="Whole words only" subtitle="“tea” then won’t match “teatime”" />
+                <ToggleRow checked={!!value.ignoreSelf} onChange={v => patch({ ignoreSelf: v })} title="Ignore my own messages" />
+            </Section>
             <Field label="Where?">
                 <Segmented small value={scope.mode} options={SCOPES} onChange={mode => setScope({ mode })} />
             </Field>
             {scope.mode === "guilds" && <GuildPicker value={scope.guildIds ?? []} onChange={guildIds => setScope({ guildIds })} />}
             {scope.mode === "channels" && <ChannelPicker value={scope.channelIds ?? []} onChange={channelIds => setScope({ channelIds })} />}
-            <div className={cl("note")}>
+            <Note>
                 Also works in muted servers. However, Discord only sends your client messages from servers and channels it is currently
                 subscribed to - in very large servers you haven't opened in a while, a match may therefore be missed.
-            </div>
+            </Note>
         </>
     );
 };
@@ -151,10 +161,10 @@ const MentionEditor: TriggerEditor = ({ value, patch }) => (
         <Field label="Which servers?" hint="Leave empty = all servers">
             <GuildPicker value={value.guildIds ?? []} onChange={guildIds => patch({ guildIds })} placeholder="All servers - or search servers…" />
         </Field>
-        <div className={cl("card")}>
-            <ToggleRow checked={!!value.roles} onChange={v => patch({ roles: v })} label="Also mentions of my roles" />
-            <ToggleRow checked={!!value.everyone} onChange={v => patch({ everyone: v })} label="Also @everyone and @here" />
-        </div>
+        <Section>
+            <ToggleRow checked={!!value.roles} onChange={v => patch({ roles: v })} title="Also mentions of my roles" />
+            <ToggleRow checked={!!value.everyone} onChange={v => patch({ everyone: v })} title="Also @everyone and @here" />
+        </Section>
     </>
 );
 
@@ -171,7 +181,7 @@ const VoiceEditor: TriggerEditor = ({ value, patch }) => (
                 onChange={where => patch({ where })}
             />
         </Field>
-        <div className={cl("note")}>Discord only shows you voice activity in servers you share with the person.</div>
+        <Note>Discord only shows you voice activity in servers you share with the person.</Note>
     </>
 );
 
@@ -187,9 +197,11 @@ const GameEditor: TriggerEditor = ({ value, patch }) => {
                 <TagInput value={games} onChange={g => patch({ games: g })} placeholder="e.g. Valorant, Minecraft" />
             </Field>
             {running.length > 0 && (
-                <div className={cl("suggest")}>
-                    <span className={cl("row-hint")}>Running now:</span>
-                    {running.map(n => <button type="button" key={n} className={cl("suggest-chip")} onClick={() => patch({ games: [...games, n] })}>+ {n}</button>)}
+                <div className={cl("inline")}>
+                    <span className={cl("dim")}>Running now:</span>
+                    <Pills>
+                        {running.map(n => <Pill key={n} icon={ICONS.plus} onClick={() => patch({ games: [...games, n] })}>{n}</Pill>)}
+                    </Pills>
                 </div>
             )}
         </>
@@ -202,31 +214,26 @@ const TimeEditor: TriggerEditor = ({ value, patch }) => {
         <>
             <div className={cl("field-row")}>
                 <Field label="Time">
-                    <input type="time" className={cl("input")} value={value.time ?? "20:00"} onChange={e => patch({ time: e.currentTarget.value || "20:00" })} />
+                    <TextField type="time" className={cl("time-input")} value={value.time ?? "20:00"} onChange={time => patch({ time: time || "20:00" })} />
                 </Field>
                 <Field label="Weekdays">
-                    <div className={cl("days")}>
+                    <Pills>
                         {[1, 2, 3, 4, 5, 6, 0].map(d => (
-                            <button
-                                type="button"
-                                key={d}
-                                className={classes(cl("day"), days.includes(d) && cl("day-on"))}
-                                onClick={() => patch({ days: days.includes(d) ? days.filter(x => x !== d) : [...days, d] })}
-                            >
+                            <Pill key={d} selected={days.includes(d)} onClick={() => patch({ days: days.includes(d) ? days.filter(x => x !== d) : [...days, d] })}>
                                 {WEEKDAYS[d]}
-                            </button>
+                            </Pill>
                         ))}
-                    </div>
+                    </Pills>
                 </Field>
             </div>
             <Field label="Notification text">
-                <input className={cl("input")} value={value.note ?? ""} placeholder="e.g. Done for the day! Time for the raid" onChange={e => patch({ note: e.currentTarget.value })} />
+                <TextField value={value.note ?? ""} placeholder="e.g. Done for the day! Time for the raid" onChange={note => patch({ note })} />
             </Field>
         </>
     );
 };
 
-const GameStatusHint = () => <div className={cl("note")}>Tip: Together with the action “Set status → restore afterwards”, your old status is restored as soon as the game ends.</div>;
+const GameStatusHint = () => <Note>Tip: Together with the action “Set status → restore afterwards”, your old status is restored as soon as the game ends.</Note>;
 
 export const TRIGGER_EDITORS: Record<TriggerType, TriggerEditor> = {
     keyword: KeywordEditor,
@@ -238,60 +245,62 @@ export const TRIGGER_EDITORS: Record<TriggerType, TriggerEditor> = {
     time: TimeEditor
 };
 
-// ---------------------------------------------------------------- Action editors
+// ---------------------------------------------------------------- Action editors (rendered inside the action's group)
 
+/** User-picked highlight colors are rule data (hex), not UI colors */
 const HIGHLIGHT_COLORS = ["#f0b232", "#f23f43", "#23a55a", "#5865f2", "#00a8fc", "#eb459e"];
 
 export const ACTION_EDITORS: Partial<Record<ActionType, ActionEditor>> = {
     notify: ({ value, patch }) => (
-        <ToggleRow checked={!!value.permanent} onChange={v => patch({ permanent: v })} label="Stays until I click it" hint="Applies to Vencord's own notifications" />
+        <ToggleRow checked={!!value.permanent} onChange={v => patch({ permanent: v })} title="Stays until I click it" subtitle="Applies to Vencord's own notifications" />
     ),
     sound: ({ value, patch }) => (
         <div className={cl("action-body")}>
-            <div className={cl("sounds")}>
+            <Pills>
                 {SOUND_OPTIONS.map(o => (
-                    <button
-                        type="button"
+                    <Pill
                         key={o.value}
-                        className={classes(cl("sound"), value.sound === o.value && cl("sound-on"))}
+                        icon={ICONS.play}
+                        selected={value.sound === o.value}
                         onClick={() => {
                             patch({ sound: o.value });
                             playSound(o.value, value.volume);
                         }}
                     >
-                        <Icon name="play" size={12} />
                         {o.label}
-                    </button>
+                    </Pill>
                 ))}
-            </div>
-            <div className={cl("range")}>
-                <span className={cl("row-hint")}>Volume</span>
-                <input type="range" min={5} max={100} step={5} value={value.volume ?? 60} onChange={e => patch({ volume: Number(e.currentTarget.value) })} onMouseUp={() => playSound(value.sound, value.volume)} />
-                <span className={cl("range-value")}>{value.volume ?? 60}%</span>
+            </Pills>
+            {/* Preview when the slider is let go */}
+            <div className={cl("inline")} onMouseUp={() => playSound(value.sound, value.volume)}>
+                <span className={cl("dim")}>Volume</span>
+                <Slider value={value.volume ?? 60} min={5} max={100} step={5} format={v => `${v}%`} onChange={volume => patch({ volume })} />
             </div>
         </div>
     ),
     status: ({ value, patch, trigger }) => {
         const endable = !!TRIGGERS[trigger.type]?.testEnd;
         return (
-            <div className={cl("action-body")}>
-                <Segmented small value={value.status ?? "dnd"} options={STATUS_OPTIONS} onChange={status => patch({ status })} />
+            <>
+                <div className={cl("action-body")}>
+                    <Segmented small value={value.status ?? "dnd"} options={STATUS_OPTIONS} onChange={status => patch({ status })} />
+                </div>
                 <ToggleRow
                     checked={!!value.restore && endable}
                     disabled={!endable}
                     onChange={v => patch({ restore: v })}
-                    label="Restore afterwards"
-                    hint={endable ? "Previous status returns as soon as the trigger ends (e.g. game stopped)" : "Only possible for game rules"}
+                    title="Restore afterwards"
+                    subtitle={endable ? "Previous status returns as soon as the trigger ends (e.g. game stopped)" : "Only possible for game rules"}
                 />
-            </div>
+            </>
         );
     },
     highlight: ({ value, patch }) => (
-        <div className={cl("colors")}>
+        <div className={classes(cl("action-body"), cl("wrap"))}>
             {HIGHLIGHT_COLORS.map(c => (
-                <button type="button" key={c} aria-label={c} className={classes(cl("color"), value.color === c && cl("color-on"))} style={{ background: c }} onClick={() => patch({ color: c })} />
+                <button type="button" key={c} aria-label={c} aria-pressed={value.color === c} className={classes(cl("swatch"), value.color === c && cl("swatch-on"))} style={{ background: c }} onClick={() => patch({ color: c })} />
             ))}
-            <input type="color" className={cl("color-input")} value={value.color ?? "#f0b232"} onChange={e => patch({ color: e.currentTarget.value })} />
+            <input type="color" className={cl("swatch-input")} title="Own color" value={value.color ?? "#f0b232"} onChange={e => patch({ color: e.currentTarget.value })} />
         </div>
     )
 };
@@ -308,7 +317,8 @@ interface Preset {
     id: string;
     label: string;
     hint: string;
-    icon: "search" | "voiceIn" | "gamepad" | "at";
+    icon: RadarIcon;
+    color: UiColor;
     build(): Rule;
 }
 
@@ -318,6 +328,7 @@ const PRESETS: Preset[] = [
         label: "Keyword alert",
         hint: "Notification + sound + highlight when a word is said - even in muted servers",
         icon: "search",
+        color: TRIGGER_COLOR.keyword,
         build: () => newRule("Keyword alert", TRIGGERS.keyword.create(), [act("notify"), act("sound", { sound: "ping" }), act("highlight"), act("inbox")])
     },
     {
@@ -325,6 +336,7 @@ const PRESETS: Preset[] = [
         label: "Friend joins voice",
         hint: "Get notified as soon as a specific person joins a voice channel",
         icon: "voiceIn",
+        color: TRIGGER_COLOR.voiceJoin,
         build: () => newRule("Friend joins voice", TRIGGERS.voiceJoin.create(), [act("notify"), act("sound", { sound: "chime" }), act("inbox")])
     },
     {
@@ -332,6 +344,7 @@ const PRESETS: Preset[] = [
         label: "While gaming: Do Not Disturb",
         hint: "Set status to “Do Not Disturb” when a game starts, then restore it afterwards",
         icon: "gamepad",
+        color: TRIGGER_COLOR.gameStart,
         build: () => newRule("While gaming: Do Not Disturb", TRIGGERS.gameStart.create(), [act("status", { status: "dnd", restore: true })])
     },
     {
@@ -339,6 +352,7 @@ const PRESETS: Preset[] = [
         label: "Mention in server X → flash taskbar",
         hint: "If you are mentioned in certain servers, Discord flashes in the taskbar",
         icon: "at",
+        color: TRIGGER_COLOR.mention,
         build: () => newRule("Mention → taskbar", TRIGGERS.mention.create(), [act("flash"), act("notify"), act("inbox")])
     }
 ];
@@ -362,31 +376,38 @@ function validate(rule: Rule): string | null {
 
 // ---------------------------------------------------------------- Editor
 
+function TriggerTiles({ selected, onPick }: { selected?: TriggerType; onPick(type: TriggerType): void; }) {
+    return (
+        <div className={cl("tiles")}>
+            {Object.values(TRIGGERS).filter(t => !t.hidden).map(t => (
+                <button
+                    type="button"
+                    key={t.type}
+                    title={t.hint}
+                    aria-pressed={t.type === selected}
+                    className={classes(cl("tile"), t.type === selected && cl("tile-on"))}
+                    onClick={() => onPick(t.type)}
+                >
+                    <TriggerGlyph type={t.type} size={30} />
+                    <span>{t.label}</span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function PresetPicker({ onPick }: { onPick(rule: Rule): void; }) {
     return (
-        <div className={cl("editor")}>
-            <SectionTitle icon="flash">Presets</SectionTitle>
-            <div className={cl("presets")}>
+        <>
+            <Section title="Presets">
                 {PRESETS.map(p => (
-                    <button type="button" key={p.id} className={cl("preset")} onClick={() => onPick(p.build())}>
-                        <span className={cl("preset-icon")}><Icon name={p.icon} size={20} /></span>
-                        <span className={cl("preset-text")}>
-                            <span className={cl("preset-title")}>{p.label}</span>
-                            <span className={cl("row-hint")}>{p.hint}</span>
-                        </span>
-                    </button>
+                    <Row key={p.id} leading={<Glyph path={RI[p.icon]} color={p.color} />} title={p.label} subtitle={p.hint} chevron onClick={() => onPick(p.build())} />
                 ))}
-            </div>
-            <SectionTitle icon="rules">Or build your own - When …</SectionTitle>
-            <div className={cl("trigger-grid")}>
-                {Object.values(TRIGGERS).filter(t => !t.hidden).map(t => (
-                    <button type="button" key={t.type} className={cl("trigger-tile")} title={t.hint} onClick={() => onPick(newRule(t.label, t.create(), [act("notify"), act("inbox")]))}>
-                        <Icon name={t.icon} size={20} />
-                        <span>{t.label}</span>
-                    </button>
-                ))}
-            </div>
-        </div>
+            </Section>
+            <Section title="Or build your own - When …" plain>
+                <TriggerTiles onPick={type => onPick(newRule(TRIGGERS[type].label, TRIGGERS[type].create(), [act("notify"), act("inbox")]))} />
+            </Section>
+        </>
     );
 }
 
@@ -398,6 +419,7 @@ function RuleForm({ rule, setRule }: { rule: Rule; setRule(r: Rule): void; }) {
     const tDef = TRIGGERS[rule.trigger.type];
     const TEditor = TRIGGER_EDITORS[rule.trigger.type];
     const cond = { ...DEFAULT_CONDITIONS, ...rule.conditions };
+    const condActive = cond.onlyUnfocused || cond.skipWhenDnd || cond.hoursEnabled;
 
     const patchTrigger = (p: Partial<TriggerConfig>) => setRule({ ...rule, trigger: { ...rule.trigger, ...p } });
     const patchCond = (p: Partial<typeof cond>) => setRule({ ...rule, conditions: { ...cond, ...p } });
@@ -415,88 +437,77 @@ function RuleForm({ rule, setRule }: { rule: Rule; setRule(r: Rule): void; }) {
     const missing = (Object.keys(ACTIONS) as ActionType[]).filter(t => !rule.actions.some(a => a.type === t));
 
     return (
-        <div className={cl("editor")}>
+        <>
             <Field label="Name">
-                <input className={cl("input")} value={rule.name} maxLength={80} placeholder="Rule name" onChange={e => setRule({ ...rule, name: e.currentTarget.value })} />
+                <TextField value={rule.name} maxLength={80} placeholder="Rule name" onChange={name => setRule({ ...rule, name })} />
             </Field>
 
-            <SectionTitle icon="search">When …</SectionTitle>
-            <div className={cl("trigger-grid")}>
-                {Object.values(TRIGGERS).filter(t => !t.hidden).map(t => (
-                    <button
-                        type="button"
-                        key={t.type}
-                        title={t.hint}
-                        className={classes(cl("trigger-tile"), t.type === rule.trigger.type && cl("trigger-tile-on"))}
-                        onClick={() => changeTrigger(t.type)}
-                    >
-                        <Icon name={t.icon} size={18} />
-                        <span>{t.label}</span>
-                    </button>
-                ))}
-            </div>
-            <div className={cl("row-hint")}>{tDef?.hint}</div>
-            <div className={cl("stack")}>
-                {TEditor && <TEditor value={rule.trigger} patch={patchTrigger} />}
-            </div>
+            <Section title="When …" footer={tDef?.hint} plain>
+                <TriggerTiles selected={rule.trigger.type} onPick={changeTrigger} />
+            </Section>
+            {TEditor && <Stack><TEditor value={rule.trigger} patch={patchTrigger} /></Stack>}
 
-            <button type="button" className={cl("disclosure")} onClick={() => setShowConditions(v => !v)}>
-                <span className={classes(cl("chev"), showConditions && cl("chev-open"))}>›</span>
-                Conditions {cond.onlyUnfocused || cond.skipWhenDnd || cond.hoursEnabled ? "(active)" : "(optional)"}
-            </button>
-            {showConditions && (
-                <div className={cl("card")}>
-                    <ToggleRow checked={cond.onlyUnfocused} onChange={v => patchCond({ onlyUnfocused: v })} label="Only when Discord is in the background" />
-                    <ToggleRow checked={cond.skipWhenDnd} onChange={v => patchCond({ skipWhenDnd: v })} label="Not while on “Do Not Disturb”" />
-                    <ToggleRow checked={cond.hoursEnabled} onChange={v => patchCond({ hoursEnabled: v })} label="Only within a time window" />
-                    {cond.hoursEnabled && (
-                        <div className={cl("hours")}>
-                            <span>from</span>
-                            <input type="time" className={cl("input")} value={cond.hoursFrom} onChange={e => patchCond({ hoursFrom: e.currentTarget.value })} />
-                            <span>to</span>
-                            <input type="time" className={cl("input")} value={cond.hoursTo} onChange={e => patchCond({ hoursTo: e.currentTarget.value })} />
+            <Section
+                title={`Conditions ${condActive ? "(active)" : "(optional)"}`}
+                right={showConditions && <Button small variant="plain" onClick={() => setShowConditions(false)}>Hide</Button>}
+            >
+                {showConditions
+                    ? (
+                        <>
+                            <ToggleRow checked={cond.onlyUnfocused} onChange={v => patchCond({ onlyUnfocused: v })} title="Only when Discord is in the background" />
+                            <ToggleRow checked={cond.skipWhenDnd} onChange={v => patchCond({ skipWhenDnd: v })} title="Not while on “Do Not Disturb”" />
+                            <ToggleRow checked={cond.hoursEnabled} onChange={v => patchCond({ hoursEnabled: v })} title="Only within a time window" />
+                            {cond.hoursEnabled && (
+                                <Row
+                                    title="Between"
+                                    trailing={
+                                        <span className={cl("inline")}>
+                                            <TextField type="time" className={cl("time-input")} value={cond.hoursFrom} onChange={hoursFrom => patchCond({ hoursFrom })} />
+                                            <span>and</span>
+                                            <TextField type="time" className={cl("time-input")} value={cond.hoursTo} onChange={hoursTo => patchCond({ hoursTo })} />
+                                        </span>
+                                    }
+                                />
+                            )}
+                        </>
+                    )
+                    : <Row title="Add conditions" subtitle="Background only, not on Do Not Disturb, time window" chevron onClick={() => setShowConditions(true)} />}
+            </Section>
+
+            <Section title="Then …" plain>
+                <Stack>
+                    {rule.actions.map((a, i) => {
+                        const def = ACTIONS[a.type];
+                        const AEditor = ACTION_EDITORS[a.type];
+                        if (!def) return null;
+                        return (
+                            <Group key={a.type + i}>
+                                <Row
+                                    leading={<Glyph path={RI[def.icon]} color={ACTION_COLOR[a.type]} />}
+                                    title={def.label}
+                                    subtitle={def.hint}
+                                    trailing={<IconButton icon={ICONS.trash} label="Remove action" destructive onClick={() => setRule({ ...rule, actions: rule.actions.filter((_, j) => j !== i) })} />}
+                                />
+                                {AEditor && <AEditor value={a} patch={p => patchAction(i, p)} trigger={rule.trigger} />}
+                            </Group>
+                        );
+                    })}
+                    {missing.length > 0 && (
+                        <div className={cl("buttons")}>
+                            {missing.map(t => (
+                                <Button key={t} small variant="gray" icon={ICONS.plus} title={ACTIONS[t].hint} onClick={() => setRule({ ...rule, actions: [...rule.actions, act(t)] })}>
+                                    {ACTIONS[t].label}
+                                </Button>
+                            ))}
                         </div>
                     )}
-                </div>
-            )}
-
-            <SectionTitle icon="flash">Then …</SectionTitle>
-            <div className={cl("stack")}>
-                {rule.actions.map((a, i) => {
-                    const def = ACTIONS[a.type];
-                    const AEditor = ACTION_EDITORS[a.type];
-                    if (!def) return null;
-                    return (
-                        <div key={a.type + i} className={cl("action")}>
-                            <div className={cl("action-head")}>
-                                <span className={cl("action-icon")}><Icon name={def.icon} size={16} /></span>
-                                <span className={cl("row-text")}>
-                                    <span className={cl("row-label")}>{def.label}</span>
-                                    <span className={cl("row-hint")}>{def.hint}</span>
-                                </span>
-                                <IconButton icon="trash" label="Remove action" danger onClick={() => setRule({ ...rule, actions: rule.actions.filter((_, j) => j !== i) })} />
-                            </div>
-                            {AEditor && <AEditor value={a} patch={p => patchAction(i, p)} trigger={rule.trigger} />}
-                        </div>
-                    );
-                })}
-            </div>
-            {missing.length > 0 && (
-                <div className={cl("add-actions")}>
-                    {missing.map(t => (
-                        <button type="button" key={t} className={cl("add-action")} title={ACTIONS[t].hint} onClick={() => setRule({ ...rule, actions: [...rule.actions, act(t)] })}>
-                            <Icon name="plus" size={14} />
-                            <Icon name={ACTIONS[t].icon} size={14} />
-                            {ACTIONS[t].label}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
+                </Stack>
+            </Section>
+        </>
     );
 }
 
-function RuleEditorModal({ modalProps, initial }: { modalProps: RenderModalProps; initial?: Rule; }) {
+function RuleEditor({ close, initial }: { close(): void; initial?: Rule; }) {
     const [rule, setRule] = useState<Rule | null>(initial ? structuredClone(initial) : null);
     const error = rule ? validate(rule) : null;
 
@@ -504,45 +515,35 @@ function RuleEditorModal({ modalProps, initial }: { modalProps: RenderModalProps
         if (!rule || error) return;
         upsertRule({ ...rule, name: rule.name.trim() });
         showToast(initial ? "Rule saved" : "Rule created", "success");
-        modalProps.onClose();
+        close();
     };
 
     return (
-        <Modal
-            {...modalProps}
-            size="md"
-            title={initial ? "Edit rule" : "New rule"}
-            subtitle={rule ? "Everything runs locally on your side - Radar never sends messages." : "Choose a preset or a trigger."}
-            notice={rule && error ? { message: error, type: "warning" } : undefined}
+        <Sheet
+            onClose={close}
+            height={rule ? "min(760px, 88vh)" : undefined}
+            header={{
+                title: initial ? "Edit rule" : "New rule",
+                subtitle: rule ? "Everything runs locally on your side - Radar never sends messages." : "Choose a preset or a trigger.",
+                icon: RI.rules,
+                iconColor: "green"
+            }}
+            notice={rule && error ? error : undefined}
             actions={rule
                 ? [
-                    ...(!initial ? [{ text: "Back", variant: "secondary", onClick: () => setRule(null) }] : []),
-                    { text: "Test", variant: "secondary", onClick: () => testRule(rule), disabled: !rule.actions.some(a => a.type !== "status") },
-                    { text: "Save", variant: "primary", onClick: save, disabled: !!error }
+                    ...(!initial ? [{ label: "Back", onClick: () => setRule(null), variant: "gray" as const }] : []),
+                    { label: "Test", onClick: () => testRule(rule), variant: "gray" as const, disabled: !rule.actions.some(a => a.type !== "status") },
+                    { label: "Save", onClick: save, disabled: !!error }
                 ]
-                : [{ text: "Cancel", variant: "secondary", onClick: modalProps.onClose }]}
+                : [{ label: "Cancel", onClick: close, variant: "gray" }]}
         >
-            <ErrorBoundary>
-                <div className={cl("modal-body")}>
-                    {rule ? <RuleForm rule={rule} setRule={setRule} /> : <PresetPicker onPick={setRule} />}
-                </div>
-            </ErrorBoundary>
-        </Modal>
+            <div className={cl("form")}>
+                {rule ? <RuleForm rule={rule} setRule={setRule} /> : <PresetPicker onPick={setRule} />}
+            </div>
+        </Sheet>
     );
 }
 
 export function openRuleEditor(rule?: Rule) {
-    openModal(props => <RuleEditorModal modalProps={props} initial={rule} />);
+    openWindow(close => <RuleEditor close={close} initial={rule} />);
 }
-
-// ---------------------------------------------------------------- Small helpers for lists
-
-export function TriggerBadge({ type }: { type: TriggerType; }) {
-    const def = TRIGGERS[type];
-    return (
-        <span className={cl("trigger-badge")} title={def?.label}>
-            <Icon name={def?.icon ?? "search"} size={16} />
-        </span>
-    );
-}
-

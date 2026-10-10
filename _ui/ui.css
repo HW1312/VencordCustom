@@ -1,0 +1,1463 @@
+/*
+ * _ui – shared Apple style for all own plugins.
+ * Colors are global variables so every plugin's CSS can use them: var(--vc-ui-blue), var(--vc-ui-group) …
+ */
+
+/* ---------------------------------------------------------------- Tokens */
+
+:root,
+.theme-dark,
+.theme-darker,
+.theme-midnight {
+    --vc-ui-glass: rgb(32 32 36 / 80%);
+    --vc-ui-glass-strong: rgb(36 36 40 / 92%);
+    --vc-ui-group: rgb(255 255 255 / 6%);
+    --vc-ui-group-hover: rgb(255 255 255 / 9%);
+    --vc-ui-group-active: rgb(255 255 255 / 12%);
+    --vc-ui-sep: rgb(255 255 255 / 8%);
+    --vc-ui-edge: rgb(255 255 255 / 12%);
+    --vc-ui-title: rgb(255 255 255 / 92%);
+    --vc-ui-text: rgb(255 255 255 / 72%);
+    --vc-ui-dim: rgb(255 255 255 / 45%);
+    --vc-ui-track: rgb(120 120 128 / 32%);
+    --vc-ui-thumb: rgb(99 99 102 / 90%);
+    --vc-ui-field: rgb(118 118 128 / 24%);
+    --vc-ui-shadow: 0 30px 80px rgb(0 0 0 / 45%), 0 0 0 0.5px rgb(0 0 0 / 40%);
+
+    --vc-ui-blue: #0a84ff;
+    --vc-ui-green: #30d158;
+    --vc-ui-orange: #ff9f0a;
+    --vc-ui-red: #ff453a;
+    --vc-ui-purple: #bf5af2;
+    --vc-ui-indigo: #5e5ce6;
+    --vc-ui-teal: #40c8e0;
+    --vc-ui-mint: #63e6e2;
+    --vc-ui-yellow: #ffd60a;
+    --vc-ui-pink: #ff375f;
+    --vc-ui-gray: #8e8e93;
+
+    --vc-ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", var(--font-primary), sans-serif;
+    --vc-ui-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", var(--font-display), sans-serif;
+    --vc-ui-mono: "SF Mono", ui-monospace, "Cascadia Code", Consolas, var(--font-code), monospace;
+    --vc-ui-spring: cubic-bezier(0.3, 1.3, 0.5, 1);
+    --vc-ui-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-light {
+    --vc-ui-glass: rgb(242 242 247 / 88%);
+    --vc-ui-glass-strong: rgb(246 246 248 / 96%);
+    --vc-ui-group: rgb(255 255 255 / 85%);
+    --vc-ui-group-hover: rgb(255 255 255 / 100%);
+    --vc-ui-group-active: rgb(229 229 234 / 100%);
+    --vc-ui-sep: rgb(60 60 67 / 14%);
+    --vc-ui-edge: rgb(0 0 0 / 8%);
+    --vc-ui-title: rgb(0 0 0 / 88%);
+    --vc-ui-text: rgb(60 60 67 / 85%);
+    --vc-ui-dim: rgb(60 60 67 / 55%);
+    --vc-ui-track: rgb(120 120 128 / 16%);
+    --vc-ui-thumb: #fff;
+    --vc-ui-field: rgb(118 118 128 / 12%);
+    --vc-ui-shadow: 0 30px 80px rgb(0 0 0 / 18%), 0 0 0 0.5px rgb(0 0 0 / 10%);
+
+    --vc-ui-blue: #007aff;
+    --vc-ui-green: #34c759;
+    --vc-ui-orange: #ff9500;
+    --vc-ui-red: #ff3b30;
+    --vc-ui-purple: #af52de;
+    --vc-ui-indigo: #5856d6;
+    --vc-ui-teal: #30b0c7;
+    --vc-ui-mint: #00c7be;
+    --vc-ui-yellow: #ffcc00;
+    --vc-ui-pink: #ff2d55;
+    --vc-ui-gray: #8e8e93;
+}
+
+/* ---------------------------------------------------------------- Colored fills (app icons, glyphs) */
+
+.vc-ui-fill-blue { background: linear-gradient(160deg, #40a0ff, #0a6cff); }
+.vc-ui-fill-green { background: linear-gradient(160deg, #5be27e, #28b84b); }
+.vc-ui-fill-orange { background: linear-gradient(160deg, #ffb340, #ff8a00); }
+.vc-ui-fill-red { background: linear-gradient(160deg, #ff6b61, #e5322a); }
+.vc-ui-fill-purple { background: linear-gradient(160deg, #d07cf7, #9b3fd6); }
+.vc-ui-fill-indigo { background: linear-gradient(160deg, #7d7aff, #4f4ad9); }
+.vc-ui-fill-teal { background: linear-gradient(160deg, #5ad8e6, #23a6c2); }
+.vc-ui-fill-mint { background: linear-gradient(160deg, #6ff0e8, #12bdb3); }
+.vc-ui-fill-yellow { background: linear-gradient(160deg, #ffd84d, #f5b400); }
+.vc-ui-fill-pink { background: linear-gradient(160deg, #ff6b8a, #e8264e); }
+.vc-ui-fill-gray { background: linear-gradient(160deg, #a5a5ab, #75757b); }
+
+.vc-ui-app-icon,
+.vc-ui-glyph {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.vc-ui-app-icon {
+    box-shadow: 0 2px 8px rgb(0 0 0 / 25%), inset 0 0.5px 0 rgb(255 255 255 / 40%);
+    transition: filter 0.3s;
+}
+
+.vc-ui-glyph {
+    box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 30%);
+}
+
+/* ---------------------------------------------------------------- Window */
+
+.vc-ui-window {
+    overflow: hidden;
+    border: 0.5px solid var(--vc-ui-edge) !important;
+    border-radius: 22px !important;
+    background: var(--vc-ui-glass) !important;
+    box-shadow: var(--vc-ui-shadow), inset 0 0.5px 0 rgb(255 255 255 / 10%) !important;
+    backdrop-filter: blur(40px) saturate(180%);
+}
+
+.vc-ui-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 82vh;
+    padding: 18px 18px 0;
+    box-sizing: border-box;
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+}
+
+.vc-ui-sheet-embedded {
+    max-height: none;
+    padding: 0;
+}
+
+.vc-ui-sheet-paused .vc-ui-header .vc-ui-app-icon {
+    filter: grayscale(1) brightness(0.8);
+}
+
+.vc-ui-header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+}
+
+.vc-ui-header .vc-ui-app-icon {
+    margin-right: 2px;
+}
+
+.vc-ui-header-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vc-ui-title {
+    margin: 0;
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-ui-subtitle {
+    overflow: hidden;
+    margin-top: 1px;
+    color: var(--vc-ui-dim);
+    font-size: 12.5px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-ui-subtitle-live {
+    color: var(--vc-ui-green);
+}
+
+.vc-ui-body {
+    flex: 1;
+    min-height: 0;
+    margin: 0 -18px;
+    padding: 0 18px 18px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--vc-ui-track) transparent;
+}
+
+.vc-ui-sheet-embedded .vc-ui-body {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+}
+
+.vc-ui-body:empty {
+    display: none;
+}
+
+/* Breathing room between everything stacked in a window body (sections keep their own larger gap) */
+.vc-ui-body > * + * {
+    margin-top: 12px;
+}
+
+.vc-ui-footer {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 -18px;
+    padding: 12px 18px 16px;
+    border-top: 0.5px solid var(--vc-ui-sep);
+}
+
+.vc-ui-sheet-embedded .vc-ui-footer {
+    margin: 0;
+    padding: 12px 0 0;
+}
+
+.vc-ui-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ---------------------------------------------------------------- Alert */
+
+.vc-ui-alert-window {
+    width: 300px !important;
+    min-width: 0 !important;
+}
+
+.vc-ui-alert {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 22px 18px 16px;
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    text-align: center;
+}
+
+.vc-ui-alert .vc-ui-app-icon {
+    margin-bottom: 6px;
+}
+
+.vc-ui-alert-title {
+    margin: 0;
+    color: var(--vc-ui-title);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.vc-ui-alert-body {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.vc-ui-alert-buttons {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.vc-ui-alert-buttons-stacked {
+    flex-direction: column-reverse;
+}
+
+/* ---------------------------------------------------------------- Popover */
+
+.vc-ui-popover {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 80vh;
+    padding: 14px;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 18px;
+    background: var(--vc-ui-glass-strong);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 40%), inset 0 0.5px 0 rgb(255 255 255 / 8%);
+    backdrop-filter: blur(40px) saturate(180%);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    font-size: 14px;
+    transform-origin: top center;
+    animation: vc-ui-pop-in 0.28s var(--vc-ui-spring);
+}
+
+.vc-ui-popover .vc-ui-body {
+    margin: 0 -14px;
+    padding: 0 14px 4px;
+}
+
+/* A whole Sheet inside a popover uses the popover's spacing */
+.vc-ui-popover:has(> .vc-ui-sheet) {
+    padding: 0;
+}
+
+.vc-ui-popover > .vc-ui-sheet {
+    padding: 14px 14px 0;
+}
+
+.vc-ui-popover > .vc-ui-sheet > .vc-ui-body,
+.vc-ui-popover > .vc-ui-sheet > .vc-ui-footer {
+    margin: 0 -14px;
+    padding-right: 14px;
+    padding-left: 14px;
+}
+
+/* ---------------------------------------------------------------- Buttons */
+
+.vc-ui-round-btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-text);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.12s, color 0.15s;
+}
+
+.vc-ui-round-btn:hover,
+.vc-ui-round-btn-active {
+    background: var(--vc-ui-group-hover);
+    color: var(--vc-ui-title);
+}
+
+.vc-ui-round-btn:active {
+    transform: scale(0.88);
+}
+
+.vc-ui-round-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.vc-ui-btn {
+    --vc-ui-tone: var(--vc-ui-blue);
+
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 16px;
+    font: inherit;
+    font-family: var(--vc-ui-font);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.12s, background 0.15s, opacity 0.15s;
+}
+
+.vc-ui-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.vc-ui-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.vc-ui-btn-small {
+    height: 26px;
+    padding: 0 12px;
+    border-radius: 13px;
+    font-size: 12.5px;
+}
+
+.vc-ui-btn-wide {
+    flex: 1;
+}
+
+.vc-ui-btn-icon-only {
+    width: 32px;
+    padding: 0;
+}
+
+.vc-ui-btn-small.vc-ui-btn-icon-only {
+    width: 26px;
+}
+
+.vc-ui-btn-filled {
+    background: var(--vc-ui-tone);
+    color: #fff;
+}
+
+.vc-ui-btn-filled:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.vc-ui-btn-tinted {
+    background: color-mix(in srgb, var(--vc-ui-tone) 18%, transparent);
+    color: var(--vc-ui-tone);
+}
+
+.vc-ui-btn-tinted:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vc-ui-tone) 26%, transparent);
+}
+
+.vc-ui-btn-gray {
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-title);
+}
+
+.vc-ui-btn-gray:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vc-ui-field) 100%, rgb(128 128 128 / 15%));
+}
+
+.vc-ui-btn-plain {
+    padding: 0 8px;
+    background: none;
+    color: var(--vc-ui-tone);
+}
+
+.vc-ui-btn-plain:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vc-ui-tone) 10%, transparent);
+}
+
+.vc-ui-icon-btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--vc-ui-dim);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+
+.vc-ui-icon-btn:hover:not(:disabled),
+.vc-ui-icon-btn-active {
+    background: var(--vc-ui-group-hover);
+    color: var(--vc-ui-title);
+}
+
+.vc-ui-icon-btn-active {
+    color: var(--vc-ui-blue);
+}
+
+.vc-ui-icon-btn-destructive:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vc-ui-red) 15%, transparent);
+    color: var(--vc-ui-red);
+}
+
+.vc-ui-icon-btn:active:not(:disabled) {
+    transform: scale(0.88);
+}
+
+.vc-ui-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* ---------------------------------------------------------------- Switch */
+
+.vc-ui-toggle {
+    position: relative;
+    flex: none;
+    width: 46px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 14px;
+    background: var(--vc-ui-track);
+    cursor: pointer;
+    transition: background 0.25s;
+}
+
+.vc-ui-toggle:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.vc-ui-toggle-on {
+    background: var(--vc-ui-green);
+}
+
+.vc-ui-toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 22%), 0 0 0 0.5px rgb(0 0 0 / 4%);
+    transition: transform 0.28s var(--vc-ui-spring), width 0.18s;
+}
+
+.vc-ui-toggle:active:not(:disabled) .vc-ui-toggle-knob {
+    width: 29px;
+}
+
+.vc-ui-toggle-on .vc-ui-toggle-knob {
+    transform: translateX(18px);
+}
+
+.vc-ui-toggle-on:active:not(:disabled) .vc-ui-toggle-knob {
+    transform: translateX(13px);
+}
+
+/* ---------------------------------------------------------------- Segmented control */
+
+.vc-ui-segmented {
+    position: relative;
+    display: flex;
+    flex: none;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--vc-ui-track);
+}
+
+.vc-ui-segmented-thumb {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc((100% - 4px) / var(--vc-ui-segs));
+    border-radius: 7px;
+    background: var(--vc-ui-thumb);
+    box-shadow: 0 3px 8px rgb(0 0 0 / 12%), 0 3px 1px rgb(0 0 0 / 4%), 0 0 0 0.5px rgb(0 0 0 / 4%);
+    transform: translateX(calc(100% * var(--vc-ui-seg)));
+    transition: transform 0.3s cubic-bezier(0.3, 1.1, 0.5, 1);
+}
+
+.vc-ui-segment {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    height: 30px;
+    padding: 0 8px;
+    border: none;
+    background: none;
+    color: var(--vc-ui-text);
+    font: inherit;
+    font-family: var(--vc-ui-font);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.vc-ui-segmented-small .vc-ui-segment {
+    height: 24px;
+    font-size: 12px;
+}
+
+.vc-ui-segment-on {
+    color: var(--vc-ui-title);
+    font-weight: 600;
+}
+
+.vc-ui-segment-count {
+    min-width: 16px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: var(--vc-ui-sep);
+    color: var(--vc-ui-dim);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- Grouped lists */
+
+.vc-ui-section + .vc-ui-section {
+    margin-top: 18px;
+}
+
+.vc-ui-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 14px 6px;
+}
+
+.vc-ui-section-title {
+    flex: 1;
+    margin: 0;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.vc-ui-section-right {
+    font-size: 12px;
+}
+
+.vc-ui-section-footer {
+    margin: 6px 14px 0;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.vc-ui-group {
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+}
+
+.vc-ui-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 14px;
+    box-sizing: border-box;
+    transition: background 0.15s;
+}
+
+/* Separators like iOS lists. Rows draw theirs from where the text starts (whatever the picture size),
+   anything else in a group gets a line with the normal inset. */
+.vc-ui-group > * {
+    position: relative;
+}
+
+.vc-ui-group > * + :not(.vc-ui-row)::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 14px;
+    height: 0.5px;
+    background: var(--vc-ui-sep);
+    pointer-events: none;
+}
+
+.vc-ui-group > * + .vc-ui-row > .vc-ui-row-main::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: -400px;
+    left: 0;
+    height: 0.5px;
+    background: var(--vc-ui-sep);
+    pointer-events: none;
+}
+
+.vc-ui-row-click {
+    cursor: pointer;
+}
+
+.vc-ui-row-click:hover {
+    background: var(--vc-ui-group-hover);
+}
+
+.vc-ui-row-click:active {
+    background: var(--vc-ui-group-active);
+}
+
+.vc-ui-row-dim {
+    opacity: 0.55;
+}
+
+.vc-ui-row-top {
+    align-items: flex-start;
+}
+
+.vc-ui-row-top > .vc-ui-row-trailing {
+    align-self: flex-start;
+    min-height: 28px;
+}
+
+.vc-ui-row-leading {
+    display: flex;
+    flex: none;
+    align-items: center;
+}
+
+.vc-ui-row-main {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-self: stretch;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-ui-row-title {
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.1px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-ui-row-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+/* Several sub parts are separated by a dot */
+.vc-ui-row-sub > * + *::before {
+    content: "·";
+    margin-right: 6px;
+    color: var(--vc-ui-dim);
+}
+
+.vc-ui-row-note {
+    color: var(--vc-ui-dim);
+    font-size: 11.5px;
+    line-height: 1.35;
+}
+
+.vc-ui-row-trailing {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    color: var(--vc-ui-dim);
+    font-size: 13px;
+}
+
+.vc-ui-row-chevron {
+    flex: none;
+    margin-left: -4px;
+    color: var(--vc-ui-dim);
+    opacity: 0.7;
+}
+
+.vc-ui-link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: none;
+    background: none;
+    color: var(--vc-ui-blue);
+    font: inherit;
+    font-family: var(--vc-ui-font);
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vc-ui-link-row:hover {
+    background: var(--vc-ui-group-hover);
+}
+
+.vc-ui-link-row-destructive {
+    color: var(--vc-ui-red);
+}
+
+/* ---------------------------------------------------------------- Stats */
+
+.vc-ui-stats {
+    display: grid;
+    flex: none;
+    gap: 10px;
+}
+
+.vc-ui-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--vc-ui-group);
+}
+
+.vc-ui-stat-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-ui-stat-label {
+    overflow: hidden;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- Small parts */
+
+.vc-ui-badge {
+    --vc-ui-tone: var(--vc-ui-gray);
+
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    height: 18px;
+    padding: 0 7px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--vc-ui-tone) 18%, transparent);
+    color: var(--vc-ui-tone);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-ui-badge-solid {
+    background: var(--vc-ui-tone);
+    color: #fff;
+}
+
+.vc-ui-badge-click {
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.vc-ui-badge-click:hover {
+    filter: brightness(1.15);
+}
+
+/* Pills: filters, quick picks, removable chips */
+
+.vc-ui-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.vc-ui-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    height: 26px;
+    padding: 0 11px;
+    box-sizing: border-box;
+    border-radius: 13px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+
+.vc-ui-pill-click {
+    cursor: pointer;
+}
+
+.vc-ui-pill-click:hover {
+    color: var(--vc-ui-title);
+    background: color-mix(in srgb, var(--vc-ui-field) 100%, rgb(128 128 128 / 15%));
+}
+
+.vc-ui-pill-click:active {
+    transform: scale(0.95);
+}
+
+.vc-ui-pill-on,
+.vc-ui-pill-on:hover {
+    background: var(--vc-ui-blue);
+    color: #fff;
+}
+
+.vc-ui-pill-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-ui-pill .vc-ui-avatar {
+    margin-left: -7px;
+}
+
+.vc-ui-pill-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-right: -5px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--vc-ui-sep);
+    color: inherit;
+    cursor: pointer;
+}
+
+.vc-ui-pill-x:hover {
+    background: var(--vc-ui-red);
+    color: #fff;
+}
+
+/* Slider (macOS style) */
+
+.vc-ui-slider {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 160px;
+}
+
+.vc-ui-slider input {
+    flex: 1;
+    height: 4px;
+    margin: 0;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--vc-ui-blue) var(--vc-ui-fill), var(--vc-ui-track) var(--vc-ui-fill));
+    appearance: none;
+    cursor: pointer;
+}
+
+.vc-ui-slider input::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%), 0 0 0 0.5px rgb(0 0 0 / 8%);
+    appearance: none;
+    transition: transform 0.15s var(--vc-ui-spring);
+}
+
+.vc-ui-slider input:active::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+
+.vc-ui-slider-value {
+    min-width: 42px;
+    color: var(--vc-ui-dim);
+    font-size: 12.5px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-ui-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--vc-ui-dim);
+    font-size: 13px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.vc-ui-state-ok {
+    color: var(--vc-ui-green);
+}
+
+.vc-ui-state-warn {
+    color: var(--vc-ui-orange);
+    font-weight: 600;
+}
+
+.vc-ui-state-bad {
+    color: var(--vc-ui-red);
+}
+
+.vc-ui-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--vc-ui-green);
+    color: #fff;
+}
+
+.vc-ui-progress {
+    height: 4px;
+    margin: 4px 0 1px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--vc-ui-track);
+}
+
+.vc-ui-progress > div {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.3, 1, 0.5, 1);
+}
+
+.vc-ui-spinner {
+    position: relative;
+    display: inline-block;
+    flex: none;
+}
+
+.vc-ui-spinner > i {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 1px);
+    width: 2px;
+    height: 30%;
+    border-radius: 1px;
+    background: currentcolor;
+    transform-origin: 1px calc(var(--vc-ui-spin-size) / 2);
+    animation: vc-ui-fade 0.8s linear infinite;
+}
+
+.vc-ui-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 40px 20px;
+    color: var(--vc-ui-dim);
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.vc-ui-empty b {
+    color: var(--vc-ui-title);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vc-ui-empty .vc-ui-btn {
+    margin-top: 8px;
+}
+
+.vc-ui-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-dim);
+}
+
+.vc-ui-note {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-dim);
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.vc-ui-note-warn {
+    background: color-mix(in srgb, var(--vc-ui-orange) 14%, transparent);
+    color: var(--vc-ui-orange);
+}
+
+.vc-ui-note-bad {
+    background: color-mix(in srgb, var(--vc-ui-red) 14%, transparent);
+    color: var(--vc-ui-red);
+}
+
+.vc-ui-note-ok {
+    background: color-mix(in srgb, var(--vc-ui-green) 14%, transparent);
+    color: var(--vc-ui-green);
+}
+
+.vc-ui-avatar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-dim);
+}
+
+.vc-ui-avatar-square {
+    border-radius: 22%;
+}
+
+.vc-ui-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ---------------------------------------------------------------- Text fields */
+
+.vc-ui-field,
+.vc-ui-search {
+    width: 100%;
+    min-height: 34px;
+    box-sizing: border-box;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-title);
+    font: inherit;
+    font-family: var(--vc-ui-font);
+    font-size: 14px;
+    transition: box-shadow 0.15s;
+}
+
+.vc-ui-field {
+    padding: 7px 11px;
+}
+
+.vc-ui-field::placeholder,
+.vc-ui-search input::placeholder {
+    color: var(--vc-ui-dim);
+}
+
+.vc-ui-field:focus,
+.vc-ui-search:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--vc-ui-blue) 45%, transparent);
+}
+
+.vc-ui-textarea {
+    min-height: 72px;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.vc-ui-select {
+    padding-right: 30px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='14' height='14'%3E%3Cpath fill='%238e8e93' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+.vc-ui-select option {
+    background: var(--background-floating, #2b2d31);
+    color: var(--text-default, #dbdee1);
+}
+
+.vc-ui-search {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    color: var(--vc-ui-dim);
+}
+
+.vc-ui-search input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: none;
+    color: var(--vc-ui-title);
+    font: inherit;
+    font-size: 14px;
+}
+
+.vc-ui-search-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--vc-ui-dim);
+    color: var(--vc-ui-glass-strong);
+    cursor: pointer;
+}
+
+.vc-ui-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-ui-form-label {
+    margin-left: 4px;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.vc-ui-form-hint {
+    margin-left: 4px;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+/* ---------------------------------------------------------------- Notifications */
+
+.vc-ui-notify-host {
+    position: fixed;
+    top: 40px;
+    right: 14px;
+    z-index: 1100;
+    pointer-events: none;
+}
+
+.vc-ui-notify-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.vc-ui-notify {
+    --vc-ui-n-glass: rgb(38 38 42 / 72%);
+    --vc-ui-n-hover: rgb(50 50 55 / 78%);
+
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 356px;
+    box-sizing: border-box;
+    padding: 11px 14px 11px 11px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 18px;
+    background: var(--vc-ui-n-glass);
+    box-shadow: 0 0 0 0.5px rgb(0 0 0 / 30%), 0 10px 30px rgb(0 0 0 / 30%), inset 0 0.5px 0 rgb(255 255 255 / 8%);
+    backdrop-filter: blur(28px) saturate(180%);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    pointer-events: auto;
+    transform-origin: top right;
+    animation: vc-ui-notify-in 0.45s cubic-bezier(0.22, 1.35, 0.36, 1);
+    transition: background 0.15s, transform 0.15s;
+}
+
+.theme-light .vc-ui-notify {
+    --vc-ui-n-glass: rgb(246 246 248 / 80%);
+    --vc-ui-n-hover: rgb(236 236 240 / 88%);
+}
+
+.vc-ui-notify-click {
+    cursor: pointer;
+}
+
+.vc-ui-notify-click:hover {
+    background: var(--vc-ui-n-hover);
+}
+
+.vc-ui-notify-click:active {
+    transform: scale(0.985);
+}
+
+.vc-ui-notify-leave {
+    animation: vc-ui-notify-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.vc-ui-notify-img,
+.vc-ui-notify-icon {
+    flex: none;
+    align-self: flex-start;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    object-fit: cover;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.vc-ui-notify-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #40a0ff, #0a6cff);
+    color: #fff;
+}
+
+.vc-ui-notify-success .vc-ui-notify-icon {
+    background: linear-gradient(160deg, #5be27e, #28b84b);
+}
+
+.vc-ui-notify-attention .vc-ui-notify-icon {
+    background: linear-gradient(160deg, #ffcb5c, #f0a020);
+}
+
+.vc-ui-notify-error .vc-ui-notify-icon {
+    background: linear-gradient(160deg, #ff6b61, #e5322a);
+}
+
+.vc-ui-notify-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.vc-ui-notify-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.vc-ui-notify-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-ui-notify-when {
+    flex: none;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+}
+
+.vc-ui-notify-body {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.vc-ui-notify-side {
+    display: flex;
+    margin-top: 4px;
+}
+
+/* macOS: round close button at the top left, only on hover */
+.vc-ui-notify-close {
+    position: absolute;
+    top: -7px;
+    left: -7px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 50%;
+    background: var(--vc-ui-n-hover);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+    backdrop-filter: blur(20px);
+    color: var(--vc-ui-text);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.vc-ui-notify:hover .vc-ui-notify-close {
+    opacity: 1;
+    transform: none;
+}
+
+/* ---------------------------------------------------------------- Title bar icons (shared hover feel) */
+
+.vc-ui-tb-icon {
+    color: var(--interactive-icon-default, var(--interactive-normal));
+    transition: color 0.15s, transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+:hover > .vc-ui-tb-icon,
+:hover > * > .vc-ui-tb-icon {
+    color: var(--interactive-icon-hover, var(--interactive-hover));
+    transform: scale(1.1);
+}
+
+:active > .vc-ui-tb-icon,
+:active > * > .vc-ui-tb-icon {
+    transform: scale(0.88);
+}
+
+/* ---------------------------------------------------------------- Motion */
+
+@keyframes vc-ui-fade {
+    from { opacity: 1; }
+    to { opacity: 0.15; }
+}
+
+@keyframes vc-ui-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes vc-ui-pulse {
+    0%,
+    100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+@keyframes vc-ui-pop-in {
+    from { opacity: 0; transform: scale(0.94) translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes vc-ui-notify-in {
+    from { opacity: 0; transform: translateX(110%); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes vc-ui-notify-out {
+    to { opacity: 0; transform: translateX(30%) scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-ui-popover,
+    .vc-ui-notify,
+    .vc-ui-notify-leave {
+        animation-duration: 0.01ms;
+    }
+
+    .vc-ui-toggle-knob,
+    .vc-ui-segmented-thumb {
+        transition: none;
+    }
+}

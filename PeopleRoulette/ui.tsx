@@ -7,18 +7,18 @@ import "./ui.css";
 
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
 import { copyToClipboard } from "@utils/clipboard";
 import { fetchUserProfile, openPrivateChannel, openUserProfile } from "@utils/discord";
 import { classes } from "@utils/misc";
 import type { Activity } from "@vencord/discord-types";
-import type { ReactNode } from "react";
 import { findComponentByCodeLazy } from "@webpack";
 import {
-    GuildMemberStore, GuildStore, IconUtils, Modal, openModal, Parser, PresenceStore, showToast, SnowflakeUtils, useEffect, useMemo,
-    UserProfileStore, UserStore, useRef, useState, useStateFromStores
+    GuildMemberStore, GuildStore, IconUtils, Parser, PresenceStore, showToast, SnowflakeUtils, useEffect, useMemo,
+useRef, UserProfileStore, UserStore, useState, useStateFromStores
 } from "@webpack/common";
+import type { ReactNode } from "react";
 
+import { Avatar, Button, Empty, Icon, ICONS, Note, openWindow, Pill, Pills, Row, Section, Sheet, TextField, ToggleRow } from "../_ui";
 import { Candidate, getPool, markSeen, pickRandom, PoolResult, resetSeen, settings, SkipReason } from "./index";
 
 const cl = classNameFactory("vc-roulette-");
@@ -30,17 +30,9 @@ const RECENT_MAX = 8;
 
 // ---------------------------------------------------------------- Icons
 
-const COPY_PATH = "M15 2H5a2 2 0 0 0-2 2v12h2V4h10V2Zm3 4H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm0 14H9V8h9v12Z";
-const CHECK_PATH = "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z";
 const DICE_PATH = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm-4.5 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7.5 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm9 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z";
-
-function Icon({ path, size = 20, className }: { path: string; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={classes(cl("icon"), className)}>
-            <path fill="currentColor" d={path} />
-        </svg>
-    );
-}
+const EYE_PATH = "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5ZM12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z";
+const MSG_PATH = "M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z";
 
 // ---------------------------------------------------------------- Helpers
 
@@ -111,7 +103,7 @@ function BioLink({ href, children }: { href: string; children: ReactNode; }) {
                 title={copied ? "Copied!" : "Copy link"}
                 onClick={copy}
             >
-                <Icon key={copied ? "check" : "copy"} path={copied ? CHECK_PATH : COPY_PATH} size={12} />
+                <Icon key={copied ? "check" : "copy"} path={copied ? ICONS.check : ICONS.copy} size={12} className={cl("icon")} />
             </button>
         </span>
     );
@@ -237,25 +229,24 @@ function PersonCard({ candidate, onClose }: { candidate: Candidate; onClose(): v
                 {guilds.length > 0 && (
                     <div className={cl("guilds")}>
                         <span className={cl("label")}>Shared server{guilds.length > 1 ? "s" : ""}</span>
-                        <div className={cl("guild-list")}>
+                        <Pills>
                             {guilds.slice(0, 6).map(g => (
-                                <span key={g!.id} className={cl("guild")} title={g!.name}>
-                                    {g!.icon
-                                        ? <img src={IconUtils.getGuildIconURL({ id: g!.id, icon: g!.icon, canAnimate: false, size: 32 })} alt="" />
-                                        : <span className={cl("guild-acronym")}>{g!.name.slice(0, 2)}</span>}
-                                    <span className={cl("guild-name")}>{g!.name}</span>
-                                </span>
+                                <Pill
+                                    key={g!.id}
+                                    title={g!.name}
+                                    leading={<Avatar square size={18} src={g!.icon ? IconUtils.getGuildIconURL({ id: g!.id, icon: g!.icon, canAnimate: false, size: 32 }) : undefined} />}
+                                >
+                                    {g!.name}
+                                </Pill>
                             ))}
-                            {guilds.length > 6 && <span className={cl("more")}>+{guilds.length - 6}</span>}
-                        </div>
+                            {guilds.length > 6 && <Pill>+{guilds.length - 6}</Pill>}
+                        </Pills>
                     </div>
                 )}
 
                 <div className={cl("card-actions")}>
-                    <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => { openPrivateChannel(id); onClose(); }}>
-                        Message
-                    </button>
-                    <button className={cl("btn")} onClick={() => openUserProfile(id)}>Profile</button>
+                    <Button wide icon={MSG_PATH} onClick={() => { openPrivateChannel(id); onClose(); }}>Message</Button>
+                    <Button wide variant="gray" icon={ICONS.user} onClick={() => openUserProfile(id)}>Profile</Button>
                 </div>
             </div>
         </div>
@@ -282,22 +273,18 @@ function PoolStats({ stats }: { stats: PoolResult; }) {
         .sort(([, a], [, b]) => b - a);
 
     return (
-        <div className={cl("stats")}>
-            <p>
+        <Section
+            footer={<>
                 Discord never sends your client the full member list of a server, only the people you have come
                 across: members shown in the member list, people in chats you opened and in voice channels. That is
                 the “loaded” number - it grows the more you use Discord. Loading everyone would mean scraping member
                 lists, which Discord treats as abuse and can lock accounts for, so the plugin doesn't do that.
-            </p>
-            <div className={cl("stats-rows")}>
-                {rows.map(([reason, n]) => (
-                    <div key={reason} className={cl("stats-row")}>
-                        <span>{SKIP_LABELS[reason]}</span>
-                        <span>−{fmt(n)}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
+            </>}
+        >
+            {rows.map(([reason, n]) => (
+                <Row key={reason} title={SKIP_LABELS[reason]} trailing={<span className={cl("count")}>−{fmt(n)}</span>} />
+            ))}
+        </Section>
     );
 }
 
@@ -359,19 +346,18 @@ function Roulette({ onClose }: { onClose(): void; }) {
                 ) : current ? (
                     <PersonCard key={current.id} candidate={current} onClose={onClose} />
                 ) : (
-                    <div className={cl("empty")}>
-                        <Icon path={DICE_PATH} size={48} />
-                        {poolSize
-                            ? <span>Press the button to meet someone random from your servers.</span>
-                            : <span>Nobody left who matches your filters. Open some member lists or relax the filters in the settings.</span>}
-                    </div>
+                    <Empty
+                        icon={DICE_PATH}
+                        title={poolSize
+                            ? "Press the button to meet someone random from your servers."
+                            : "Nobody left who matches your filters. Open some member lists or relax the filters in the settings."}
+                    />
                 )}
             </div>
 
-            <button className={classes(cl("btn"), cl("btn-brand"), cl("spin"))} disabled={spinning || !poolSize} onClick={spin}>
-                <Icon path={DICE_PATH} size={18} />
+            <Button wide color="pink" icon={DICE_PATH} disabled={spinning || !poolSize} onClick={spin}>
                 {current ? "Next person" : "Find someone"}
-            </button>
+            </Button>
 
             <button className={cl("pool")} onClick={() => setShowStats(v => !v)}>
                 {fmt(poolSize)} of {fmt(stats.loaded)} loaded people match your filters
@@ -401,30 +387,30 @@ function Roulette({ onClose }: { onClose(): void; }) {
                 </div>
             )}
 
-            <div className={cl("note")}>
+            <Note>
                 Discord doesn't reveal whether someone accepts DMs from server members. If your message can't be
                 delivered, they only take DMs from friends - just spin again. Be nice!
-            </div>
+            </Note>
         </div>
     );
 }
 
 export function openRouletteModal() {
-    openModal(props => (
-        <Modal {...props} size="md" title="People Roulette" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
+    openWindow(close => (
+        <Sheet onClose={close} header={{ title: "People Roulette", subtitle: "Meet someone new from your servers", icon: DICE_PATH, iconColor: "pink" }}>
             <ErrorBoundary noop>
-                <Roulette onClose={props.onClose} />
+                <Roulette onClose={close} />
             </ErrorBoundary>
-        </Modal>
+        </Sheet>
     ));
 }
 
 // ---------------------------------------------------------------- Settings
 
 const FILTERS = [
-    ["skipExistingDms", "Skip people you already have a DM with"],
-    ["skipSeen", "Don't show the same person twice"],
-    ["showTitleBarButton", "Show icon in the title bar"]
+    ["skipExistingDms", "Skip people you already have a DM with", MSG_PATH, "blue"],
+    ["skipSeen", "Don't show the same person twice", EYE_PATH, "orange"],
+    ["showTitleBarButton", "Show icon in the title bar", DICE_PATH, "pink"]
 ] as const;
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
@@ -433,50 +419,52 @@ export const SettingsPanel = ErrorBoundary.wrap(() => {
     const excluded = new Set(s.excludedGuilds);
 
     return (
-        <div className={cl("settings")}>
-            <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => openRouletteModal()}>Open People Roulette</button>
-
-            {FILTERS.map(([key, label]) => (
-                <label key={key} className={cl("option")}>
-                    <span>{label}</span>
-                    <Switch checked={s[key]} onChange={v => settings.store[key] = v} />
-                </label>
-            ))}
-
-            <label className={cl("option")}>
-                <span>Minimum account age (days)</span>
-                <input
-                    className={cl("number")}
-                    type="number"
-                    min={0}
-                    value={s.minAccountAgeDays}
-                    onChange={e => settings.store.minAccountAgeDays = Math.max(0, Number(e.currentTarget.value) || 0)}
-                />
-            </label>
-
-            <div className={cl("option")}>
-                <span>{s.seen.length} people already shown</span>
-                <button className={cl("btn")} disabled={!s.seen.length} onClick={resetSeen}>Reset</button>
-            </div>
-
-            <div className={cl("label")}>Servers to pick from</div>
-            <div className={cl("guild-picker")}>
-                {guilds.map(g => (
-                    <label key={g.id} className={cl("guild-row")}>
-                        {g.icon
-                            ? <img src={IconUtils.getGuildIconURL({ id: g.id, icon: g.icon, canAnimate: false, size: 32 })} alt="" />
-                            : <span className={cl("guild-acronym")}>{g.name.slice(0, 2)}</span>}
-                        <span className={cl("guild-name")}>{g.name}</span>
-                        <Switch
-                            checked={!excluded.has(g.id)}
-                            onChange={v => settings.store.excludedGuilds = v
-                                ? s.excludedGuilds.filter(x => x !== g.id)
-                                : [...s.excludedGuilds, g.id]}
-                        />
-                    </label>
+        <Sheet
+            embedded
+            header={{
+                title: "People Roulette",
+                subtitle: "Meet someone new from your servers",
+                icon: DICE_PATH,
+                iconColor: "pink",
+                actions: <Button color="pink" icon={DICE_PATH} onClick={() => openRouletteModal()}>Open People Roulette</Button>
+            }}
+        >
+            <Section title="Filters">
+                {FILTERS.map(([key, label, icon, color]) => (
+                    <ToggleRow key={key} icon={icon} color={color} title={label} checked={s[key]} onChange={v => settings.store[key] = v} />
                 ))}
-            </div>
-        </div>
+                <Row
+                    title="Minimum account age (days)"
+                    trailing={
+                        <TextField
+                            className={cl("number")}
+                            type="number"
+                            min={0}
+                            value={s.minAccountAgeDays}
+                            onChange={v => settings.store.minAccountAgeDays = Math.max(0, Number(v) || 0)}
+                        />
+                    }
+                />
+                <Row
+                    title={`${s.seen.length} people already shown`}
+                    trailing={<Button small variant="gray" disabled={!s.seen.length} onClick={resetSeen}>Reset</Button>}
+                />
+            </Section>
+
+            <Section title="Servers to pick from">
+                {guilds.map(g => (
+                    <ToggleRow
+                        key={g.id}
+                        leading={<Avatar square size={28} src={g.icon ? IconUtils.getGuildIconURL({ id: g.id, icon: g.icon, canAnimate: false, size: 32 }) : undefined} />}
+                        title={g.name}
+                        checked={!excluded.has(g.id)}
+                        onChange={v => settings.store.excludedGuilds = v
+                            ? s.excludedGuilds.filter(x => x !== g.id)
+                            : [...s.excludedGuilds, g.id]}
+                    />
+                ))}
+            </Section>
+        </Sheet>
     );
 }, { noop: true });
 
@@ -491,7 +479,7 @@ function TitleBarButton() {
             className={cl("btn-titlebar")}
             onClick={() => openRouletteModal()}
             tooltip="People Roulette"
-            icon={() => <Icon path={DICE_PATH} />}
+            icon={() => <Icon path={DICE_PATH} size={20} className="vc-ui-tb-icon" />}
         />
     );
 }

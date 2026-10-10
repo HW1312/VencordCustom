@@ -9,6 +9,7 @@ import { Logger } from "@utils/Logger";
 import type { Channel, Message } from "@vencord/discord-types";
 import { ChannelStore, MessageActions, RestAPI, SelectedChannelStore, showToast } from "@webpack/common";
 
+import { notify } from "../_ui";
 import { canDelete, clear, displayName, formatFullDate, getChannel, getSelectedMessages, messageDate, messagesToQuote, messagesToText, readableContent, remove, setBusy, state } from "./store";
 
 export const logger = new Logger("MessageSelect");
@@ -78,8 +79,8 @@ export async function deleteSelected(messages: Message[], delay: number) {
 
     const deleted = busy.done - failed;
     if (state.busy === busy) setBusy(null);
-    if (failed) showToast(`Deleted ${deleted} of ${targets.length} messages, ${failed} failed`, "failure");
-    else showToast(`Deleted ${deleted} message${deleted === 1 ? "" : "s"}`, "success");
+    if (failed) notify({ app: "MessageSelect", kind: "error", title: `Deleted ${deleted} of ${targets.length} messages, ${failed} failed` });
+    else notify({ app: "MessageSelect", kind: "success", title: `Deleted ${deleted} message${deleted === 1 ? "" : "s"}` });
     if (state.channelId === channelId && !state.ids.size) clear();
 }
 
@@ -143,9 +144,9 @@ export async function forwardSelected(target: Channel, mode: ForwardMode, delay:
     }
 
     const where = target.name ? `#${target.name}` : "the conversation";
-    if (failed) showToast(`Forwarding to ${where}: ${failed} failed`, "failure");
-    else if (fallbacks) showToast(`Forwarded to ${where} (${fallbacks} as text)`, "success");
-    else showToast(`Forwarded to ${where}`, "success");
+    if (failed) notify({ app: "MessageSelect", kind: "error", title: `Forwarding to ${where}: ${failed} failed` });
+    else if (fallbacks) notify({ app: "MessageSelect", kind: "success", title: `Forwarded to ${where} (${fallbacks} as text)` });
+    else notify({ app: "MessageSelect", kind: "success", title: `Forwarded to ${where}` });
     clear();
 }
 

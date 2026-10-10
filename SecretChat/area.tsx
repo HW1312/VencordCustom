@@ -10,9 +10,10 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { Message } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { ContextMenuApi, Menu, ReadStateStore, showToast, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
+import { ContextMenuApi, Menu, ReadStateStore, Tooltip, UserStore, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 
+import { Button, notify } from "../_ui";
 import { hitTest } from "../ToolbarManager/dom";
 import { openItemMenu } from "../ToolbarManager/ui";
 import { applyEmergency } from "./messages";
@@ -48,7 +49,7 @@ export function toggleEmergency() {
     settings.store.emergency = on;
     applyEmergency(on);
     if (on) closeRoomsWindow();
-    showToast(on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", on ? "message" : "success");
+    notify({ title: on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", kind: on ? "attention" : "success", app: "SecretChat" });
 }
 
 /**
@@ -74,7 +75,7 @@ function pickServerListPicture() {
         if (!file) return;
         const data = await toIconDataUrl(file, 128);
         if (data) settings.store.serverListPicture = data;
-        else showToast("That image couldn't be read", "failure");
+        else notify({ title: "That image couldn't be read", kind: "error", app: "SecretChat" });
     };
     input.click();
 }
@@ -176,7 +177,7 @@ function TitleBarButton() {
                 className={classes(cl("tb"), count !== 0 && !emergency && cl("tb-unread"), emergency && cl("tb-stop"))}
                 onClick={toggleRoomsWindow}
                 tooltip={emergency ? "SecretChat – emergency stop is on (right-click)" : count > 0 ? `Secret rooms · ${count} new` : "Secret rooms"}
-                icon={() => <LockIcon width={20} height={20} className={cl("tb-icon")} />}
+                icon={() => <LockIcon width={20} height={20} className={classes(cl("tb-icon"), "vc-ui-tb-icon")} />}
             />
         </div>
     );
@@ -208,7 +209,7 @@ export function RoomCard({ message }: { message: Message; }) {
         else if (msg.authorId === me) text = "Secret room";
         else {
             text = `${userName(msg.authorId)} made this chat a secret room`;
-            button = <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => joinRoom(msg.channelId, msg.keyId!)}>Join</button>;
+            button = <Button small color="green" onClick={() => joinRoom(msg.channelId, msg.keyId!)}>Join</Button>;
         }
     } else if (msg.authorId === me) {
         text = s.joins[msg.joinId!] ? "Waiting for a member to let you in …" : "You asked to join";
@@ -216,7 +217,7 @@ export function RoomCard({ message }: { message: Message; }) {
         text = `${userName(msg.authorId)} was let in`;
     } else if (canLetIn(msg)) {
         text = `${userName(msg.authorId)} wants to join`;
-        button = <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => letIn(msg, true)}>Let in</button>;
+        button = <Button small color="green" onClick={() => letIn(msg, true)}>Let in</Button>;
     } else {
         text = `${userName(msg.authorId)} asked to join`;
     }

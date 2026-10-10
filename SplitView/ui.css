@@ -13,26 +13,13 @@ body.vc-splitview-resizing * {
 
 /* ---------- Title bar ---------- */
 
-.vc-splitview-btn,
-.vc-splitview-icon {
+.vc-splitview-btn {
+    position: relative;
     -webkit-app-region: no-drag;
 }
 
-.vc-splitview-btn {
-    position: relative;
-}
-
-.vc-splitview-btn .vc-splitview-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-}
-
-.vc-splitview-btn:hover .vc-splitview-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-}
-
-.vc-splitview-btn[class*="selected"] .vc-splitview-icon,
-.vc-splitview-btn-active .vc-splitview-icon {
-    color: var(--interactive-icon-active, var(--interactive-active));
+.vc-splitview-btn-active .vc-ui-tb-icon {
+    color: var(--vc-ui-indigo);
 }
 
 .vc-splitview-btn-active::after {
@@ -43,7 +30,7 @@ body.vc-splitview-resizing * {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--brand-500, #5865f2);
+    background: var(--vc-ui-indigo);
     pointer-events: none;
 }
 
@@ -52,14 +39,11 @@ body.vc-splitview-resizing * {
 .vc-splitview-panels {
     -webkit-app-region: no-drag;
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0 0 0 auto;
     z-index: 100;
     display: flex;
-    flex-direction: row;
-    background: var(--background-base-lower, var(--background-tertiary));
-    color: var(--text-default, var(--text-normal));
+    background: var(--background-base-lower, var(--background-primary));
+    color: var(--vc-ui-text);
     font-size: 15px;
 }
 
@@ -70,24 +54,20 @@ body.vc-splitview-resizing * {
     min-width: 0;
     height: 100%;
     box-sizing: border-box;
-    background: var(--background-base-lower, var(--background-primary));
-    border-left: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-left: 0.5px solid var(--vc-ui-sep);
 }
 
 .vc-splitview-divider {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -3px;
+    inset: 0 auto 0 -3px;
     width: 6px;
     z-index: 2;
     cursor: col-resize;
-    -webkit-app-region: no-drag;
+    transition: background 0.15s;
 }
 
 .vc-splitview-divider:hover {
-    background: var(--brand-500, #5865f2);
-    opacity: 0.6;
+    background: color-mix(in srgb, var(--vc-ui-indigo) 60%, transparent);
 }
 
 /* ---------- Header ---------- */
@@ -95,16 +75,16 @@ body.vc-splitview-resizing * {
 .vc-splitview-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex: none;
     height: 48px;
     padding: 0 8px 0 12px;
     box-sizing: border-box;
-    border-bottom: 1px solid var(--border-subtle, var(--background-modifier-accent));
+    border-bottom: 0.5px solid var(--vc-ui-sep);
+    font-family: var(--vc-ui-font);
 }
 
-.vc-splitview-header-icon,
-.vc-splitview-list-icon {
+.vc-splitview-header-icon {
     flex: none;
     width: 28px;
     height: 28px;
@@ -113,13 +93,12 @@ body.vc-splitview-resizing * {
 }
 
 .vc-splitview-header-icon-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     font-weight: 700;
     font-size: 13px;
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 25%));
+    color: var(--vc-ui-title);
+    background: var(--vc-ui-field);
 }
 
 .vc-splitview-header-text {
@@ -127,56 +106,27 @@ body.vc-splitview-resizing * {
     min-width: 0;
 }
 
-.vc-splitview-header-name {
-    font-weight: 600;
-    font-size: 15px;
+.vc-splitview-header-name,
+.vc-splitview-header-sub {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+}
+
+.vc-splitview-header-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--vc-ui-title);
 }
 
 .vc-splitview-header-sub {
     font-size: 12px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-header-actions {
     display: flex;
     gap: 2px;
-    -webkit-app-region: no-drag;
-}
-
-.vc-splitview-icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--interactive-icon-default, var(--interactive-normal));
-    cursor: pointer;
-    -webkit-app-region: no-drag;
-}
-
-.vc-splitview-icon-btn:hover:not(:disabled) {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
-}
-
-.vc-splitview-icon-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-
-.vc-splitview-icon-btn-danger:hover:not(:disabled) {
-    color: var(--status-danger, #f23f43);
 }
 
 /* ---------- Message list ---------- */
@@ -192,8 +142,7 @@ body.vc-splitview-resizing * {
 .vc-splitview-list {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden auto;
     overflow-anchor: none;
     scrollbar-width: thin;
 }
@@ -209,31 +158,17 @@ body.vc-splitview-resizing * {
     align-self: center;
     margin: 8px 0;
     font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-splitview-load-older {
-    padding: 4px 12px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    border-radius: 12px;
-    background: transparent;
-    cursor: pointer;
-}
-
-.vc-splitview-load-older:hover:not(:disabled) {
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-center {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     padding: 24px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 14px;
+    color: var(--vc-ui-dim);
+    font-size: 13px;
 }
 
 .vc-splitview-day {
@@ -242,15 +177,15 @@ body.vc-splitview-resizing * {
     margin: 12px 12px 4px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-day::before,
 .vc-splitview-day::after {
     content: "";
     flex: 1;
-    height: 1px;
-    background: var(--border-subtle, var(--background-modifier-accent));
+    height: 0.5px;
+    background: var(--vc-ui-sep);
 }
 
 .vc-splitview-day span {
@@ -261,32 +196,30 @@ body.vc-splitview-resizing * {
     position: relative;
     padding: 1px 12px 1px 0;
     line-height: 1.375;
-    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .vc-splitview-message:hover {
-    background: var(--background-message-hover, rgb(128 128 128 / 6%));
+    background: var(--vc-ui-group);
 }
 
 .vc-splitview-group-start {
     margin-top: 12px;
 }
 
-.vc-splitview-mentioned {
-    background: var(--background-mentioned, rgb(240 177 50 / 10%));
-    box-shadow: inset 2px 0 0 var(--info-warning-foreground, #f0b232);
-}
-
+.vc-splitview-mentioned,
 .vc-splitview-mentioned:hover {
-    background: var(--background-mentioned-hover, rgb(240 177 50 / 14%));
+    background: color-mix(in srgb, var(--vc-ui-yellow) 12%, transparent);
+    box-shadow: inset 2px 0 0 var(--vc-ui-yellow);
 }
 
 .vc-splitview-pending .vc-splitview-content {
     opacity: 0.5;
 }
 
-.vc-splitview-failed .vc-splitview-content {
-    color: var(--status-danger, #f23f43);
+.vc-splitview-failed .vc-splitview-content,
+.vc-splitview-error-text {
+    color: var(--vc-ui-red);
 }
 
 .vc-splitview-flash {
@@ -296,8 +229,7 @@ body.vc-splitview-resizing * {
 @keyframes vc-splitview-flash {
     0%,
     40% {
-        background: var(--brand-500, #5865f2);
-        background: rgb(88 101 242 / 25%);
+        background: color-mix(in srgb, var(--vc-ui-indigo) 25%, transparent);
     }
 
     100% {
@@ -314,7 +246,7 @@ body.vc-splitview-resizing * {
     width: 60px;
     display: flex;
     justify-content: center;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-avatar {
@@ -330,7 +262,6 @@ body.vc-splitview-resizing * {
     visibility: hidden;
     padding-top: 3px;
     font-size: 11px;
-    color: var(--text-muted);
     cursor: pointer;
 }
 
@@ -352,38 +283,35 @@ body.vc-splitview-resizing * {
 
 .vc-splitview-name {
     font-weight: 600;
-    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+    color: var(--vc-ui-title);
     cursor: pointer;
 }
 
-.vc-splitview-name:hover {
+.vc-splitview-name:hover,
+.vc-splitview-time:hover {
     text-decoration: underline;
 }
 
 .vc-splitview-bot-tag {
-    padding: 0 4px;
-    border-radius: 3px;
+    padding: 0 5px;
+    border-radius: 4px;
     font-size: 10px;
     font-weight: 600;
     line-height: 15px;
     color: #fff;
-    background: var(--brand-500, #5865f2);
+    background: var(--vc-ui-indigo);
 }
 
 .vc-splitview-time {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     cursor: pointer;
-}
-
-.vc-splitview-time:hover {
-    text-decoration: underline;
 }
 
 .vc-splitview-content {
     white-space: pre-wrap;
     user-select: text;
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-text);
 }
 
 .vc-splitview-content code {
@@ -392,28 +320,27 @@ body.vc-splitview-resizing * {
 
 .vc-splitview-edited {
     font-size: 10px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-muted {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-error-text {
     font-size: 13px;
-    color: var(--status-danger, var(--text-danger, #f23f43));
-}
-
-.vc-splitview-system .vc-splitview-gutter {
-    font-size: 16px;
-    color: var(--status-positive, #23a55a);
 }
 
 .vc-splitview-system {
     display: flex;
     padding-top: 4px;
     padding-bottom: 4px;
+}
+
+.vc-splitview-system .vc-splitview-gutter {
+    font-size: 16px;
+    color: var(--vc-ui-green);
 }
 
 /* Reply line */
@@ -436,8 +363,8 @@ body.vc-splitview-resizing * {
     top: 50%;
     width: 28px;
     height: 10px;
-    border-top: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
-    border-left: 2px solid var(--interactive-muted, rgb(128 128 128 / 40%));
+    border-top: 2px solid var(--vc-ui-track);
+    border-left: 2px solid var(--vc-ui-track);
     border-top-left-radius: 6px;
     box-sizing: border-box;
 }
@@ -457,15 +384,15 @@ body.vc-splitview-resizing * {
 .vc-splitview-reply-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-reply:hover .vc-splitview-reply-text {
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-text);
 }
 
 .vc-splitview-command {
-    color: var(--text-link, #00a8fc);
+    color: var(--vc-ui-blue);
 }
 
 /* Attachments */
@@ -481,9 +408,9 @@ body.vc-splitview-resizing * {
     display: block;
     max-width: 100%;
     height: auto;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: zoom-in;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+    background: var(--vc-ui-group);
 }
 
 .vc-splitview-file {
@@ -492,12 +419,17 @@ body.vc-splitview-resizing * {
     gap: 8px;
     max-width: 100%;
     box-sizing: border-box;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-base-lowest, var(--background-secondary));
-    color: var(--text-link, #00a8fc);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 0.5px solid var(--vc-ui-edge);
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-blue);
     text-decoration: none;
+}
+
+.vc-splitview-file-icon {
+    flex: none;
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-file-name {
@@ -509,7 +441,7 @@ body.vc-splitview-resizing * {
 .vc-splitview-file-size {
     flex: none;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 /* Embeds */
@@ -520,9 +452,9 @@ body.vc-splitview-resizing * {
     box-sizing: border-box;
     margin-top: 4px;
     padding: 8px 12px;
-    border-radius: 4px;
-    border-left: 4px solid var(--background-modifier-accent, rgb(128 128 128 / 40%));
-    background: var(--background-base-lowest, var(--background-secondary));
+    border-radius: 12px;
+    border-left: 4px solid var(--vc-ui-track);
+    background: var(--vc-ui-group);
 }
 
 .vc-splitview-embed-body {
@@ -533,24 +465,24 @@ body.vc-splitview-resizing * {
     gap: 4px;
 }
 
-.vc-splitview-embed-provider,
-.vc-splitview-embed-author {
+.vc-splitview-embed-provider {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-embed-author {
+    font-size: 12px;
     font-weight: 600;
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-text);
 }
 
 .vc-splitview-embed-title {
     font-weight: 600;
-    color: var(--header-primary, var(--text-strong, var(--text-normal)));
+    color: var(--vc-ui-title);
 }
 
 a.vc-splitview-embed-title {
-    color: var(--text-link, #00a8fc);
+    color: var(--vc-ui-blue);
 }
 
 .vc-splitview-embed-desc {
@@ -561,7 +493,7 @@ a.vc-splitview-embed-title {
 .vc-splitview-embed-image {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: 10px;
 }
 
 .vc-splitview-embed-thumb {
@@ -569,7 +501,7 @@ a.vc-splitview-embed-title {
     width: 64px;
     height: 64px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 10px;
 }
 
 /* Stickers & reactions */
@@ -594,13 +526,13 @@ a.vc-splitview-embed-title {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 1px 6px;
-    border-radius: 8px;
-    border: 1px solid transparent;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 0.5px solid transparent;
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-muted);
-    background: var(--background-modifier-accent, rgb(128 128 128 / 15%));
+    color: var(--vc-ui-dim);
+    background: var(--vc-ui-field);
 }
 
 .vc-splitview-reaction img {
@@ -615,9 +547,9 @@ a.vc-splitview-embed-title {
 }
 
 .vc-splitview-reaction-me {
-    border-color: var(--brand-500, #5865f2);
-    background: rgb(88 101 242 / 15%);
-    color: var(--text-default, var(--text-normal));
+    border-color: var(--vc-ui-blue);
+    background: color-mix(in srgb, var(--vc-ui-blue) 15%, transparent);
+    color: var(--vc-ui-text);
 }
 
 /* New messages pill */
@@ -626,15 +558,7 @@ a.vc-splitview-embed-title {
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 4px 14px;
-    border: none;
-    border-radius: 14px;
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: var(--shadow-medium, 0 4px 8px rgb(0 0 0 / 24%));
+    filter: drop-shadow(0 4px 10px rgb(0 0 0 / 25%));
 }
 
 /* ---------- Input ---------- */
@@ -648,10 +572,10 @@ a.vc-splitview-embed-title {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    padding: 8px 8px 8px 12px;
-    border-radius: 8px;
-    background: var(--channeltextarea-background, var(--background-base-lowest, var(--background-secondary)));
-    border: 1px solid var(--border-subtle, transparent);
+    padding: 8px 8px 8px 14px;
+    border-radius: 20px;
+    background: var(--vc-ui-field);
+    border: 0.5px solid var(--vc-ui-edge);
 }
 
 .vc-splitview-input-disabled {
@@ -667,38 +591,14 @@ a.vc-splitview-embed-title {
     outline: none;
     resize: none;
     background: transparent;
-    color: var(--text-default, var(--text-normal));
+    color: var(--vc-ui-title);
     font-family: inherit;
     font-size: 15px;
     line-height: 1.375;
 }
 
 .vc-splitview-input::placeholder {
-    color: var(--text-muted);
-}
-
-.vc-splitview-send,
-.vc-splitview-button {
-    flex: none;
-    padding: 4px 12px;
-    border: none;
-    border-radius: 6px;
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-splitview-send:disabled,
-.vc-splitview-button:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.vc-splitview-send:hover:not(:disabled),
-.vc-splitview-button:hover:not(:disabled) {
-    background: var(--brand-560, #4752c4);
+    color: var(--vc-ui-dim);
 }
 
 .vc-splitview-typing {
@@ -707,7 +607,7 @@ a.vc-splitview-embed-title {
     gap: 6px;
     height: 20px;
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -750,9 +650,7 @@ a.vc-splitview-embed-title {
 
 .vc-splitview-dropzone {
     position: fixed;
-    top: 12px;
-    right: 12px;
-    bottom: 12px;
+    inset: 12px 12px 12px auto;
     z-index: 1001;
     width: 220px;
     display: flex;
@@ -761,12 +659,14 @@ a.vc-splitview-embed-title {
     justify-content: center;
     gap: 6px;
     box-sizing: border-box;
-    border: 2px dashed var(--brand-500, #5865f2);
-    border-radius: 12px;
-    background: var(--background-surface-higher, var(--background-floating));
-    color: var(--text-default, var(--text-normal));
-    opacity: 0.92;
-    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
+    border: 2px dashed var(--vc-ui-indigo);
+    border-radius: 22px;
+    background: var(--vc-ui-glass);
+    backdrop-filter: blur(30px) saturate(1.8);
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font);
+    box-shadow: var(--vc-ui-shadow);
+    transition: background 0.2s var(--vc-ui-ease);
 }
 
 .vc-splitview-dropzone * {
@@ -774,114 +674,23 @@ a.vc-splitview-embed-title {
 }
 
 .vc-splitview-dropzone-over {
-    background: rgb(88 101 242 / 25%);
-    opacity: 1;
+    background: color-mix(in srgb, var(--vc-ui-indigo) 25%, var(--vc-ui-glass));
 }
 
 .vc-splitview-dropzone-title {
+    margin-top: 6px;
     font-size: 16px;
     font-weight: 700;
 }
 
 .vc-splitview-dropzone-sub {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--vc-ui-dim);
 }
 
-/* ---------- Popout & settings ---------- */
+/* ---------- Popout ---------- */
 
 .vc-splitview-popout {
-    width: 300px;
     max-height: calc(100vh - 80px);
     overflow-y: auto;
-    box-sizing: border-box;
-    padding: 14px 16px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border-radius: 12px;
-    background: var(--background-surface-higher, var(--background-floating));
-    border: 1px solid var(--border-subtle, transparent);
-    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-}
-
-.vc-splitview-popout-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.vc-splitview-popout-title {
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.vc-splitview-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-splitview-settings > .vc-splitview-button {
-    align-self: flex-start;
-}
-
-.vc-splitview-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.vc-splitview-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-}
-
-.vc-splitview-card-title {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--text-muted);
-}
-
-.vc-splitview-list-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.vc-splitview-list-text {
-    flex: 1;
-    min-width: 0;
-    cursor: pointer;
-}
-
-.vc-splitview-list-name {
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.vc-splitview-list-text:hover .vc-splitview-list-name {
-    text-decoration: underline;
-}
-
-.vc-splitview-list-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }

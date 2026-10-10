@@ -1,36 +1,9 @@
 /* ===================================================================== OpSec
- * UI in the style of a security suite: calm dark surfaces, sidebar,
- * a green accent for "protected", all controls custom-built.
+ * Windows, rows, switches, buttons etc. come from the shared _ui kit.
+ * This file only styles what is special to OpSec: title bar mask, score ring, tiles,
+ * keybind box, server picker, curtain preview and style picker, image editor
+ * and the curtain overlay itself (its looks are deliberate disguises, so they keep their own colors).
  */
-
-.vc-opsec-app,
-.vc-opsec-curtain,
-.vc-opsec-link-warning,
-.vc-opsec-editor {
-    --opsec-accent: #3ddc97;
-    --opsec-a: #1e9e66;
-    --opsec-b: #1e9e66;
-    --opsec-grad: linear-gradient(#1e9e66, #1e9e66);
-    --opsec-good: #3ddc97;
-    --opsec-warn: #f5b83d;
-    --opsec-bad: #ff5c5c;
-    --opsec-bg: #111317;
-    --opsec-side: #0c0e11;
-    --opsec-surface: #171a1f;
-    --opsec-surface-2: #1d2127;
-    --opsec-text: #e6e9ee;
-    --opsec-muted: #8a93a0;
-    --opsec-line: rgb(255 255 255 / 7%);
-    --opsec-line-2: rgb(255 255 255 / 12%);
-    --opsec-soft: rgb(255 255 255 / 3%);
-    --opsec-soft-2: rgb(255 255 255 / 7%);
-    --opsec-accent-soft: rgb(61 220 151 / 12%);
-    --opsec-radius: 8px;
-    --opsec-spring: cubic-bezier(0.34, 1.3, 0.5, 1);
-    --opsec-ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* ---------- Shared animations ---------- */
 
 @keyframes vc-opsec-spin {
     to { transform: rotate(360deg); }
@@ -40,20 +13,8 @@
     from { opacity: 0; transform: translateY(3px); }
 }
 
-@keyframes vc-opsec-rise {
-    from { opacity: 0; transform: translateY(6px); }
-}
-
-@keyframes vc-opsec-badge {
-    from { transform: scale(0); }
-}
-
 @keyframes vc-opsec-shine {
     to { background-position: -200% 0; }
-}
-
-@keyframes vc-opsec-pop {
-    from { opacity: 0; transform: translateY(-6px) scale(0.98); }
 }
 
 /* ---------- Title bar ---------- */
@@ -63,590 +24,63 @@
     -webkit-app-region: no-drag;
 }
 
-.vc-opsec-btn-titlebar .vc-opsec-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-    transition: color 0.15s;
-}
-
-.vc-opsec-btn-titlebar:hover .vc-opsec-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-}
-
-.vc-opsec-btn-titlebar[class*="selected"] .vc-opsec-icon {
-    color: var(--interactive-icon-active, var(--interactive-active));
-}
-
-.vc-opsec-btn-titlebar-hot .vc-opsec-icon {
-    color: #3ddc97 !important;
+.vc-opsec-btn-titlebar-hot .vc-ui-tb-icon {
+    color: var(--vc-ui-green) !important;
 }
 
 /* ---------- Window ---------- */
 
-.vc-opsec-popout {
-    width: min(720px, calc(100vw - 24px));
-    height: min(560px, calc(100vh - 72px));
-    overflow: hidden;
-    border: 1px solid var(--opsec-line-2, rgb(255 255 255 / 12%));
-    border-radius: 12px;
-    background: #111317;
-    box-shadow: 0 20px 50px rgb(0 0 0 / 55%);
-    transform-origin: top left;
-    animation: vc-opsec-pop 0.18s var(--opsec-ease, ease-out);
-}
-
-.vc-opsec-app {
-    display: flex;
-    height: 100%;
-    color: var(--opsec-text);
-    background: var(--opsec-bg);
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.vc-opsec-app-modal {
-    height: min(640px, 72vh);
-    overflow: hidden;
-    border: 1px solid var(--opsec-line);
-    border-radius: 12px;
-}
-
-.vc-opsec-app button {
-    font-family: inherit;
-}
-
-.vc-opsec-app :focus-visible {
-    outline: 2px solid var(--opsec-accent);
-    outline-offset: 2px;
-}
-
-/* ---------- Sidebar ---------- */
-
-.vc-opsec-sidebar {
-    display: flex;
-    flex: none;
-    flex-direction: column;
-    width: 176px;
-    padding: 16px 10px 12px;
-    box-sizing: border-box;
-    border-right: 1px solid var(--opsec-line);
-    background: var(--opsec-side);
-}
-
-.vc-opsec-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 6px 18px;
-}
-
-.vc-opsec-brand-logo {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    color: #06140d;
-    background: var(--opsec-accent);
-}
-
-.vc-opsec-brand-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.vc-opsec-brand-name {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-}
-
-.vc-opsec-brand-sub {
-    font-size: 11px;
-    color: var(--opsec-muted);
-}
-
-.vc-opsec-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.vc-opsec-nav-item {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 9px 10px;
-    border: none;
-    border-radius: 6px;
-    background: none;
-    color: var(--opsec-muted);
-    font-size: 13px;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.vc-opsec-nav-item:hover {
-    color: var(--opsec-text);
-    background: var(--opsec-soft-2);
-}
-
-.vc-opsec-nav-item-active,
-.vc-opsec-nav-item-active:hover {
-    color: var(--opsec-text);
-    background: var(--opsec-surface-2);
-}
-
-.vc-opsec-nav-item-active::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: -10px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: var(--opsec-accent);
-}
-
-.vc-opsec-nav-item-active svg {
-    color: var(--opsec-accent);
-}
-
-.vc-opsec-nav-label {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.vc-opsec-nav-badge {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    box-sizing: border-box;
-    border-radius: 9px;
-    background: var(--opsec-warn);
-    color: #1a1204;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 18px;
-    text-align: center;
-}
-
-
-
-
-
-
-
-
-/* ---------- Main area ---------- */
-
-.vc-opsec-main {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-}
-
-
-
-
-.vc-opsec-scroller {
-    flex: 1;
-    min-height: 0;
-    padding: 16px 12px 20px 20px;
-    overflow: hidden auto;
-    scrollbar-gutter: stable;
-}
-
-/* Custom scrollbar (also for the server list) */
-.vc-opsec-scroller::-webkit-scrollbar,
-.vc-opsec-guild-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.vc-opsec-scroller::-webkit-scrollbar-track,
-.vc-opsec-guild-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.vc-opsec-scroller::-webkit-scrollbar-thumb,
-.vc-opsec-guild-list::-webkit-scrollbar-thumb {
-    border: 2px solid transparent;
-    border-radius: 8px;
-    background: rgb(255 255 255 / 10%) padding-box;
-}
-
-.vc-opsec-scroller::-webkit-scrollbar-thumb:hover,
-.vc-opsec-guild-list::-webkit-scrollbar-thumb:hover {
-    background: rgb(255 255 255 / 20%) padding-box;
-}
-
 .vc-opsec-pane {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    animation: vc-opsec-fade 0.2s var(--opsec-ease);
+    gap: 16px;
+    animation: vc-opsec-fade 0.2s var(--vc-ui-ease) both;
 }
 
-.vc-opsec-fade-in {
-    animation: vc-opsec-fade 0.2s var(--opsec-ease);
-}
-
-.vc-opsec-section-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--opsec-muted);
-}
-
-.vc-opsec-section-right {
-    margin-left: auto;
-    letter-spacing: 0;
-    text-transform: none;
-}
-
-.vc-opsec-link-btn {
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--opsec-accent);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.vc-opsec-link-btn:hover {
-    text-decoration: underline;
-}
-
-.vc-opsec-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.vc-opsec-row-hint {
+.vc-opsec-hint {
+    color: var(--vc-ui-dim);
     font-size: 12px;
     line-height: 1.4;
-    color: var(--opsec-muted);
+}
+
+.vc-opsec-dim {
+    color: var(--vc-ui-dim);
+    font-weight: 500;
 }
 
 .vc-opsec-text-warn {
-    color: var(--opsec-warn);
+    color: var(--vc-ui-orange);
 }
 
-/* ---------- Cards & rows ---------- */
-
-.vc-opsec-card {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
+.vc-opsec-off {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
-.vc-opsec-card > * + *,
-.vc-opsec-card > div > .vc-opsec-row-sub {
-    border-top: 1px solid var(--opsec-line);
+/* Option belonging to the module above (indented like an iOS sub setting) */
+.vc-opsec-sub {
+    padding-left: 38px;
 }
 
-.vc-opsec-card-pad {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px 14px;
-}
-
-.vc-opsec-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    outline: none;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.vc-opsec-row:hover {
-    background: var(--opsec-soft);
-}
-
-.vc-opsec-row:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--opsec-accent);
-}
-
-.vc-opsec-row-sub {
-    padding-left: 56px;
-    background: rgb(0 0 0 / 12%);
-}
-
-.vc-opsec-row-disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.vc-opsec-row-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    color: var(--opsec-muted);
-    background: var(--opsec-soft-2);
-    transition: color 0.15s, background 0.15s;
-}
-
-.vc-opsec-row-icon-on {
-    color: var(--opsec-accent);
-    background: var(--opsec-accent-soft);
-}
-
-.vc-opsec-row-text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.vc-opsec-row-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--opsec-text);
-}
-
-/* ---------- Switches ---------- */
-
-.vc-opsec-switch {
-    position: relative;
-    flex: none;
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    background: #2a3038;
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 6%);
-    transition: background 0.18s;
-}
-
-.vc-opsec-switch-knob {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #8a93a0;
-    transition: transform 0.2s var(--opsec-ease), background 0.18s;
-}
-
-.vc-opsec-switch-on {
-    background: var(--opsec-a);
-}
-
-.vc-opsec-switch-on .vc-opsec-switch-knob {
-    background: #fff;
-    transform: translateX(16px);
-}
-
-/* ---------- Segments ---------- */
-
-.vc-opsec-profile {
+.vc-opsec-pad {
     display: flex;
     flex-direction: column;
     gap: 8px;
-}
-
-.vc-opsec-seg {
-    position: relative;
-    display: flex;
-    padding: 3px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-side);
-}
-
-.vc-opsec-seg-thumb {
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 0;
-    border-radius: 6px;
-    background: var(--opsec-surface-2);
-    box-shadow: inset 0 0 0 1px var(--opsec-line-2), 0 1px 2px rgb(0 0 0 / 30%);
-}
-
-.vc-opsec-animated {
-    transition: transform 0.25s var(--opsec-ease), width 0.25s var(--opsec-ease);
-}
-
-.vc-opsec-seg-item {
-    position: relative;
-    z-index: 1;
-    flex: 1;
-    padding: 7px 6px;
-    border: none;
-    background: none;
-    color: var(--opsec-muted);
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: color 0.15s;
-}
-
-.vc-opsec-seg-small .vc-opsec-seg-item {
-    padding: 6px 4px;
-    font-size: 12px;
-}
-
-.vc-opsec-seg-item:hover,
-.vc-opsec-seg-item-active {
-    color: var(--opsec-text);
-}
-
-/* ---------- Status (overview) ---------- */
-
-.vc-opsec-state {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-}
-
-.vc-opsec-state-shield {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    color: var(--opsec-good);
-    background: rgb(61 220 151 / 12%);
-    box-shadow: inset 0 0 0 1px rgb(61 220 151 / 30%);
-}
-
-.vc-opsec-state-warn .vc-opsec-state-shield {
-    color: var(--opsec-warn);
-    background: rgb(245 184 61 / 12%);
-    box-shadow: inset 0 0 0 1px rgb(245 184 61 / 30%);
-}
-
-.vc-opsec-state-bad .vc-opsec-state-shield {
-    color: var(--opsec-bad);
-    background: rgb(255 92 92 / 12%);
-    box-shadow: inset 0 0 0 1px rgb(255 92 92 / 30%);
-}
-
-.vc-opsec-state-body {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-}
-
-.vc-opsec-state-title {
-    font-size: 16px;
-    font-weight: 700;
+    padding: 10px 14px 12px 52px;
+    border-top: 0.5px solid var(--vc-ui-sep);
 }
 
 .vc-opsec-meter {
-    display: block;
-    height: 4px;
-    margin-top: 6px;
-    overflow: hidden;
-    border-radius: 2px;
-    background: var(--opsec-soft-2);
+    margin-top: 8px;
 }
 
-.vc-opsec-meter-fill {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: var(--opsec-good);
-    transition: width 0.6s var(--opsec-ease);
-}
-
-.vc-opsec-state-warn .vc-opsec-meter-fill {
-    background: var(--opsec-warn);
-}
-
-.vc-opsec-state-bad .vc-opsec-meter-fill {
-    background: var(--opsec-bad);
-}
-
-.vc-opsec-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.vc-opsec-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    padding: 10px 12px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-}
-
-.vc-opsec-stat-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--opsec-muted);
-}
-
-.vc-opsec-stat-value {
-    display: flex;
-    align-items: center;
-    min-height: 22px;
-    overflow: hidden;
-    font-size: 15px;
-    font-weight: 700;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-}
-
-.vc-opsec-stat-dim {
-    font-weight: 500;
-    color: var(--opsec-muted);
-}
-
-/* ---------- Check: header with ring ---------- */
+/* ---------- Check: score ring ---------- */
 
 .vc-opsec-hero {
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 16px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-    color: inherit;
-    text-align: left;
 }
 
 .vc-opsec-hero-text {
@@ -659,17 +93,28 @@
 }
 
 .vc-opsec-hero-title {
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
     font-size: 16px;
     font-weight: 700;
 }
 
-.vc-opsec-hero-text .vc-opsec-btn {
+.vc-opsec-hero-text > div {
     margin-top: 6px;
 }
 
 .vc-opsec-ring {
     position: relative;
     flex: none;
+    --vc-opsec-ring: var(--vc-ui-green);
+}
+
+.vc-opsec-ring-mid {
+    --vc-opsec-ring: var(--vc-ui-orange);
+}
+
+.vc-opsec-ring-bad {
+    --vc-opsec-ring: var(--vc-ui-red);
 }
 
 .vc-opsec-ring svg {
@@ -678,21 +123,15 @@
 
 .vc-opsec-ring-track {
     fill: none;
-    stroke: var(--opsec-soft-2);
+    stroke: var(--vc-ui-track);
 }
 
 .vc-opsec-ring-bar {
     fill: none;
+    stroke: var(--vc-opsec-ring);
     stroke-linecap: round;
-    transition: stroke-dashoffset 0.8s var(--opsec-ease);
+    transition: stroke-dashoffset 0.8s var(--vc-ui-ease);
 }
-
-.vc-opsec-ring-good .vc-opsec-ring-stop-a,
-.vc-opsec-ring-good .vc-opsec-ring-stop-b { stop-color: #3ddc97; }
-.vc-opsec-ring-mid .vc-opsec-ring-stop-a,
-.vc-opsec-ring-mid .vc-opsec-ring-stop-b { stop-color: #f5b83d; }
-.vc-opsec-ring-bad .vc-opsec-ring-stop-a,
-.vc-opsec-ring-bad .vc-opsec-ring-stop-b { stop-color: #ff5c5c; }
 
 .vc-opsec-ring-label {
     position: absolute;
@@ -705,59 +144,23 @@
 }
 
 .vc-opsec-ring-num {
+    color: var(--vc-ui-title);
     font-size: 22px;
     font-weight: 700;
     line-height: 1;
 }
 
 .vc-opsec-ring-total {
+    color: var(--vc-ui-dim);
     font-size: 12px;
     font-weight: 600;
-    color: var(--opsec-muted);
 }
 
-/* ---------- Curtain button ---------- */
-
-.vc-opsec-curtain-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-    color: var(--opsec-text);
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-}
-
-.vc-opsec-curtain-btn:hover {
-    border-color: rgb(61 220 151 / 40%);
-    background: var(--opsec-surface-2);
-}
-
-.vc-opsec-curtain-btn:active {
-    transform: translateY(1px);
-}
-
-.vc-opsec-curtain-btn-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
-    color: var(--opsec-accent);
-    background: var(--opsec-accent-soft);
-}
-
-/* ---------- Tiles ---------- */
+/* ---------- Quick access tiles ---------- */
 
 .vc-opsec-tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
 
@@ -766,138 +169,46 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-    color: var(--opsec-text);
+    border: none;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    color: inherit;
+    font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: background 0.15s, transform 0.25s var(--vc-ui-spring);
 }
 
 .vc-opsec-tile:hover {
-    background: var(--opsec-surface-2);
-    border-color: var(--opsec-line-2);
+    background: var(--vc-ui-group-hover);
 }
 
-.vc-opsec-tile-icon {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    color: var(--opsec-muted);
-    background: var(--opsec-soft-2);
-    transition: color 0.15s, background 0.15s;
-}
-
-.vc-opsec-tile-on .vc-opsec-tile-icon {
-    color: var(--opsec-accent);
-    background: var(--opsec-accent-soft);
-}
-
-.vc-opsec-pop {
-    animation: vc-opsec-badge 0.25s var(--opsec-spring);
+.vc-opsec-tile:active {
+    transform: scale(0.97);
 }
 
 .vc-opsec-tile-text {
     display: flex;
-    flex: 1;
     flex-direction: column;
     min-width: 0;
 }
 
 .vc-opsec-tile-label {
     overflow: hidden;
+    color: var(--vc-ui-title);
     font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
+    font-weight: 500;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .vc-opsec-tile-state {
-    font-size: 11px;
-    color: var(--opsec-muted);
-}
-
-.vc-opsec-tile-on .vc-opsec-tile-state {
-    color: var(--opsec-accent);
-}
-
-/* ---------- Buttons ---------- */
-
-.vc-opsec-btn {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 6px;
-    background: var(--opsec-a);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-}
-
-.vc-opsec-btn:hover {
-    background: #22b373;
-}
-
-.vc-opsec-btn:active {
-    transform: translateY(1px);
-}
-
-.vc-opsec-btn:disabled {
-    opacity: 0.6;
-    cursor: progress;
-}
-
-.vc-opsec-btn-small {
-    padding: 6px 10px;
+    color: var(--vc-ui-dim);
     font-size: 12px;
 }
 
-.vc-opsec-btn-ghost {
-    background: var(--opsec-soft-2);
-    color: var(--opsec-text);
-    box-shadow: inset 0 0 0 1px var(--opsec-line);
-}
-
-.vc-opsec-btn-ghost:hover {
-    background: rgb(255 255 255 / 11%);
-}
-
-.vc-opsec-icon-btn {
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    background: var(--opsec-soft-2);
-    color: var(--opsec-muted);
-    cursor: pointer;
-    transition: color 0.15s, background 0.15s;
-}
-
-.vc-opsec-icon-btn:hover {
-    color: var(--opsec-text);
-    background: rgb(255 255 255 / 11%);
-}
-
-.vc-opsec-spinner {
-    width: 13px;
-    height: 13px;
-    border: 2px solid rgb(255 255 255 / 30%);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: vc-opsec-spin 0.7s linear infinite;
+.vc-opsec-tile-on .vc-opsec-tile-state {
+    color: var(--vc-ui-green);
 }
 
 /* ---------- Keys ---------- */
@@ -912,31 +223,25 @@
 .vc-opsec-kbd {
     min-width: 12px;
     padding: 2px 6px;
-    border: 1px solid var(--opsec-line-2);
-    border-bottom-width: 2px;
-    border-radius: 4px;
-    background: var(--opsec-side);
-    color: var(--opsec-text);
-    font-family: var(--font-code, monospace);
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 6px;
+    background: var(--vc-ui-field);
+    box-shadow: 0 1px 0 var(--vc-ui-sep);
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-mono);
     font-size: 11px;
     font-weight: 600;
     text-align: center;
 }
 
 .vc-opsec-kbd-live {
-    border-color: rgb(61 220 151 / 50%);
     animation: vc-opsec-fade 0.15s ease-out both;
 }
 
 .vc-opsec-keybind {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-}
-
-.vc-opsec-keybind > .vc-opsec-row-hint {
-    flex-basis: 100%;
 }
 
 .vc-opsec-keybind-box {
@@ -945,39 +250,35 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    min-height: 38px;
-    padding: 6px 8px 6px 10px;
-    border: 1px solid var(--opsec-line-2);
-    border-radius: 6px;
-    background: var(--opsec-side);
-    color: var(--opsec-text);
+    min-height: 36px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 10px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
+    font: inherit;
     cursor: pointer;
-    transition: border-color 0.15s;
-}
-
-.vc-opsec-keybind-box:hover {
-    border-color: rgb(255 255 255 / 22%);
+    transition: box-shadow 0.15s;
 }
 
 .vc-opsec-keybind-rec {
-    border-color: var(--opsec-accent);
+    box-shadow: 0 0 0 2px var(--vc-ui-blue);
     animation: vc-opsec-rec 1.4s ease-in-out infinite;
 }
 
 @keyframes vc-opsec-rec {
-    50% { border-color: var(--opsec-line-2); }
+    50% { box-shadow: 0 0 0 2px transparent; }
 }
 
 .vc-opsec-keybind-prompt {
+    color: var(--vc-ui-blue);
     font-size: 13px;
     font-weight: 600;
-    color: var(--opsec-accent);
 }
 
 .vc-opsec-keybind-action {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--opsec-muted);
+    color: var(--vc-ui-dim);
+    font-size: 12px;
 }
 
 .vc-opsec-flash .vc-opsec-kbd {
@@ -985,109 +286,81 @@
 }
 
 @keyframes vc-opsec-flash {
-    0% { border-color: var(--opsec-accent); color: var(--opsec-accent); }
+    0% { color: var(--vc-ui-green); box-shadow: 0 0 0 1px var(--vc-ui-green); }
 }
 
-/* ---------- Sliders, colors, input ---------- */
+/* ---------- Streaming protection: server picker ---------- */
 
-.vc-opsec-range {
+.vc-opsec-picker {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 10px 14px 12px 52px;
+    border-top: 0.5px solid var(--vc-ui-sep);
 }
 
-.vc-opsec-range-head {
+.vc-opsec-picker-head {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-}
-
-.vc-opsec-range-value {
-    font-size: 12px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--opsec-muted);
-}
-
-.vc-opsec-range input {
-    width: 100%;
-    height: 4px;
-    margin: 6px 0;
-    border-radius: 2px;
-    background: linear-gradient(var(--opsec-accent), var(--opsec-accent)) 0 0 / var(--pct) 100% no-repeat, #2a3038;
-    outline: none;
-    cursor: pointer;
-    appearance: none;
-}
-
-.vc-opsec-range input::-webkit-slider-thumb {
-    width: 14px;
-    height: 14px;
-    border: 3px solid var(--opsec-accent);
-    border-radius: 50%;
-    background: var(--opsec-bg);
-    appearance: none;
-    transition: transform 0.15s;
-}
-
-.vc-opsec-range input:hover::-webkit-slider-thumb {
-    transform: scale(1.15);
-}
-
-.vc-opsec-swatches {
-    display: flex;
-    flex-wrap: wrap;
     gap: 8px;
 }
 
-.vc-opsec-swatch {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%);
-    cursor: pointer;
+.vc-opsec-label {
+    color: var(--vc-ui-title);
+    font-size: 14px;
+    font-weight: 500;
 }
 
-.vc-opsec-swatch-active {
-    box-shadow: 0 0 0 2px var(--opsec-bg), 0 0 0 4px var(--opsec-text);
+.vc-opsec-value {
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
 }
 
-.vc-opsec-swatch-custom {
-    display: block;
+.vc-opsec-picker-bulk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.vc-opsec-guild-list {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--vc-ui-field);
+    scrollbar-width: thin;
+    scrollbar-color: var(--vc-ui-track) transparent;
+}
+
+.vc-opsec-guild-icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
     overflow: hidden;
-    background: conic-gradient(#ff5c5c, #f5b83d, #3ddc97, #4c9bff, #8b7bff, #ff5c5c);
+    border-radius: 8px;
+    background: var(--vc-ui-track);
+    color: var(--vc-ui-title);
+    font-size: 10px;
+    font-weight: 700;
+    object-fit: cover;
 }
 
-.vc-opsec-swatch-custom input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
+.vc-opsec-guild-trail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.vc-opsec-swatch-small {
-    width: 20px;
-    height: 20px;
+.vc-opsec-guild-expand svg {
+    transition: transform 0.2s var(--vc-ui-ease);
 }
 
-.vc-opsec-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    border: 1px solid var(--opsec-line-2);
-    border-radius: 6px;
-    background: var(--opsec-side);
-    color: var(--opsec-text);
-    font: inherit;
-    outline: none;
-    transition: border-color 0.15s;
+.vc-opsec-guild-expand-open svg {
+    transform: rotate(90deg);
 }
 
-.vc-opsec-input:focus {
-    border-color: var(--opsec-accent);
+.vc-opsec-guild-channels {
+    padding: 4px 14px 12px 52px;
 }
 
 /* ---------- Curtain tab ---------- */
@@ -1104,199 +377,13 @@
     gap: 8px;
 }
 
-.vc-opsec-styles {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
-}
-
-.vc-opsec-style {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 4px 8px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-    color: var(--opsec-muted);
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
-}
-
-.vc-opsec-style:hover {
-    color: var(--opsec-text);
-    border-color: var(--opsec-line-2);
-}
-
-.vc-opsec-style-active,
-.vc-opsec-style-active:hover {
-    border-color: var(--opsec-accent);
-    color: var(--opsec-text);
-}
-
-/* ---------- Check ---------- */
-
-.vc-opsec-checks {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.vc-opsec-check {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--opsec-line);
-    border-radius: var(--opsec-radius);
-    background: var(--opsec-surface);
-    animation: vc-opsec-rise 0.25s var(--opsec-ease) both;
-}
-
-.vc-opsec-check-warn {
-    border-left: 3px solid var(--opsec-warn);
-}
-
-.vc-opsec-status {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-}
-
-.vc-opsec-status-ok {
-    color: var(--opsec-good);
-    background: rgb(61 220 151 / 14%);
-}
-
-.vc-opsec-status-check {
-    stroke-dasharray: 22;
-    stroke-dashoffset: 22;
-    animation: vc-opsec-draw 0.4s 0.1s var(--opsec-ease) forwards;
-}
-
-@keyframes vc-opsec-draw {
-    to { stroke-dashoffset: 0; }
-}
-
-.vc-opsec-status-warn {
-    color: var(--opsec-warn);
-    background: rgb(245 184 61 / 14%);
-}
-
-.vc-opsec-status-unknown {
-    color: var(--opsec-muted);
-    background: var(--opsec-soft-2);
-}
-
-.vc-opsec-pill-danger {
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: rgb(255 92 92 / 16%);
-    color: var(--opsec-bad);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.vc-opsec-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--opsec-good);
-}
-
-/* ---------- Link warning ---------- */
-
-.vc-opsec-link-warning {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    color: var(--text-default, var(--text-normal, #dbdee1));
-}
-
-.vc-opsec-link-badge {
-    display: grid;
-    align-self: center;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-}
-
-.vc-opsec-link-badge-danger {
-    color: var(--opsec-bad);
-    background: rgb(255 92 92 / 14%);
-}
-
-.vc-opsec-link-badge-warn {
-    color: var(--opsec-warn);
-    background: rgb(245 184 61 / 14%);
-}
-
-.vc-opsec-link-badge-info {
-    color: var(--opsec-accent);
-    background: var(--opsec-accent-soft);
-}
-
-.vc-opsec-link-reason {
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.vc-opsec-link-danger {
-    border: 1px solid rgb(255 92 92 / 40%);
-    background: rgb(255 92 92 / 10%);
-}
-
-.vc-opsec-link-warn {
-    border: 1px solid rgb(245 184 61 / 40%);
-    background: rgb(245 184 61 / 10%);
-}
-
-.vc-opsec-link-host {
-    font-size: 18px;
-    font-weight: 700;
-    word-break: break-all;
-}
-
-.vc-opsec-link-url {
-    max-height: 110px;
-    padding: 8px 10px;
-    overflow-y: auto;
-    border-radius: 6px;
-    background: rgb(0 0 0 / 25%);
-    color: var(--opsec-muted);
-    font-family: var(--font-code, monospace);
-    font-size: 12px;
-    word-break: break-all;
-}
-
-/* ---------- Preview (mini Discord) ---------- */
-
 .vc-opsec-preview {
     position: relative;
     aspect-ratio: 16 / 9;
-    border-radius: 12px;
     overflow: hidden;
-    border: 1px solid var(--opsec-line);
-    box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
-    background: #313338;
-}
-
-.vc-opsec-preview-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 12px;
+    background: var(--vc-ui-group);
 }
 
 .vc-opsec-mock {
@@ -1317,18 +404,18 @@
     gap: 6%;
     width: 9%;
     padding-top: 3%;
-    background: #1e1f22;
+    background: var(--vc-ui-field);
 }
 
 .vc-opsec-mock-servers i {
     width: 62%;
     aspect-ratio: 1;
-    background: #313338;
+    background: var(--vc-ui-track);
 }
 
 .vc-opsec-mock-servers i:first-child {
-    background: #5865f2;
     border-radius: 30%;
+    background: var(--vc-ui-blue);
 }
 
 .vc-opsec-mock-channels {
@@ -1338,17 +425,18 @@
     width: 24%;
     padding: 5% 3%;
     box-sizing: border-box;
-    background: #2b2d31;
+    border-right: 0.5px solid var(--vc-ui-sep);
 }
 
-.vc-opsec-mock-channels i {
+.vc-opsec-mock-channels i,
+.vc-opsec-mock-lines i {
     height: 5px;
-    background: #4e5058;
+    background: var(--vc-ui-track);
 }
 
 .vc-opsec-mock-chat {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 7%;
     padding: 5% 4%;
@@ -1356,8 +444,8 @@
 
 .vc-opsec-mock-msg {
     display: flex;
-    gap: 6%;
     align-items: flex-start;
+    gap: 6%;
 }
 
 .vc-opsec-mock-avatar {
@@ -1368,28 +456,305 @@
 }
 
 .vc-opsec-mock-lines {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 4px;
 }
 
-.vc-opsec-mock-lines i {
-    height: 5px;
-    background: #4e5058;
-}
-
 .vc-opsec-mock-lines i:first-child {
     height: 6px;
-    background: #80848e;
+    background: var(--vc-ui-dim);
 }
 
 .vc-opsec-mock-input {
-    margin-top: auto;
     height: 12%;
+    margin-top: auto;
     border-radius: 6px;
-    background: #383a40;
+    background: var(--vc-ui-field);
 }
+
+.vc-opsec-styles {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.vc-opsec-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px 8px;
+    border: none;
+    border-radius: 12px;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-dim);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.vc-opsec-style:hover {
+    background: var(--vc-ui-group-hover);
+    color: var(--vc-ui-text);
+}
+
+.vc-opsec-style-active,
+.vc-opsec-style-active:hover {
+    box-shadow: 0 0 0 2px var(--vc-ui-blue);
+    color: var(--vc-ui-title);
+}
+
+.vc-opsec-slider {
+    margin-top: 6px;
+}
+
+.vc-opsec-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.vc-opsec-swatch {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.5px var(--vc-ui-edge);
+    cursor: pointer;
+    transition: transform 0.2s var(--vc-ui-spring);
+}
+
+.vc-opsec-swatch:hover {
+    transform: scale(1.1);
+}
+
+.vc-opsec-swatch-active {
+    box-shadow: 0 0 0 2px var(--vc-ui-glass), 0 0 0 4px var(--vc-ui-blue);
+}
+
+.vc-opsec-swatch-custom {
+    display: block;
+    overflow: hidden;
+    background: conic-gradient(var(--vc-ui-red), var(--vc-ui-orange), var(--vc-ui-yellow), var(--vc-ui-green), var(--vc-ui-blue), var(--vc-ui-purple), var(--vc-ui-red));
+}
+
+.vc-opsec-swatch-custom input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.vc-opsec-swatch-small {
+    width: 22px;
+    height: 22px;
+}
+
+.vc-opsec-icon-picks {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+}
+
+.vc-opsec-icon-pick {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-dim);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.vc-opsec-icon-pick:hover {
+    color: var(--vc-ui-title);
+}
+
+.vc-opsec-icon-pick-active,
+.vc-opsec-icon-pick-active:hover {
+    background: var(--vc-ui-blue);
+    color: #fff;
+}
+
+.vc-opsec-icon-pick-custom {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ---------- Link warning / prompts (body of the kit alert) ---------- */
+
+.vc-opsec-link-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.vc-opsec-link-reason {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vc-opsec-link-danger {
+    color: var(--vc-ui-red);
+}
+
+.vc-opsec-link-warn {
+    color: var(--vc-ui-orange);
+}
+
+.vc-opsec-link-host {
+    max-width: 100%;
+    padding: 4px 10px;
+    overflow-wrap: anywhere;
+    border-radius: 10px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-mono);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vc-opsec-link-url {
+    max-width: 100%;
+    max-height: 64px;
+    overflow: auto;
+    color: var(--vc-ui-dim);
+    font-family: var(--vc-ui-mono);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+/* ===================================================================== Image editor */
+
+.vc-opsec-editor-window {
+    width: min(1100px, 94vw) !important;
+    max-width: none !important;
+}
+
+.vc-opsec-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vc-opsec-editor-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.vc-opsec-editor-tools,
+.vc-opsec-editor-history {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 10px;
+    background: var(--vc-ui-track);
+}
+
+.vc-opsec-editor-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--vc-ui-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, transform 0.3s var(--vc-ui-spring);
+}
+
+.vc-opsec-editor-tool:hover:not(:disabled) {
+    color: var(--vc-ui-title);
+}
+
+.vc-opsec-editor-tool:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.vc-opsec-editor-tool:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.vc-opsec-editor-tool-active,
+.vc-opsec-editor-tool-active:hover:not(:disabled) {
+    background: var(--vc-ui-thumb);
+    color: var(--vc-ui-title);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+}
+
+.vc-opsec-editor-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+}
+
+.vc-opsec-editor-options .vc-opsec-swatches {
+    margin-top: 0;
+}
+
+.vc-opsec-editor-text {
+    flex: 1;
+    min-width: 200px;
+}
+
+.vc-opsec-editor-options .vc-opsec-hint {
+    flex: 1 1 200px;
+}
+
+.vc-opsec-editor-stage {
+    display: grid;
+    place-items: center;
+    height: min(62vh, 640px);
+    overflow: hidden;
+    border-radius: 12px;
+    background:
+        repeating-conic-gradient(var(--vc-ui-group) 0 25%, transparent 0 50%) 0 0 / 20px 20px,
+        var(--vc-ui-field);
+}
+
+.vc-opsec-editor-canvas {
+    display: block;
+    box-shadow: 0 6px 24px rgb(0 0 0 / 40%);
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.vc-opsec-editor-canvas-text {
+    cursor: text;
+}
+
+.vc-opsec-editor-size {
+    align-self: flex-end;
+    color: var(--vc-ui-dim);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================== Style thumbnails (miniatures of the curtain looks) */
 
 .vc-opsec-style-thumb {
     position: relative;
@@ -1462,6 +827,56 @@
         background-position: 0 100%;
     }
 }
+
+
+.vc-opsec-thumb-radar {
+    background:
+        conic-gradient(from 0deg, color-mix(in srgb, var(--opsec-c-accent) 55%, transparent), transparent 25%),
+        repeating-radial-gradient(circle, transparent 0 7px, color-mix(in srgb, var(--opsec-c-accent) 35%, transparent) 7px 8px),
+        #05100b;
+}
+
+.vc-opsec-thumb-aurora {
+    background:
+        radial-gradient(60% 80% at 20% 30%, color-mix(in srgb, var(--opsec-c-accent) 70%, transparent), transparent 70%),
+        radial-gradient(60% 80% at 80% 70%, #4c9bff99, transparent 70%),
+        #0b0d14;
+}
+
+.vc-opsec-thumb-lock {
+    background: linear-gradient(160deg, #1d2b3a, #0c1118);
+}
+
+.vc-opsec-thumb-clock {
+    font-size: 11px;
+    font-weight: 300;
+    color: #fff;
+}
+
+.vc-opsec-thumb-terminal {
+    background: #0a0c0a;
+    justify-items: start;
+    padding-left: 8px;
+}
+
+.vc-opsec-thumb-term {
+    font-family: var(--font-code, monospace);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--opsec-c-accent);
+}
+
+.vc-opsec-thumb-bsod {
+    background: #0078d7;
+    justify-items: start;
+    padding-left: 8px;
+}
+
+.vc-opsec-thumb-sad {
+    font-size: 16px;
+    color: #fff;
+}
+
 
 /* ===================================================================== Curtain */
 
@@ -1777,339 +1192,6 @@
     100% { clip-path: inset(50% 0 50% 0); opacity: 0; }
 }
 
-/* ===================================================================== Streaming protection & blocklist */
-
-.vc-opsec-row-static {
-    cursor: default;
-}
-
-.vc-opsec-row-static:hover {
-    background: none;
-}
-
-.vc-opsec-dot-live {
-    background: var(--opsec-bad);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--opsec-bad) 25%, transparent);
-}
-
-.vc-opsec-dot-idle {
-    background: var(--opsec-muted);
-    animation: none;
-}
-
-.vc-opsec-guild-bulk {
-    display: flex;
-    gap: 6px;
-}
-
-.vc-opsec-guild-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 320px;
-    margin-right: -6px;
-    padding-right: 6px;
-    overflow: hidden auto;
-}
-
-.vc-opsec-guild-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.vc-opsec-guild-list::-webkit-scrollbar-thumb {
-    border: 2px solid transparent;
-    border-radius: 8px;
-    background: var(--opsec-soft-2) padding-box;
-}
-
-.vc-opsec-guild {
-    border-radius: 10px;
-    transition: background 0.2s;
-}
-
-.vc-opsec-guild:hover {
-    background: var(--opsec-soft);
-}
-
-.vc-opsec-guild-on {
-    background: var(--opsec-accent-soft);
-}
-
-.vc-opsec-guild-on:hover {
-    background: color-mix(in srgb, var(--opsec-a) 18%, transparent);
-}
-
-.vc-opsec-guild-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    padding: 6px 8px;
-    border-radius: 10px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.vc-opsec-guild-row:focus-visible {
-    outline: 2px solid var(--opsec-accent);
-    outline-offset: -2px;
-}
-
-.vc-opsec-row-disabled .vc-opsec-guild-row {
-    cursor: not-allowed;
-}
-
-.vc-opsec-guild-row > .vc-opsec-switch {
-    display: block;
-}
-
-.vc-opsec-guild-badge {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    gap: 4px;
-    color: var(--opsec-accent);
-    font-size: 11px;
-    font-weight: 700;
-}
-
-.vc-opsec-guild-expand {
-    width: 24px;
-    height: 24px;
-    background: none;
-}
-
-.vc-opsec-guild-expand:hover {
-    transform: none;
-}
-
-.vc-opsec-guild-expand svg {
-    transition: transform 0.3s var(--opsec-spring);
-}
-
-.vc-opsec-guild-expand-open svg {
-    transform: rotate(90deg);
-}
-
-.vc-opsec-guild-icon {
-    flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 9px;
-    overflow: hidden;
-    object-fit: cover;
-    background: var(--opsec-soft-2);
-    color: var(--opsec-text);
-    font-size: 10px;
-    font-weight: 800;
-}
-
-.vc-opsec-guild-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.vc-opsec-guild-channels {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 2px 8px 10px 46px;
-    animation: vc-opsec-fade 0.3s var(--opsec-ease);
-}
-
-.vc-opsec-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    max-width: 100%;
-    padding: 3px 8px;
-    border: 1px solid var(--opsec-line);
-    border-radius: 99px;
-    background: var(--opsec-soft);
-    color: var(--opsec-muted);
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    transition: color 0.2s, border-color 0.2s, background 0.2s;
-}
-
-.vc-opsec-chip:hover {
-    color: var(--opsec-text);
-}
-
-.vc-opsec-chip-on {
-    border-color: color-mix(in srgb, var(--opsec-a) 60%, transparent);
-    background: color-mix(in srgb, var(--opsec-a) 18%, transparent);
-    color: var(--opsec-text);
-}
-
-/* ===================================================================== Image editor */
-
-.vc-opsec-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-bottom: 8px;
-    color: var(--opsec-text);
-}
-
-.vc-opsec-editor-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.vc-opsec-editor-tools,
-.vc-opsec-editor-history {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid var(--opsec-line);
-    background: var(--opsec-soft);
-}
-
-.vc-opsec-editor-tool {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 9px;
-    background: none;
-    color: var(--opsec-muted);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: color 0.2s, background 0.2s, transform 0.3s var(--opsec-spring);
-}
-
-.vc-opsec-editor-tool:hover:not(:disabled) {
-    color: var(--opsec-text);
-    background: var(--opsec-soft-2);
-}
-
-.vc-opsec-editor-tool:active:not(:disabled) {
-    transform: scale(0.94);
-}
-
-.vc-opsec-editor-tool:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.vc-opsec-editor-tool-active,
-.vc-opsec-editor-tool-active:hover:not(:disabled) {
-    color: #fff;
-    background: var(--opsec-grad);
-}
-
-.vc-opsec-editor-options {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    min-height: 34px;
-}
-
-.vc-opsec-editor-options .vc-opsec-input {
-    flex: 1;
-    min-width: 200px;
-    padding: 6px 10px;
-}
-
-.vc-opsec-editor-options .vc-opsec-row-hint {
-    flex: 1 1 200px;
-}
-
-.vc-opsec-swatch-small {
-    width: 22px;
-    height: 22px;
-}
-
-.vc-opsec-editor-stage {
-    display: grid;
-    place-items: center;
-    height: min(62vh, 640px);
-    border-radius: 12px;
-    overflow: hidden;
-    background:
-        repeating-conic-gradient(rgb(128 128 128 / 14%) 0 25%, transparent 0 50%) 0 0 / 20px 20px,
-        rgb(0 0 0 / 25%);
-}
-
-.vc-opsec-editor-canvas {
-    display: block;
-    cursor: crosshair;
-    touch-action: none;
-    box-shadow: 0 6px 24px rgb(0 0 0 / 40%);
-}
-
-.vc-opsec-editor-canvas-text {
-    cursor: text;
-}
-
-.vc-opsec-editor-size {
-    align-self: flex-end;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--opsec-muted);
-    font-variant-numeric: tabular-nums;
-}
-
-/* ===================================================================== More curtain styles */
-
-/* ---------- Icon picker ---------- */
-
-.vc-opsec-icon-picks {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 6px;
-}
-
-.vc-opsec-icon-pick {
-    display: grid;
-    place-items: center;
-    aspect-ratio: 1;
-    padding: 0;
-    border: 1px solid var(--opsec-line);
-    border-radius: 6px;
-    background: var(--opsec-side);
-    color: var(--opsec-muted);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-}
-
-.vc-opsec-icon-pick:hover {
-    color: var(--opsec-text);
-    border-color: var(--opsec-line-2);
-}
-
-.vc-opsec-icon-pick-active,
-.vc-opsec-icon-pick-active:hover {
-    color: var(--opsec-accent);
-    border-color: var(--opsec-accent);
-}
-
-.vc-opsec-icon-pick-custom {
-    font-size: 12px;
-    font-weight: 700;
-}
-
-/* Custom icon in the curtain */
 .vc-opsec-curtain-img {
     position: relative;
     width: 72%;
@@ -2122,56 +1204,6 @@
     position: relative;
     font-size: clamp(22px, 12cqmin, 96px);
     line-height: 1;
-}
-
-/* ---------- Thumbnails of the new styles ---------- */
-
-.vc-opsec-thumb-radar {
-    background:
-        conic-gradient(from 0deg, color-mix(in srgb, var(--opsec-c-accent) 55%, transparent), transparent 25%),
-        repeating-radial-gradient(circle, transparent 0 7px, color-mix(in srgb, var(--opsec-c-accent) 35%, transparent) 7px 8px),
-        #05100b;
-}
-
-.vc-opsec-thumb-aurora {
-    background:
-        radial-gradient(60% 80% at 20% 30%, color-mix(in srgb, var(--opsec-c-accent) 70%, transparent), transparent 70%),
-        radial-gradient(60% 80% at 80% 70%, #4c9bff99, transparent 70%),
-        #0b0d14;
-}
-
-.vc-opsec-thumb-lock {
-    background: linear-gradient(160deg, #1d2b3a, #0c1118);
-}
-
-.vc-opsec-thumb-clock {
-    font-size: 11px;
-    font-weight: 300;
-    color: #fff;
-}
-
-.vc-opsec-thumb-terminal {
-    background: #0a0c0a;
-    justify-items: start;
-    padding-left: 8px;
-}
-
-.vc-opsec-thumb-term {
-    font-family: var(--font-code, monospace);
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--opsec-c-accent);
-}
-
-.vc-opsec-thumb-bsod {
-    background: #0078d7;
-    justify-items: start;
-    padding-left: 8px;
-}
-
-.vc-opsec-thumb-sad {
-    font-size: 16px;
-    color: #fff;
 }
 
 /* ---------- Radar ---------- */

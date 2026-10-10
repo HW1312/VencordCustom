@@ -9,10 +9,11 @@
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
-import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, showToast, Tooltip, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
+import { ChannelStore, createRoot, FluxDispatcher, PrivateChannelSortStore, ReadStateStore, RelationshipStore, Tooltip, useEffect, useMemo, useReducer, useRef, UserStore, useState, useStateFromStores } from "@webpack/common";
 import type { ReactNode } from "react";
 import type { Root } from "react-dom/client";
 
+import { Button, Empty, Group, Icon, ICONS, notify, RoundButton, Row, SearchField, State, TextField } from "../_ui";
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
 import { Badge, unreadOf } from "./area";
 import { sendEncryptedFiles } from "./files";
@@ -21,7 +22,7 @@ import { NativeMessageList } from "./nativelist";
 import { chatLabel, createRoom, deleteRoomForEveryone, isJoining, isOwnedGroup, joinRoom, pruneStale, reannounce, roomMessages, userName, windowView } from "./rooms";
 import { settings } from "./settings";
 import { dismissInvite, Invite, removeRoom, renameRoom, Room, useStore } from "./store";
-import { Avatar, CloseIcon, LockIcon, PencilIcon, PlusIcon, TrashIcon } from "./ui";
+import { LOCK_PATH, RenameField, SC_COLOR, UserAvatar } from "./ui";
 
 const cl = classNameFactory("vc-secretchat-");
 
@@ -55,7 +56,7 @@ let root: Root | null = null;
 /** Opens the rooms window over Discord (or switches the room if it's open already) */
 export function openRoomsWindow(channelId?: string) {
     if (settings.store.emergency) {
-        showToast("Emergency stop is on – right-click the lock to turn it off", "failure");
+        notify({ title: "Emergency stop is on", body: "Right-click the lock to turn it off", kind: "attention", app: "SecretChat" });
         return;
     }
     if (channelId) select(channelId);
@@ -73,7 +74,7 @@ export function openRoomsWindow(channelId?: string) {
         );
     } catch (e) {
         closeRoomsWindow();
-        showToast("Couldn't open the SecretChat window", "failure");
+        notify({ title: "Couldn't open the SecretChat window", kind: "error", app: "SecretChat" });
     }
 }
 
@@ -136,8 +137,7 @@ function RoomsWindow() {
     if (!isSendGuarded()) {
         return (
             <div className={cl("win-empty")}>
-                <LockIcon width={40} height={40} />
-                <div>SecretChat couldn't secure sending here – write in Discord itself (lock in the chat bar)</div>
+                <Empty icon={LOCK_PATH} title="SecretChat couldn't secure sending here" hint="Write in Discord itself (lock in the chat bar)" />
             </div>
         );
     }
@@ -155,8 +155,7 @@ function RoomsWindow() {
             onClose={closeRoomsWindow}
             emptyView={
                 <div className={cl("win-empty")}>
-                    <LockIcon width={40} height={40} />
-                    <div>Pick a room on the left or create a new one</div>
+                    <Empty icon={LOCK_PATH} title="No room open" hint="Pick a room on the left or create a new one" />
                 </div>
             }
         />
@@ -211,20 +210,14 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
     return (
         <div ref={rootRef} className={cl("side")}>
             <div className={cl("side-head")}>
-                <LockIcon width={16} height={16} />
+                <Icon path={LOCK_PATH} size={16} />
                 <span>Secret rooms</span>
-                <Tooltip text={creating ? "Cancel" : "New room"}>
-                    {p => (
-                        <button
-                            {...p}
-                            className={classes(cl("side-add"), creating && cl("side-add-on"))}
-                            aria-label={creating ? "Cancel" : "New room"}
-                            onClick={() => setCreating(!creating)}
-                        >
-                            {creating ? <CloseIcon /> : <PlusIcon />}
-                        </button>
-                    )}
-                </Tooltip>
+                <RoundButton
+                    icon={creating ? ICONS.close : ICONS.plus}
+                    label={creating ? "Cancel" : "New room"}
+                    active={creating}
+                    onClick={() => setCreating(!creating)}
+                />
             </div>
 
             <div className={cl("side-list")}>
@@ -241,9 +234,9 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
                 {rooms.map(r => <RoomItem key={r.channelId} room={r} active={r.channelId === current} onOpen={() => open(r.channelId)} />)}
 
                 {!rooms.length && !invites.length && !creating && (
-                    <button className={cl("side-empty")} onClick={() => setCreating(true)}>
-                        <PlusIcon />Create your first room
-                    </button>
+                    <Empty icon={LOCK_PATH} title="No secret rooms yet">
+                        <Button small color={SC_COLOR} icon={ICONS.plus} onClick={() => setCreating(true)}>Create your first room</Button>
+                    </Empty>
                 )}
             </div>
         </div>
@@ -251,8 +244,6 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
 }
 
 const SEND_PATH = "M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a.99.99 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91Z";
-
-const CHECK_PATH = "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17Z";
 
 /**
  * Small icon button of a room row: Discord tooltip, a hover animation per kind, a press effect – and with
@@ -280,9 +271,7 @@ function ActionIcon({ kind, label, doneLabel, danger, active, onClick, children 
                         if (doneLabel) setDone(true);
                     }}
                 >
-                    {done
-                        ? <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={CHECK_PATH} /></svg>
-                        : children}
+                    {done ? <Icon path={ICONS.check} size={14} /> : children}
                 </button>
             )}
         </Tooltip>
@@ -293,7 +282,6 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
     const unread = useStateFromStores([ReadStateStore], () => unreadOf(room.channelId), [room.channelId]);
     const owned = useStateFromStores([ChannelStore], () => isOwnedGroup(room.channelId), [room.channelId]);
     const [editing, setEditing] = useState(false);
-    const [name, setName] = useState(room.name);
     // No Discord dialogs in this layer – the trash opens a small choice under the row
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -310,21 +298,9 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
                 className={classes(cl("side-room"), active && cl("side-room-on"), unread !== 0 && !active && cl("side-room-unread"))}
                 onClick={() => !editing && onOpen()}
             >
-                <span className={cl("side-room-icon")}><LockIcon width={14} height={14} /></span>
+                <span className={cl("side-room-icon")}><Icon path={LOCK_PATH} size={14} /></span>
                 {editing ? (
-                    <input
-                        className={classes(cl("input"), cl("input-inline"))}
-                        value={name}
-                        autoFocus
-                        maxLength={64}
-                        onClick={e => e.stopPropagation()}
-                        onChange={e => setName(e.currentTarget.value)}
-                        onBlur={() => { renameRoom(room.channelId, name); setEditing(false); }}
-                        onKeyDown={e => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                            if (e.key === "Escape") { e.stopPropagation(); setName(room.name); setEditing(false); }
-                        }}
-                    />
+                    <RenameField initial={room.name} onDone={n => { if (n != null) renameRoom(room.channelId, n); setEditing(false); }} />
                 ) : (
                     <span className={cl("side-room-text")}>
                         <span className={cl("side-room-name")}>{room.name}</span>
@@ -339,13 +315,13 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
                         doneLabel="Invite sent"
                         onClick={() => reannounce(room.channelId)}
                     >
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={SEND_PATH} /></svg>
+                        <Icon path={SEND_PATH} size={14} />
                     </ActionIcon>
-                    <ActionIcon kind="edit" label="Rename" onClick={() => { setName(room.name); setEditing(true); }}>
-                        <PencilIcon width={14} height={14} />
+                    <ActionIcon kind="edit" label="Rename" onClick={() => setEditing(true)}>
+                        <Icon path={ICONS.edit} size={14} />
                     </ActionIcon>
                     <ActionIcon kind="trash" label={confirming ? "Close" : "Remove or delete"} danger active={confirming} onClick={() => setConfirming(!confirming)}>
-                        <TrashIcon width={14} height={14} />
+                        <Icon path={ICONS.trash} size={14} />
                     </ActionIcon>
                 </span>
 
@@ -355,12 +331,12 @@ function RoomItem({ room, active, onOpen }: { room: Room; active: boolean; onOpe
             {confirming && (
                 <div className={cl("side-confirm")}>
                     {owned && (
-                        <button className={classes(cl("btn"), cl("btn-danger"))} disabled={deleting} onClick={deleteGroup}>
+                        <Button small wide variant="destructive" disabled={deleting} onClick={deleteGroup}>
                             {deleting ? "Deleting …" : "Delete group for everyone"}
-                        </button>
+                        </Button>
                     )}
-                    <button className={cl("btn")} disabled={deleting} onClick={() => removeRoom(room.channelId)}>Only remove from list</button>
-                    <button className={classes(cl("btn"), cl("btn-ghost"))} disabled={deleting} onClick={() => setConfirming(false)}>Cancel</button>
+                    <Button small wide variant="gray" disabled={deleting} onClick={() => removeRoom(room.channelId)}>Only remove from list</Button>
+                    <Button small wide variant="plain" disabled={deleting} onClick={() => setConfirming(false)}>Cancel</Button>
                     {owned && <span className={cl("hint")}>Deleting removes everyone, deletes the group with all messages and forgets the key.</span>}
                 </div>
             )}
@@ -375,20 +351,20 @@ function InviteItem({ invite }: { invite: Invite; }) {
     return (
         <div className={cl("side-invite")}>
             <div className={cl("side-invite-top")}>
-                <Avatar userId={invite.from} />
+                <UserAvatar userId={invite.from} />
                 <span className={cl("side-invite-text")}>
                     <b>{userName(invite.from)}</b>
                     <span>{chatLabel(invite.channelId)}</span>
                 </span>
                 <ActionIcon kind="trash" label="Dismiss" danger onClick={() => dismissInvite(invite.channelId)}>
-                    <CloseIcon width={14} height={14} />
+                    <Icon path={ICONS.close} size={14} />
                 </ActionIcon>
             </div>
             {!exists
-                ? <span className={cl("waiting")}>This chat no longer exists</span>
+                ? <State tone="bad">This chat no longer exists</State>
                 : joining
-                    ? <span className={cl("waiting")}>Waiting for a member …</span>
-                : <button className={classes(cl("btn"), cl("btn-primary"))} onClick={() => joinRoom(invite.channelId, invite.keyId)}>Join</button>}
+                    ? <State spinner>Waiting for a member …</State>
+                    : <Button small wide color={SC_COLOR} onClick={() => joinRoom(invite.channelId, invite.keyId)}>Join</Button>}
         </div>
     );
 }
@@ -454,13 +430,13 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
             select(channelId);
             onDone();
         } catch (e) {
-            showToast("Could not create the group – Discord may want a captcha, create it by hand and use the lock there", "failure");
+            notify({ title: "Could not create the group", body: "Discord may want a captcha – create it by hand and use the lock there", kind: "error", app: "SecretChat" });
             setBusy(false);
         }
     };
 
     return (
-        <div className={classes(cl("panel"), cl("side-panel"))}>
+        <div className={cl("side-panel")}>
             <div className={cl("name-row")}>
                 <Tooltip text={picked.length < 2
                     ? "A picture needs a group – pick at least 2 friends"
@@ -475,11 +451,11 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
                         >
                             {icon && picked.length >= 2
                                 ? <img src={icon} alt="" />
-                                : <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor"><path d={IMAGE_PATH} /></svg>}
+                                : <Icon path={IMAGE_PATH} size={18} />}
                         </button>
                     )}
                 </Tooltip>
-                <input className={cl("input")} value={name} autoFocus placeholder="Room name" maxLength={64} onChange={e => setName(e.currentTarget.value)} />
+                <TextField value={name} autoFocus placeholder="Room name" maxLength={64} onChange={setName} />
                 <input
                     ref={fileRef}
                     type="file"
@@ -491,27 +467,30 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
                         if (!file) return;
                         const data = await toIconDataUrl(file);
                         if (data) setIcon(data);
-                        else showToast("That image couldn't be read", "failure");
+                        else notify({ title: "That image couldn't be read", kind: "error", app: "SecretChat" });
                     }}
                 />
             </div>
-            <input className={cl("input")} value={query} placeholder="Search friends" onChange={e => setQuery(e.currentTarget.value)} />
-            <div className={cl("pick-list")}>
+            <SearchField value={query} placeholder="Search friends" onChange={setQuery} />
+            <Group className={cl("pick-list")}>
                 {shown.map(f => {
                     const on = picked.includes(f.id);
                     return (
-                        <button key={f.id} className={classes(cl("pick"), on && cl("pick-on"))} onClick={() => toggle(f.id)}>
-                            <Avatar userId={f.id} />
-                            <span className={cl("row-title")}>{f.name}</span>
-                            <span className={cl("box")}>{on && "✓"}</span>
-                        </button>
+                        <Row
+                            key={f.id}
+                            className={classes(cl("pick"), on && cl("pick-on"))}
+                            onClick={() => toggle(f.id)}
+                            leading={<UserAvatar userId={f.id} size={26} />}
+                            title={f.name}
+                            trailing={<span className={cl("box")}>{on && <Icon path={ICONS.check} size={12} />}</span>}
+                        />
                     );
                 })}
-                {!shown.length && <div className={cl("empty")}>No friends found</div>}
-            </div>
-            <button className={classes(cl("btn"), cl("btn-primary"))} disabled={!canCreate} onClick={create}>
+                {!shown.length && <Empty title="No friends found" />}
+            </Group>
+            <Button wide color={SC_COLOR} disabled={!canCreate} onClick={create}>
                 {busy ? "Creating …" : picked.length ? `Create (${picked.length})` : "Pick friends"}
-            </button>
+            </Button>
             <span className={cl("hint")}>Existing chat or server channel: open it in Discord and use the lock in the chat bar.</span>
         </div>
     );

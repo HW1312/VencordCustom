@@ -1,5 +1,5 @@
 /*
- * Radar – title bar button, popout, settings & dialogs
+ * Radar – title bar button, popout, settings & dialogs (built from the shared _ui kit)
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -9,13 +9,13 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { useForceUpdater } from "@utils/react";
-import { RenderModalProps } from "@vencord/discord-types";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, Modal, openModal, Popout, useEffect, useMemo, useRef, useState } from "@webpack/common";
-import type { ReactNode } from "react";
+import { Popout, useEffect, useMemo, useRef, useState } from "@webpack/common";
+import type { CSSProperties, ReactNode } from "react";
 
-import { Avatar, Button, cl, Empty, Field, Icon, IconButton, IconName, RadarLogo, SectionTitle, Segmented, ToggleRow, useSlider } from "./components";
-import { openRuleEditor, TriggerBadge } from "./editor";
+import { AppIcon, Avatar, Badge, Button, confirm, Empty, Field, Glyph, Icon, IconButton, ICONS, Note, openWindow, Pill, Pills, Popover, RoundButton, Row, SearchField, Section, Segmented, Select, Sheet, Slider, TextArea, TextField, Toggle, ToggleRow } from "../_ui";
+import { ACTION_COLOR, cl, RadarIcon, RadarLogo, RI } from "./components";
+import { openRuleEditor, TriggerGlyph } from "./editor";
 import { ACTIONS, highlights, highlightSignal, jumpTo, placeLabel, removeHighlight, snapshotMessage, TRIGGERS } from "./engine";
 import { settings } from "./index";
 import { bookmarkMediaSize, collectMedia, formatBytes, openBookmarkFolder, removeOfflineMedia, saveMediaOffline, useMediaSrc } from "./media";
@@ -24,56 +24,16 @@ import { playSound, SOUND_OPTIONS } from "./sounds";
 import { Bookmark, bookmarksStore, deleteRule, InboxItem, inboxStore, markAllRead, MessageSnapshot, Reminder, remindersStore, Rule, rulesStore, SavedMedia, toggleRule, useSignal, useStore } from "./store";
 
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
+const POPOUT_STYLE: CSSProperties = { height: "min(660px, calc(100vh - 72px))", transformOrigin: "top left" };
 
-// ---------------------------------------------------------------- Tabs
+// ---------------------------------------------------------------- Helpers
 
 type TabId = "inbox" | "rules" | "reminders" | "bookmarks" | "options";
-
-const TABS: { id: TabId; label: string; icon: IconName; }[] = [
-    { id: "inbox", label: "History", icon: "inbox" },
-    { id: "rules", label: "Rules", icon: "rules" },
-    { id: "reminders", label: "Reminders", icon: "clock" },
-    { id: "bookmarks", label: "Bookmarks", icon: "bookmark" },
-    { id: "options", label: "", icon: "gear" }
-];
+const TAB_IDS: TabId[] = ["inbox", "rules", "reminders", "bookmarks", "options"];
 
 function useUnreadCount() {
     const inbox = useStore(inboxStore);
     return inbox.reduce((n, i) => n + (i.read ? 0 : 1), 0);
-}
-
-function Tabs({ value, onChange }: { value: TabId; onChange(t: TabId): void; }) {
-    const { refs, pos } = useSlider(value);
-    const unread = useUnreadCount();
-    const reminders = useStore(remindersStore);
-    const upcoming = reminders.filter(r => !r.done).length;
-
-    const badge = (id: TabId) => id === "inbox" ? unread : id === "reminders" ? upcoming : 0;
-
-    return (
-        <div className={cl("tabs")} role="tablist">
-            <span
-                className={classes(cl("tab-indicator"), pos.ready && cl("animated"))}
-                style={{ transform: `translateX(${pos.left}px)`, width: pos.width }}
-            />
-            {TABS.map(t => (
-                <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    title={t.label || "Options"}
-                    aria-selected={t.id === value}
-                    ref={n => { refs.current[t.id] = n; }}
-                    className={classes(cl("tab"), !t.label && cl("tab-icon-only"), t.id === value && cl("tab-active"))}
-                    onClick={() => onChange(t.id)}
-                >
-                    <Icon name={t.icon} size={16} />
-                    {t.label && <span className={cl("tab-label")}>{t.label}</span>}
-                    {badge(t.id) > 0 && <span className={classes(cl("tab-badge"), t.id !== "inbox" && cl("tab-badge-soft"))}>{badge(t.id) > 99 ? "99+" : badge(t.id)}</span>}
-                </button>
-            ))}
-        </div>
-    );
 }
 
 /** Redraw time labels regularly ("3 min ago") */
@@ -85,45 +45,59 @@ function useTicker(ms = 30_000) {
     }, []);
 }
 
-function confirm(title: string, body: string, confirmText: string, onConfirm: () => void) {
-    Alerts.show({ title, body, confirmText, cancelText: "Cancel", onConfirm });
+const placeOf = (m: MessageSnapshot) => m.guildId ? `#${m.channelName ?? "?"}${m.guildName ? ` · ${m.guildName}` : ""}` : placeLabel(null, m.channelId);
+const textOf = (m: MessageSnapshot) => m.content || (m.attachments ? `[${m.attachments} ${m.attachments === 1 ? "attachment" : "attachments"}]` : "[no text]");
+
+/** Bar above a list: hint or filter on the left, buttons on the right */
+function Toolbar({ children }: { children: ReactNode; }) {
+    return <div className={cl("toolbar")}>{children}</div>;
+}
+
+/** Row actions, faint until the row is hovered */
+function Actions({ children }: { children: ReactNode; }) {
+    return <span className={cl("actions")}>{children}</span>;
+}
+
+function Time({ at, title }: { at: string; title?: string; }) {
+    return <span className={cl("time")} title={title}>{at}</span>;
 }
 
 // ---------------------------------------------------------------- History
 
-const KIND_ICON: Record<string, IconName> = { reminder: "clock" };
+const KIND_ICON: Record<string, RadarIcon> = { reminder: "clock" };
 
 function InboxRow({ item }: { item: InboxItem; }) {
-    const icon = KIND_ICON[item.kind] ?? TRIGGERS[item.kind as keyof typeof TRIGGERS]?.icon ?? "bell";
+    const icon: RadarIcon = KIND_ICON[item.kind] ?? TRIGGERS[item.kind as keyof typeof TRIGGERS]?.icon ?? "bell";
     const canJump = !!item.channelId;
     const markRead = () => !item.read && inboxStore.update(list => list.map(i => i.id === item.id ? { ...i, read: true } : i));
 
     return (
-        <div
-            className={classes(cl("item"), !item.read && cl("item-unread"), canJump && cl("item-click"))}
+        <Row
+            className={cl("item")}
+            align="top"
+            leading={
+                <span className={cl("lead")}>
+                    {!item.read && <span className={cl("unread-dot")} />}
+                    <Avatar src={item.icon} fallback={RI[icon]} size={34} />
+                    <span className={cl("kind")}><Icon path={RI[icon]} size={10} /></span>
+                </span>
+            }
+            title={item.title}
+            subtitle={<span className={cl("clip")}>{item.body}</span>}
+            note={item.ruleName}
             onClick={() => {
                 markRead();
                 if (canJump) jumpTo(item);
             }}
-        >
-            <span className={cl("item-avatar")}>
-                <Avatar src={item.icon} fallback={icon} size={34} />
-                <span className={cl("item-kind")}><Icon name={icon} size={11} /></span>
-            </span>
-            <span className={cl("item-main")}>
-                <span className={cl("item-top")}>
-                    <span className={cl("item-title")}>{item.title}</span>
-                    <span className={cl("item-time")} title={new Date(item.at).toLocaleString("en-GB")}>{formatRelative(item.at)}</span>
-                </span>
-                <span className={cl("item-body")}>{item.body}</span>
-                <span className={cl("item-rule")}>{item.ruleName}</span>
-            </span>
-            <span className={cl("item-actions")}>
-                {canJump && <IconButton icon="jump" label="Jump there" onClick={() => { markRead(); jumpTo(item); }} />}
-                {!item.read && <IconButton icon="check" label="Mark as read" onClick={markRead} />}
-                <IconButton icon="trash" label="Remove" danger onClick={() => inboxStore.update(list => list.filter(i => i.id !== item.id))} />
-            </span>
-        </div>
+            trailing={<>
+                <Time at={formatRelative(item.at)} title={new Date(item.at).toLocaleString("en-GB")} />
+                <Actions>
+                    {canJump && <IconButton icon={RI.jump} label="Jump there" onClick={() => { markRead(); jumpTo(item); }} />}
+                    {!item.read && <IconButton icon={ICONS.check} label="Mark as read" onClick={markRead} />}
+                    <IconButton icon={ICONS.trash} label="Remove" destructive onClick={() => inboxStore.update(list => list.filter(i => i.id !== item.id))} />
+                </Actions>
+            </>}
+        />
     );
 }
 
@@ -136,17 +110,24 @@ function InboxTab() {
 
     return (
         <>
-            <div className={cl("toolbar")}>
-                <Segmented<"all" | "unread"> small value={filter} options={[{ value: "all", label: `All (${inbox.length})` }, { value: "unread", label: `Unread (${unread})` }]} onChange={setFilter} />
-                <span className={cl("spacer")} />
-                <IconButton icon="doneAll" label="Mark all as read" disabled={!unread} onClick={markAllRead} />
-                <IconButton icon="trash" label="Clear history" danger disabled={!inbox.length} onClick={() => confirm("Clear history?", "All entries in the Radar history will be deleted.", "Clear", () => inboxStore.set([]))} />
-            </div>
+            <Toolbar>
+                <Segmented<"all" | "unread"> small value={filter} options={[{ value: "all", label: "All", count: inbox.length }, { value: "unread", label: "Unread", count: unread }]} onChange={setFilter} />
+                <IconButton icon={RI.doneAll} label="Mark all as read" disabled={!unread} onClick={markAllRead} />
+                <IconButton
+                    icon={ICONS.trash}
+                    label="Clear history"
+                    destructive
+                    disabled={!inbox.length}
+                    onClick={async () => {
+                        if (await confirm({ title: "Clear history?", body: "All entries in the Radar history will be deleted.", confirmText: "Clear", destructive: true })) inboxStore.set([]);
+                    }}
+                />
+            </Toolbar>
             {shown.length
-                ? <div className={cl("list")}>{shown.slice(0, 150).map(i => <InboxRow key={i.id} item={i} />)}</div>
+                ? <Section>{shown.slice(0, 150).map(i => <InboxRow key={i.id} item={i} />)}</Section>
                 : (
                     <Empty
-                        icon="inbox"
+                        icon={RI.inbox}
                         title={filter === "unread" ? "All caught up" : "Nothing yet"}
                         hint={filter === "unread" ? "No unread hits." : "Hits from your rules (action “Add to Radar history”) and due reminders end up here."}
                     />
@@ -157,43 +138,40 @@ function InboxTab() {
 
 // ---------------------------------------------------------------- Rules
 
-function RuleCard({ rule, close }: { rule: Rule; close?(): void; }) {
+function RuleRow({ rule, close }: { rule: Rule; close?(): void; }) {
     const tDef = TRIGGERS[rule.trigger.type];
+    const edit = () => { close?.(); openRuleEditor(rule); };
+
     return (
-        <div className={classes(cl("rule"), !rule.enabled && cl("rule-off"))}>
-            <TriggerBadge type={rule.trigger.type} />
-            <span className={cl("rule-main")} onClick={() => { close?.(); openRuleEditor(rule); }}>
-                <span className={cl("rule-name")}>{rule.name}</span>
-                <span className={cl("rule-summary")}>
-                    <b>{tDef?.label ?? rule.trigger.type}</b>: {tDef?.summary(rule.trigger) ?? ""}
-                </span>
-                <span className={cl("rule-actions")}>
-                    {rule.actions.map((a, i) => ACTIONS[a.type] && (
-                        <span key={i} className={cl("rule-action")} title={ACTIONS[a.type].summary(a)}>
-                            <Icon name={ACTIONS[a.type].icon} size={12} />
-                            {ACTIONS[a.type].label}
-                        </span>
-                    ))}
-                </span>
+        <Row
+            className={cl("item")}
+            align="top"
+            leading={<TriggerGlyph type={rule.trigger.type} size={32} />}
+            title={rule.name}
+            subtitle={<span className={cl("clip")}><b>{tDef?.label ?? rule.trigger.type}</b>: {tDef?.summary(rule.trigger) ?? ""}</span>}
+            dim={!rule.enabled}
+            onClick={edit}
+            trailing={<>
+                <Actions>
+                    <IconButton icon={ICONS.edit} label="Edit" onClick={edit} />
+                    <IconButton
+                        icon={ICONS.trash}
+                        label="Delete"
+                        destructive
+                        onClick={async () => {
+                            if (await confirm({ title: "Delete rule?", body: `“${rule.name}” will be permanently deleted.`, confirmText: "Delete", destructive: true })) deleteRule(rule.id);
+                        }}
+                    />
+                </Actions>
+                <Toggle checked={rule.enabled} label={rule.enabled ? "Disable rule" : "Enable rule"} onChange={v => toggleRule(rule.id, v)} />
+            </>}
+        >
+            <span className={cl("badges")}>
+                {rule.actions.map((a, i) => ACTIONS[a.type] && (
+                    <Badge key={i} color={ACTION_COLOR[a.type]} icon={RI[ACTIONS[a.type].icon]} title={ACTIONS[a.type].summary(a)}>{ACTIONS[a.type].label}</Badge>
+                ))}
             </span>
-            <span className={cl("rule-side")}>
-                <span
-                    role="switch"
-                    aria-checked={rule.enabled}
-                    tabIndex={0}
-                    title={rule.enabled ? "Disable rule" : "Enable rule"}
-                    className={classes(cl("switch"), rule.enabled && cl("switch-on"))}
-                    onClick={() => toggleRule(rule.id, !rule.enabled)}
-                    onKeyDown={e => (e.key === " " || e.key === "Enter") && toggleRule(rule.id, !rule.enabled)}
-                >
-                    <span className={cl("switch-knob")} />
-                </span>
-                <span className={cl("rule-buttons")}>
-                    <IconButton icon="edit" label="Edit" onClick={() => { close?.(); openRuleEditor(rule); }} />
-                    <IconButton icon="trash" label="Delete" danger onClick={() => confirm("Delete rule?", `“${rule.name}” will be permanently deleted.`, "Delete", () => deleteRule(rule.id))} />
-                </span>
-            </span>
-        </div>
+        </Row>
     );
 }
 
@@ -205,20 +183,21 @@ function RulesTab({ close }: { close?(): void; }) {
         openRuleEditor();
     };
 
+    if (!rules.length) {
+        return (
+            <Empty icon={RI.rules} title="When this happens, do that" hint="For example: keyword alert, friend joins voice, automatic “Do Not Disturb” while gaming.">
+                <Button icon={ICONS.plus} onClick={newRule}>Create your first rule</Button>
+            </Empty>
+        );
+    }
+
     return (
         <>
-            <div className={cl("toolbar")}>
-                <span className={cl("row-hint")}>{rules.length ? `${active} of ${rules.length} rules active` : "No rules yet"}</span>
-                <span className={cl("spacer")} />
-                <Button icon="plus" small onClick={newRule}>New rule</Button>
-            </div>
-            {rules.length
-                ? <div className={cl("list")}>{rules.map(r => <RuleCard key={r.id} rule={r} close={close} />)}</div>
-                : (
-                    <Empty icon="rules" title="When this happens, do that" hint="For example: keyword alert, friend joins voice, automatic “Do Not Disturb” while gaming.">
-                        <Button icon="plus" onClick={newRule}>Create your first rule</Button>
-                    </Empty>
-                )}
+            <Toolbar>
+                <span className={cl("dim")}>{active} of {rules.length} rules active</span>
+                <Button icon={ICONS.plus} small onClick={newRule}>New rule</Button>
+            </Toolbar>
+            <Section>{rules.map(r => <RuleRow key={r.id} rule={r} close={close} />)}</Section>
         </>
     );
 }
@@ -228,13 +207,13 @@ function RulesTab({ close }: { close?(): void; }) {
 function SnapshotPreview({ m, compact }: { m: MessageSnapshot; compact?: boolean; }) {
     return (
         <div className={classes(cl("snap"), compact && cl("snap-compact"))}>
-            <Avatar src={m.authorAvatar} fallback="user" size={compact ? 20 : 24} />
+            <Avatar src={m.authorAvatar} size={compact ? 20 : 26} />
             <span className={cl("snap-main")}>
                 <span className={cl("snap-top")}>
-                    <span className={cl("snap-author")}>{m.authorName}</span>
-                    <span className={cl("row-hint")}>{m.guildId ? `#${m.channelName ?? "?"}${m.guildName ? ` · ${m.guildName}` : ""}` : placeLabel(null, m.channelId)}</span>
+                    <b>{m.authorName}</b>
+                    <span className={cl("dim")}>{placeOf(m)}</span>
                 </span>
-                <span className={cl("snap-content")}>{m.content || (m.attachments ? `[${m.attachments} ${m.attachments === 1 ? "attachment" : "attachments"}]` : "[no text]")}</span>
+                <span className={cl("snap-content")}>{textOf(m)}</span>
             </span>
         </div>
     );
@@ -242,26 +221,30 @@ function SnapshotPreview({ m, compact }: { m: MessageSnapshot; compact?: boolean
 
 function ReminderRow({ r }: { r: Reminder; }) {
     const m = r.message;
+    const soon = !r.done && r.dueAt - Date.now() < 3600_000;
+
     return (
-        <div className={classes(cl("item"), r.done && cl("item-done"), m && cl("item-click"))} onClick={() => m && jumpTo(m)}>
-            <span className={classes(cl("when"), r.missed && cl("when-missed"), !r.done && r.dueAt - Date.now() < 3600_000 && cl("when-soon"))}>
-                <Icon name="clock" size={14} />
+        <Row
+            className={cl("item")}
+            align="top"
+            leading={<Glyph path={RI.clock} color={r.done ? "gray" : r.missed ? "red" : soon ? "orange" : "blue"} />}
+            title={<>{r.note || (m ? `Message from ${m.authorName}` : "Reminder")}{r.missed && <> <Badge color="red">missed</Badge></>}</>}
+            subtitle={<>
                 <span>{r.done ? formatWhen(r.firedAt ?? r.dueAt) : formatRelative(r.dueAt)}</span>
-            </span>
-            <span className={cl("item-main")}>
-                <span className={cl("item-top")}>
-                    <span className={cl("item-title")}>{r.note || (m ? `Message from ${m.authorName}` : "Reminder")}</span>
-                    {r.missed && <span className={cl("pill-warn")}>missed</span>}
-                    <span className={cl("item-time")}>{formatWhen(r.dueAt)}</span>
-                </span>
-                {m && <SnapshotPreview m={m} compact />}
-            </span>
-            <span className={cl("item-actions")}>
-                {m && <IconButton icon="jump" label="Go to message" onClick={() => jumpTo(m)} />}
-                <IconButton icon="clock" label={r.done ? "Again in 1 hour" : "Postpone by 1 hour"} onClick={() => snoozeReminder(r.id, r.done ? 3600_000 : Math.max(0, r.dueAt - Date.now()) + 3600_000)} />
-                <IconButton icon="trash" label="Delete" danger onClick={() => deleteReminder(r.id)} />
-            </span>
-        </div>
+                {!r.done && <span>{formatWhen(r.dueAt)}</span>}
+            </>}
+            dim={r.done}
+            onClick={m ? () => jumpTo(m) : undefined}
+            trailing={
+                <Actions>
+                    {m && <IconButton icon={RI.jump} label="Go to message" onClick={() => jumpTo(m)} />}
+                    <IconButton icon={RI.clock} label={r.done ? "Again in 1 hour" : "Postpone by 1 hour"} onClick={() => snoozeReminder(r.id, r.done ? 3600_000 : Math.max(0, r.dueAt - Date.now()) + 3600_000)} />
+                    <IconButton icon={ICONS.trash} label="Delete" destructive onClick={() => deleteReminder(r.id)} />
+                </Actions>
+            }
+        >
+            {m && <SnapshotPreview m={m} compact />}
+        </Row>
     );
 }
 
@@ -273,22 +256,17 @@ function RemindersTab({ close }: { close?(): void; }) {
 
     return (
         <>
-            <div className={cl("toolbar")}>
-                <span className={cl("row-hint")}>Right-click a message → “Remind me…”</span>
-                <span className={cl("spacer")} />
-                <Button icon="plus" small onClick={() => { close?.(); openReminderModal(); }}>New</Button>
-            </div>
-            <SectionTitle icon="clock">Upcoming ({upcoming.length})</SectionTitle>
+            <Toolbar>
+                <span className={cl("dim")}>Right-click a message → “Remind me…”</span>
+                <Button icon={ICONS.plus} small onClick={() => { close?.(); openReminderModal(); }}>New</Button>
+            </Toolbar>
             {upcoming.length
-                ? <div className={cl("list")}>{upcoming.map(r => <ReminderRow key={r.id} r={r} />)}</div>
-                : <Empty icon="clock" title="No upcoming reminders" />}
+                ? <Section title={`Upcoming (${upcoming.length})`}>{upcoming.map(r => <ReminderRow key={r.id} r={r} />)}</Section>
+                : <Empty icon={RI.clock} title="No upcoming reminders" />}
             {done.length > 0 && (
-                <>
-                    <SectionTitle icon="check" right={<button type="button" className={cl("link-btn")} onClick={clearDoneReminders}>Delete completed</button>}>
-                        Completed ({done.length})
-                    </SectionTitle>
-                    <div className={cl("list")}>{done.slice(0, 50).map(r => <ReminderRow key={r.id} r={r} />)}</div>
-                </>
+                <Section title={`Completed (${done.length})`} right={<Button small variant="plain" onClick={clearDoneReminders}>Delete completed</Button>}>
+                    {done.slice(0, 50).map(r => <ReminderRow key={r.id} r={r} />)}
+                </Section>
             )}
         </>
     );
@@ -309,20 +287,20 @@ function MediaTile({ b, m, more, onOpen }: { b: Bookmark; m: SavedMedia; more?: 
     return (
         <button
             type="button"
-            className={classes(cl("media-tile"), !thumb && cl("media-tile-plain"))}
+            className={cl("tile-media")}
             title={m.local ? `${m.name} · saved on this PC` : m.name}
             onClick={e => { e.stopPropagation(); onOpen(); }}
         >
             {thumb && src && !broken
                 ? <img src={src} alt="" loading="lazy" onError={() => setBroken(true)} />
                 : (
-                    <span className={cl("media-plain")}>
-                        <Icon name={m.kind === "video" ? "play" : m.kind === "image" ? "image" : "file"} size={18} />
-                        <span className={cl("media-name")}>{m.name}</span>
+                    <span className={cl("tile-plain")}>
+                        <Icon path={m.kind === "video" ? ICONS.play : m.kind === "image" ? RI.image : RI.file} size={18} />
+                        <span>{m.name}</span>
                     </span>
                 )}
-            {m.local && <span className={cl("media-saved")}><Icon name="check" size={9} /></span>}
-            {more ? <span className={cl("media-more")}>+{more}</span> : null}
+            {m.local && <span className={cl("tile-saved")}><Icon path={ICONS.check} size={9} /></span>}
+            {more ? <span className={cl("tile-more")}>+{more}</span> : null}
         </button>
     );
 }
@@ -332,7 +310,7 @@ function MediaStrip({ b }: { b: Bookmark; }) {
     if (!media.length) return null;
     const shown = media.slice(0, MAX_TILES);
     return (
-        <span className={cl("media-strip")}>
+        <div className={cl("media")}>
             {shown.map((m, i) => (
                 <MediaTile
                     key={m.key}
@@ -342,26 +320,25 @@ function MediaStrip({ b }: { b: Bookmark; }) {
                     onOpen={() => openMediaViewer(b.id, i)}
                 />
             ))}
-        </span>
+        </div>
     );
 }
 
 function SaveStatus({ b }: { b: Bookmark; }) {
     if (!b.offline) return null;
-    if (b.saveState === "saving") return <span className={cl("bm-status")}><Icon name="download" size={11} />Saving on this PC…</span>;
+    if (b.saveState === "saving") return <Badge icon={ICONS.download}>Saving on this PC…</Badge>;
     if (b.saveState === "failed") {
         return (
-            <button
-                type="button"
-                className={classes(cl("bm-status"), cl("bm-status-warn"))}
+            <Badge
+                color="orange"
                 title="Discord's links expire after about a day. Open the message in Discord once, then try again."
-                onClick={e => { e.stopPropagation(); saveMediaOffline(b); }}
+                onClick={() => saveMediaOffline(b)}
             >
                 Some files could not be saved · Retry
-            </button>
+            </Badge>
         );
     }
-    return <span className={classes(cl("bm-status"), cl("bm-status-ok"))}><Icon name="check" size={11} />Saved on this PC</span>;
+    return <Badge color="green" icon={ICONS.check}>Saved on this PC</Badge>;
 }
 
 function BookmarkRow({ b, onTag }: { b: Bookmark; onTag(t: string): void; }) {
@@ -370,49 +347,53 @@ function BookmarkRow({ b, onTag }: { b: Bookmark; onTag(t: string): void; }) {
     const hasMedia = !!b.media?.length;
 
     return (
-        <div className={classes(cl("item"), cl("item-click"), cl("bm"))} onClick={() => jumpTo(m)}>
-            <Avatar src={avatar} fallback="user" size={36} />
-            <span className={cl("item-main")}>
-                <span className={cl("item-top")}>
-                    <span className={cl("item-title")}>{m.authorName}</span>
-                    {m.authorUsername && m.authorUsername !== m.authorName && <span className={cl("bm-username")}>@{m.authorUsername}</span>}
-                    <span className={cl("item-time")} title={`Saved ${new Date(b.createdAt).toLocaleString("en-GB")}`}>{formatWhen(m.timestamp)}</span>
-                </span>
-                <span className={cl("bm-meta")}>
-                    {m.authorId && (
-                        <button
-                            type="button"
-                            className={cl("bm-id")}
-                            title="Copy user ID"
-                            onClick={e => { e.stopPropagation(); copyWithToast(m.authorId, "User ID copied"); }}
-                        >
-                            <Icon name="copy" size={10} />
-                            {m.authorId}
-                        </button>
-                    )}
-                    <span className={cl("row-hint")}>{m.guildId ? `#${m.channelName ?? "?"}${m.guildName ? ` · ${m.guildName}` : ""}` : placeLabel(null, m.channelId)}</span>
-                </span>
-                {(m.content || !hasMedia) && (
-                    <span className={cl("item-body")}>{m.content || (m.attachments ? `[${m.attachments} ${m.attachments === 1 ? "attachment" : "attachments"}]` : "[no text]")}</span>
+        <Row
+            className={cl("item")}
+            align="top"
+            leading={<Avatar src={avatar} size={36} />}
+            title={<>
+                {m.authorName}
+                {m.authorUsername && m.authorUsername !== m.authorName && <span className={cl("handle")}>@{m.authorUsername}</span>}
+            </>}
+            subtitle={<>
+                {m.authorId && (
+                    <button
+                        type="button"
+                        className={cl("id")}
+                        title="Copy user ID"
+                        onClick={e => { e.stopPropagation(); copyWithToast(m.authorId, "User ID copied"); }}
+                    >
+                        <Icon path={ICONS.copy} size={10} />
+                        {m.authorId}
+                    </button>
                 )}
-                <MediaStrip b={b} />
-                {b.note && <span className={cl("item-note")}>{b.note}</span>}
-                {(b.tags.length > 0 || b.offline) && (
-                    <span className={cl("tags")}>
+                <span className={cl("clip")}>{placeOf(m)}</span>
+            </>}
+            onClick={() => jumpTo(m)}
+            trailing={<>
+                <Time at={formatWhen(m.timestamp)} title={`Saved ${new Date(b.createdAt).toLocaleString("en-GB")}`} />
+                <Actions>
+                    <IconButton icon={RI.jump} label="Go to message" onClick={() => jumpTo(m)} />
+                    {b.offline
+                        ? <IconButton icon={ICONS.folder} label="Show saved files" onClick={() => openBookmarkFolder(b.id)} />
+                        : hasMedia && <IconButton icon={ICONS.download} label="Save images & videos on this PC" onClick={() => saveMediaOffline(b)} />}
+                    <IconButton icon={ICONS.edit} label="Edit bookmark" onClick={() => openBookmarkEditor(b)} />
+                    <IconButton icon={ICONS.trash} label="Delete" destructive onClick={() => deleteBookmark(b.id)} />
+                </Actions>
+            </>}
+        >
+            {(m.content || !hasMedia) && <div className={cl("text")}>{textOf(m)}</div>}
+            <MediaStrip b={b} />
+            {b.note && <div className={cl("text-note")}>{b.note}</div>}
+            {(b.tags.length > 0 || b.offline) && (
+                <div className={cl("row-pills")}>
+                    <Pills>
                         <SaveStatus b={b} />
-                        {b.tags.map(t => <button type="button" key={t} className={cl("tag")} onClick={e => { e.stopPropagation(); onTag(t); }}>#{t}</button>)}
-                    </span>
-                )}
-            </span>
-            <span className={cl("item-actions")}>
-                <IconButton icon="jump" label="Go to message" onClick={() => jumpTo(m)} />
-                {b.offline
-                    ? <IconButton icon="folder" label="Show saved files" onClick={() => openBookmarkFolder(b.id)} />
-                    : hasMedia && <IconButton icon="download" label="Save images & videos on this PC" onClick={() => saveMediaOffline(b)} />}
-                <IconButton icon="edit" label="Edit bookmark" onClick={() => openBookmarkEditor(b)} />
-                <IconButton icon="trash" label="Delete" danger onClick={() => deleteBookmark(b.id)} />
-            </span>
-        </div>
+                        {b.tags.map(t => <Pill key={t} onClick={() => onTag(t)}>#{t}</Pill>)}
+                    </Pills>
+                </div>
+            )}
+        </Row>
     );
 }
 
@@ -431,21 +412,20 @@ function BookmarksTab() {
 
     return (
         <>
-            <div className={cl("picker-box")}>
-                <Icon name="search" size={16} className={cl("picker-search")} />
-                <input className={cl("input")} value={query} placeholder="Search text, person, user ID, server, tag…" onChange={e => setQuery(e.currentTarget.value)} />
-            </div>
+            <SearchField value={query} placeholder="Search text, person, user ID, server, tag…" onChange={setQuery} />
             {tags.length > 0 && (
-                <div className={cl("tags")}>
-                    <button type="button" className={classes(cl("tag"), !tag && cl("tag-on"))} onClick={() => setTag(null)}>All</button>
-                    {tags.map(t => <button type="button" key={t} className={classes(cl("tag"), tag === t && cl("tag-on"))} onClick={() => setTag(tag === t ? null : t)}>#{t}</button>)}
+                <div className={cl("tag-bar")}>
+                    <Pills>
+                        <Pill selected={!tag} onClick={() => setTag(null)}>All</Pill>
+                        {tags.map(t => <Pill key={t} selected={tag === t} onClick={() => setTag(tag === t ? null : t)}>#{t}</Pill>)}
+                    </Pills>
                 </div>
             )}
             {shown.length
-                ? <div className={cl("list")}>{shown.map(b => <BookmarkRow key={b.id} b={b} onTag={setTag} />)}</div>
+                ? <Section>{shown.map(b => <BookmarkRow key={b.id} b={b} onTag={setTag} />)}</Section>
                 : (
                     <Empty
-                        icon="bookmark"
+                        icon={RI.bookmark}
                         title={bookmarks.length ? "Nothing found" : "No bookmarks yet"}
                         hint={bookmarks.length ? "Adjust your search or tag filter." : "Right-click any message, picture or video → “Save to Radar bookmarks”."}
                     />
@@ -463,68 +443,62 @@ function OptionsTab() {
 
     return (
         <>
-            <SectionTitle icon="gear">General</SectionTitle>
-            <div className={cl("card")}>
+            <Section title="General">
                 <ToggleRow
+                    icon={RI.inbox}
+                    color="green"
+                    title="Radar icon in the title bar"
+                    subtitle="When hidden, you can reach Radar via the plugin settings and the Vencord Toolbox menu."
                     checked={s.showTitleBarButton}
                     onChange={v => settings.store.showTitleBarButton = v}
-                    icon="inbox"
-                    label="Radar icon in the title bar"
-                    hint="When hidden, you can reach Radar via the plugin settings and the Vencord Toolbox menu."
                 />
-                <div className={cl("row-static")}>
-                    <span className={cl("row-text")}>
-                        <span className={cl("row-label")}>Cooldown per rule</span>
-                        <span className={cl("row-hint")}>Notification, sound and flashing at most every {s.cooldown} s per rule (history entries still count).</span>
-                    </span>
-                    <input type="range" min={0} max={120} step={5} value={s.cooldown} onChange={e => settings.store.cooldown = Number(e.currentTarget.value)} />
-                    <span className={cl("range-value")}>{s.cooldown} s</span>
-                </div>
-            </div>
+                <Row
+                    leading={<Glyph path={RI.flash} color="orange" />}
+                    title="Cooldown per rule"
+                    subtitle={`Notification, sound and flashing at most every ${s.cooldown} s per rule (history entries still count).`}
+                    trailing={<Slider value={s.cooldown} min={0} max={120} step={5} format={v => `${v} s`} onChange={v => settings.store.cooldown = v} />}
+                />
+            </Section>
 
-            <SectionTitle icon="clock">Reminders</SectionTitle>
-            <div className={cl("card")}>
-                <div className={cl("row-static")}>
-                    <span className={cl("row-text")}>
-                        <span className={cl("row-label")}>Sound</span>
-                    </span>
-                    <select className={cl("select")} value={s.reminderSound} onChange={e => settings.store.reminderSound = e.currentTarget.value}>
-                        <option value="none">No sound</option>
-                        {SOUND_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <IconButton icon="play" label="Listen" disabled={s.reminderSound === "none"} onClick={() => playSound(s.reminderSound, s.reminderVolume)} />
-                </div>
-                <div className={cl("row-static")}>
-                    <span className={cl("row-text")}>
-                        <span className={cl("row-label")}>Volume</span>
-                    </span>
-                    <input type="range" min={5} max={100} step={5} value={s.reminderVolume} onChange={e => settings.store.reminderVolume = Number(e.currentTarget.value)} />
-                    <span className={cl("range-value")}>{s.reminderVolume}%</span>
-                </div>
-                <ToggleRow checked={s.reminderFlash} onChange={v => settings.store.reminderFlash = v} icon="flash" label="Flash the taskbar on due reminders" />
-            </div>
+            <Section title="Reminders">
+                <Row
+                    leading={<Glyph path={RI.sound} color="pink" />}
+                    title="Sound"
+                    trailing={<>
+                        <Select<string> width={150} value={s.reminderSound} options={[{ value: "none", label: "No sound" }, ...SOUND_OPTIONS]} onChange={v => settings.store.reminderSound = v} />
+                        <IconButton icon={ICONS.play} label="Listen" disabled={s.reminderSound === "none"} onClick={() => playSound(s.reminderSound, s.reminderVolume)} />
+                    </>}
+                />
+                <Row
+                    leading={<Glyph path={RI.voiceIn} color="gray" />}
+                    title="Volume"
+                    trailing={<Slider value={s.reminderVolume} min={5} max={100} step={5} format={v => `${v}%`} onChange={v => settings.store.reminderVolume = v} />}
+                />
+                <ToggleRow icon={RI.flash} color="yellow" title="Flash the taskbar on due reminders" checked={s.reminderFlash} onChange={v => settings.store.reminderFlash = v} />
+            </Section>
 
-            <SectionTitle icon="bookmark">Bookmarks</SectionTitle>
-            <div className={cl("card")}>
+            <Section title="Bookmarks">
                 <ToggleRow
+                    icon={ICONS.download}
+                    color="blue"
+                    title="Save images & videos of new bookmarks on this PC"
+                    subtitle="They stay in the bookmark even if the message gets deleted. You can still change it per bookmark."
                     checked={s.bookmarkSaveMedia}
                     onChange={v => settings.store.bookmarkSaveMedia = v}
-                    icon="download"
-                    label="Save images & videos of new bookmarks on this PC"
-                    hint="They stay in the bookmark even if the message gets deleted. You can still change it per bookmark."
                 />
-                <div className={cl("row-static")}>
-                    <span className={cl("row-text")}>
-                        <span className={cl("row-label")}>Saved files</span>
-                        <span className={cl("row-hint")}>{mediaBytes == null ? "…" : mediaBytes ? `${formatBytes(mediaBytes)} used` : "Nothing saved yet"}</span>
-                    </span>
-                    <Button icon="folder" small variant="secondary" onClick={() => openBookmarkFolder()}>Open folder</Button>
-                </div>
-            </div>
+                <Row
+                    leading={<Glyph path={ICONS.folder} color="teal" />}
+                    title="Saved files"
+                    subtitle={mediaBytes == null ? "…" : mediaBytes ? `${formatBytes(mediaBytes)} used` : "Nothing saved yet"}
+                    trailing={<Button icon={ICONS.folder} small variant="gray" onClick={() => openBookmarkFolder()}>Open folder</Button>}
+                />
+            </Section>
 
-            <div className={cl("note")}>
-                Radar works entirely locally: no messages are sent and no actions are performed on Discord - except
-                changing your own status if you set that up in a rule.
+            <div className={cl("options-note")}>
+                <Note>
+                    Radar works entirely locally: no messages are sent and no actions are performed on Discord - except
+                    changing your own status if you set that up in a rule.
+                </Note>
             </div>
         </>
     );
@@ -532,58 +506,67 @@ function OptionsTab() {
 
 // ---------------------------------------------------------------- Whole interface
 
-export function RadarApp({ variant, close }: { variant: "popout" | "modal"; close?(): void; }) {
+export function RadarApp({ variant, close }: { variant: "popout" | "modal" | "embedded"; close?(): void; }) {
     const { lastTab } = settings.use(["lastTab"]);
-    const tab = (TABS.some(t => t.id === lastTab) ? lastTab : "inbox") as TabId;
-    const prev = useRef(tab);
-    const dir = TABS.findIndex(t => t.id === tab) >= TABS.findIndex(t => t.id === prev.current) ? 1 : -1;
-    useEffect(() => { prev.current = tab; }, [tab]);
+    const tab = (TAB_IDS.includes(lastTab as TabId) ? lastTab : "inbox") as TabId;
+    const setTab = (t: TabId) => settings.store.lastTab = t;
 
     const unread = useUnreadCount();
     const rules = useStore(rulesStore);
+    const reminders = useStore(remindersStore);
     const activeRules = rules.filter(r => r.enabled).length;
+    const upcoming = reminders.filter(r => !r.done).length;
+
+    const subtitle = (activeRules ? `${activeRules} ${activeRules === 1 ? "rule" : "rules"} active` : "No rules active") + (unread > 0 ? ` · ${unread} unread` : "");
 
     return (
-        <div className={classes(cl("app"), cl(`app-${variant}`))}>
-            <div className={cl("head")}>
-                <span className={cl("logo")}>
-                    <RadarLogo size={24} spin={activeRules > 0} />
-                </span>
-                <span className={cl("head-text")}>
-                    <span className={cl("head-title")}>Radar</span>
-                    <span className={cl("head-sub")}>
-                        <span className={classes(cl("dot"), !activeRules && cl("dot-off"))} />
-                        {activeRules ? `${activeRules} ${activeRules === 1 ? "rule" : "rules"} active` : "No rules active"}
-                        {unread > 0 && ` · ${unread} unread`}
-                    </span>
-                </span>
+        <Sheet
+            embedded={variant === "embedded"}
+            height={variant === "modal" ? "min(720px, 85vh)" : variant === "popout" ? "100%" : undefined}
+            onClose={variant === "modal" ? close : undefined}
+            header={{
+                title: "Radar",
+                subtitle,
+                live: activeRules > 0,
+                iconNode: <AppIcon color="green"><RadarLogo size={24} spin={activeRules > 0} /></AppIcon>,
+                actions: (
+                    <RoundButton
+                        icon={ICONS.gear}
+                        label={tab === "options" ? "Back" : "Settings"}
+                        active={tab === "options"}
+                        onClick={() => setTab(tab === "options" ? "inbox" : "options")}
+                    />
+                )
+            }}
+            top={
+                // No segment is selected while the settings (gear) are open
+                <Segmented<TabId>
+                    value={tab === "options" ? null : tab}
+                    onChange={setTab}
+                    options={[
+                        { value: "inbox", label: "History", count: unread },
+                        { value: "rules", label: "Rules" },
+                        { value: "reminders", label: "Reminders", count: upcoming },
+                        { value: "bookmarks", label: "Bookmarks" }
+                    ]}
+                />
+            }
+        >
+            <div key={tab} className={cl("pane")}>
+                {tab === "inbox" && <InboxTab />}
+                {tab === "rules" && <RulesTab close={close} />}
+                {tab === "reminders" && <RemindersTab close={close} />}
+                {tab === "bookmarks" && <BookmarksTab />}
+                {tab === "options" && <OptionsTab />}
             </div>
-
-            <Tabs value={tab} onChange={t => settings.store.lastTab = t} />
-
-            <div className={cl("scroller")}>
-                <div key={tab} className={classes(cl("pane"), dir > 0 ? cl("pane-right") : cl("pane-left"))}>
-                    {tab === "inbox" && <InboxTab />}
-                    {tab === "rules" && <RulesTab close={close} />}
-                    {tab === "reminders" && <RemindersTab close={close} />}
-                    {tab === "bookmarks" && <BookmarksTab />}
-                    {tab === "options" && <OptionsTab />}
-                </div>
-            </div>
-        </div>
+        </Sheet>
     );
 }
 
-export const SettingsPanel = ErrorBoundary.wrap(() => <RadarApp variant="modal" />, { noop: true });
+export const SettingsPanel = ErrorBoundary.wrap(() => <RadarApp variant="embedded" />, { noop: true });
 
 export function openRadarModal() {
-    openModal(props => (
-        <Modal {...props} size="md" title="Radar" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
-            <ErrorBoundary>
-                <RadarApp variant="modal" close={props.onClose} />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => <RadarApp variant="modal" close={close} />);
 }
 
 // ---------------------------------------------------------------- Dialog: Reminder
@@ -593,7 +576,7 @@ function toLocalInput(ts: number) {
     return d.toISOString().slice(0, 16);
 }
 
-function ReminderModal({ modalProps, message }: { modalProps: RenderModalProps; message?: any; }) {
+function ReminderDialog({ close, message }: { close(): void; message?: any; }) {
     const picks = useMemo(getQuickPicks, []);
     const [pick, setPick] = useState<string>(message ? picks[1].id : "custom");
     const [custom, setCustom] = useState(() => toLocalInput(Date.now() + 3600_000));
@@ -605,57 +588,55 @@ function ReminderModal({ modalProps, message }: { modalProps: RenderModalProps; 
     const save = () => {
         if (invalid) return;
         addReminder(due, note, message);
-        modalProps.onClose();
+        close();
     };
 
     return (
-        <Modal
-            {...modalProps}
-            size="sm"
-            title="Remind me…"
-            subtitle={Number.isFinite(due) && due > Date.now() ? `${formatWhen(due)} (${formatRelative(due)})` : "Choose a time in the future"}
+        <Sheet
+            onClose={close}
+            header={{
+                title: "Remind me…",
+                subtitle: Number.isFinite(due) && due > Date.now() ? `${formatWhen(due)} (${formatRelative(due)})` : "Choose a time in the future",
+                icon: RI.clock,
+                iconColor: "green"
+            }}
             actions={[
-                { text: "Cancel", variant: "secondary", onClick: modalProps.onClose },
-                { text: "Remind", variant: "primary", onClick: save, disabled: invalid }
+                { label: "Cancel", onClick: close, variant: "gray" },
+                { label: "Remind", onClick: save, disabled: invalid }
             ]}
         >
-            <div className={cl("modal-body")}>
-                <div className={cl("editor")}>
-                    {message && <SnapshotPreview m={snapshotMessage(message)} />}
-                    <div className={cl("picks")}>
-                        {picks.map(p => (
-                            <button type="button" key={p.id} className={classes(cl("pick"), pick === p.id && cl("pick-on"))} onClick={() => setPick(p.id)}>{p.label}</button>
-                        ))}
-                        <button type="button" className={classes(cl("pick"), pick === "custom" && cl("pick-on"))} onClick={() => setPick("custom")}>Custom time…</button>
-                    </div>
-                    {pick === "custom" && (
-                        <Field label="Date & time">
-                            <input type="datetime-local" className={cl("input")} value={custom} onChange={e => setCustom(e.currentTarget.value)} />
-                        </Field>
-                    )}
-                    <Field label={message ? "Note (optional)" : "Note"}>
-                        <textarea
-                            className={classes(cl("input"), cl("textarea"))}
-                            value={note}
-                            rows={3}
-                            maxLength={500}
-                            placeholder={message ? "What should I remind you about?" : "e.g. Reply to Max"}
-                            onChange={e => setNote(e.currentTarget.value)}
-                        />
+            <div className={cl("form")}>
+                {message && <SnapshotPreview m={snapshotMessage(message)} />}
+                <Pills>
+                    {picks.map(p => <Pill key={p.id} selected={pick === p.id} onClick={() => setPick(p.id)}>{p.label}</Pill>)}
+                    <Pill selected={pick === "custom"} onClick={() => setPick("custom")}>Custom time…</Pill>
+                </Pills>
+                {pick === "custom" && (
+                    <Field label="Date & time">
+                        <TextField type="datetime-local" value={custom} onChange={setCustom} />
                     </Field>
-                </div>
+                )}
+                <Field label={message ? "Note (optional)" : "Note"}>
+                    <TextArea
+                        value={note}
+                        rows={3}
+                        maxLength={500}
+                        placeholder={message ? "What should I remind you about?" : "e.g. Reply to Max"}
+                        onChange={setNote}
+                    />
+                </Field>
             </div>
-        </Modal>
+        </Sheet>
     );
 }
 
 export function openReminderModal(message?: any) {
-    openModal(props => <ReminderModal modalProps={props} message={message} />);
+    openWindow(close => <ReminderDialog close={close} message={message} />, { size: "small" });
 }
 
 // ---------------------------------------------------------------- Dialog: Bookmark
 
-function BookmarkModal({ modalProps, message, existing }: { modalProps: RenderModalProps; message?: any; existing?: Bookmark; }) {
+function BookmarkDialog({ close, message, existing }: { close(): void; message?: any; existing?: Bookmark; }) {
     const [tags, setTags] = useState((existing?.tags ?? []).join(", "));
     const [note, setNote] = useState(existing?.note ?? "");
     const [offline, setOffline] = useState(existing ? !!existing.offline : settings.store.bookmarkSaveMedia);
@@ -674,67 +655,65 @@ function BookmarkModal({ modalProps, message, existing }: { modalProps: RenderMo
             if (latest && offline && !existing.offline) saveMediaOffline(latest);
             if (latest && !offline && existing.offline) removeOfflineMedia(latest);
         }
-        modalProps.onClose();
+        close();
     };
 
     return (
-        <Modal
-            {...modalProps}
-            size="sm"
-            title={existing ? "Edit bookmark" : "Save to Radar bookmarks"}
+        <Sheet
+            onClose={close}
+            header={{ title: existing ? "Edit bookmark" : "Save to Radar bookmarks", icon: RI.bookmark, iconColor: "green" }}
             actions={[
-                ...(existing ? [{ text: "Remove", variant: "critical-primary", onClick: () => { deleteBookmark(existing.id); modalProps.onClose(); } }] : []),
-                { text: "Cancel", variant: "secondary", onClick: modalProps.onClose },
-                { text: "Save", variant: "primary", onClick: save }
+                ...(existing ? [{ label: "Remove", onClick: () => { deleteBookmark(existing.id); close(); }, variant: "destructive" as const }] : []),
+                { label: "Cancel", onClick: close, variant: "gray" },
+                { label: "Save", onClick: save }
             ]}
         >
-            <div className={cl("modal-body")}>
-                <div className={cl("editor")}>
-                    {preview && <SnapshotPreview m={preview} />}
-                    <div className={cl("card")}>
-                        <ToggleRow
-                            checked={offline}
-                            onChange={setOffline}
-                            icon="download"
-                            label={mediaCount ? `Save ${mediaCount === 1 ? "the image / video" : `all ${mediaCount} files`} on this PC` : "Save the avatar on this PC"}
-                            hint={offline && existing?.offline
-                                ? "Turning this off deletes the saved copies."
-                                : "Stays in your bookmark even if the message or the account gets deleted."}
-                        />
-                    </div>
-                    <Field label="Tags (optional)" hint="Separate with commas, e.g. “important, recipes”">
-                        <input className={cl("input")} value={tags} placeholder="important, read later" onChange={e => setTags(e.currentTarget.value)} autoFocus />
-                    </Field>
-                    {known.length > 0 && (
-                        <div className={cl("tags")}>
-                            {known.filter(t => !current.includes(t)).slice(0, 12).map(t => (
-                                <button type="button" key={t} className={cl("tag")} onClick={() => setTags(current.concat(t).join(", "))}>+ #{t}</button>
-                            ))}
-                        </div>
-                    )}
-                    <Field label="Note (optional)">
-                        <input className={cl("input")} value={note} maxLength={300} onChange={e => setNote(e.currentTarget.value)} />
-                    </Field>
-                </div>
+            <div className={cl("form")}>
+                {preview && <SnapshotPreview m={preview} />}
+                <Section>
+                    <ToggleRow
+                        icon={ICONS.download}
+                        color="blue"
+                        checked={offline}
+                        onChange={setOffline}
+                        title={mediaCount ? `Save ${mediaCount === 1 ? "the image / video" : `all ${mediaCount} files`} on this PC` : "Save the avatar on this PC"}
+                        subtitle={offline && existing?.offline
+                            ? "Turning this off deletes the saved copies."
+                            : "Stays in your bookmark even if the message or the account gets deleted."}
+                    />
+                </Section>
+                <Field label="Tags (optional)" hint="Separate with commas, e.g. “important, recipes”">
+                    <TextField value={tags} placeholder="important, read later" onChange={setTags} autoFocus />
+                </Field>
+                {known.length > 0 && (
+                    <Pills>
+                        {known.filter(t => !current.includes(t)).slice(0, 12).map(t => (
+                            <Pill key={t} icon={ICONS.plus} onClick={() => setTags(current.concat(t).join(", "))}>#{t}</Pill>
+                        ))}
+                    </Pills>
+                )}
+                <Field label="Note (optional)">
+                    <TextField value={note} maxLength={300} onChange={setNote} />
+                </Field>
             </div>
-        </Modal>
+        </Sheet>
     );
 }
 
 export function openBookmarkModal(message: any) {
     const existing = findBookmark(message.id);
-    openModal(props => existing
-        ? <BookmarkModal modalProps={props} existing={existing} />
-        : <BookmarkModal modalProps={props} message={message} />);
+    openWindow(close => existing
+        ? <BookmarkDialog close={close} existing={existing} />
+        : <BookmarkDialog close={close} message={message} />, { size: "small" });
 }
 
 function openBookmarkEditor(existing: Bookmark) {
-    openModal(props => <BookmarkModal modalProps={props} existing={existing} />);
+    openWindow(close => <BookmarkDialog close={close} existing={existing} />, { size: "small" });
 }
 
 // ---------------------------------------------------------------- Dialog: picture / video viewer
 
-function MediaViewer({ modalProps, bookmarkId, start }: { modalProps: RenderModalProps; bookmarkId: string; start: number; }) {
+function MediaViewer({ close, bookmarkId, start }: { close(): void; bookmarkId: string; start: number; }) {
     const bookmarks = useStore(bookmarksStore);
     const b = bookmarks.find(x => x.id === bookmarkId);
     const media = b?.media ?? [];
@@ -754,43 +733,52 @@ function MediaViewer({ modalProps, bookmarkId, start }: { modalProps: RenderModa
         return () => document.removeEventListener("keydown", onKey);
     }, [media.length]);
 
-    if (!b || !m) return null;
+    if (!b || !m) {
+        return (
+            <Sheet onClose={close} header={{ title: "Bookmark removed", icon: RI.image, iconColor: "green" }}>
+                <Empty icon={RI.image} title="Not available anymore" />
+            </Sheet>
+        );
+    }
 
     return (
-        <Modal
-            {...modalProps}
-            size="lg"
-            title={m.name}
-            subtitle={`${b.message.authorName}${media.length > 1 ? ` · ${index + 1} of ${media.length}` : ""} · ${m.local ? "saved on this PC" : "from Discord, may disappear"}`}
+        <Sheet
+            onClose={close}
+            header={{
+                title: m.name,
+                subtitle: `${b.message.authorName}${media.length > 1 ? ` · ${index + 1} of ${media.length}` : ""} · ${m.local ? "saved on this PC" : "from Discord, may disappear"}`,
+                icon: m.kind === "video" ? ICONS.play : m.kind === "image" ? RI.image : RI.file,
+                iconColor: "green"
+            }}
             actions={[
-                ...(b.offline ? [{ text: "Show in folder", variant: "secondary", onClick: () => openBookmarkFolder(b.id) }] : []),
-                { text: "Go to message", variant: "secondary", onClick: () => { modalProps.onClose(); jumpTo(b.message); } },
-                { text: "Close", variant: "primary", onClick: modalProps.onClose }
+                ...(b.offline ? [{ label: "Show in folder", onClick: () => openBookmarkFolder(b.id), variant: "gray" as const }] : []),
+                { label: "Go to message", onClick: () => { close(); jumpTo(b.message); }, variant: "gray" },
+                { label: "Close", onClick: close }
             ]}
         >
             <div className={cl("viewer")}>
-                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-prev"))} aria-label="Previous" onClick={() => step(-1)}><Icon name="chevronLeft" size={22} /></button>}
+                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-prev"))} aria-label="Previous" onClick={() => step(-1)}><Icon path={ICONS.back} size={22} /></button>}
                 {!src
-                    ? <span className={cl("row-hint")}>Loading…</span>
+                    ? <span className={cl("dim")}>Loading…</span>
                     : broken
-                        ? <Empty icon="image" title="Not available anymore" hint="Discord no longer has this file and it wasn't saved on this PC." />
+                        ? <Empty icon={RI.image} title="Not available anymore" hint="Discord no longer has this file and it wasn't saved on this PC." />
                         : m.kind === "image"
                             ? <img key={src} src={src} alt={m.name} onError={() => setBroken(true)} />
                             : m.kind === "video"
                                 ? <video key={src} src={src} controls autoPlay onError={() => setBroken(true)} />
                                 : (
-                                    <Empty icon="file" title={m.name} hint={m.size ? formatBytes(m.size) : undefined}>
-                                        {b.offline && <Button icon="folder" onClick={() => openBookmarkFolder(b.id)}>Show in folder</Button>}
+                                    <Empty icon={RI.file} title={m.name} hint={m.size ? formatBytes(m.size) : undefined}>
+                                        {b.offline && <Button icon={ICONS.folder} onClick={() => openBookmarkFolder(b.id)}>Show in folder</Button>}
                                     </Empty>
                                 )}
-                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-next"))} aria-label="Next" onClick={() => step(1)}><Icon name="chevronRight" size={22} /></button>}
+                {media.length > 1 && <button type="button" className={classes(cl("viewer-nav"), cl("viewer-next"))} aria-label="Next" onClick={() => step(1)}><Icon path={ICONS.chevron} size={22} /></button>}
             </div>
-        </Modal>
+        </Sheet>
     );
 }
 
 function openMediaViewer(bookmarkId: string, start: number) {
-    openModal(props => <MediaViewer modalProps={props} bookmarkId={bookmarkId} start={start} />);
+    openWindow(close => <MediaViewer close={close} bookmarkId={bookmarkId} start={start} />, { size: "large" });
 }
 
 // ---------------------------------------------------------------- Highlight under messages
@@ -800,11 +788,11 @@ export const HighlightChip = ErrorBoundary.wrap(({ message }: { message: any; })
     const h = message?.id ? highlights.get(message.id) : undefined;
     if (!h) return null;
     return (
-        <span className={cl("hl-chip")} style={{ "--vc-radar-hl": h.color } as React.CSSProperties}>
+        <span className={cl("hl-chip")} style={{ "--vc-radar-hl": h.color } as CSSProperties}>
             <RadarLogo size={12} />
             <span>Radar · {h.ruleName}</span>
             <button type="button" className={cl("chip-x")} aria-label="Remove highlight" onClick={() => removeHighlight(message.id)}>
-                <Icon name="close" size={10} />
+                <Icon path={ICONS.close} size={9} />
             </button>
         </span>
     );
@@ -820,8 +808,6 @@ function TitleBarButton() {
 
     if (!showTitleBarButton) return null;
 
-    const badge: ReactNode = unread > 0 && <span className={cl("badge")}>{unread > 99 ? "99+" : unread}</span>;
-
     return (
         <Popout
             position="bottom"
@@ -832,22 +818,22 @@ function TitleBarButton() {
             targetElementRef={buttonRef}
             renderPopout={() => (
                 <ErrorBoundary noop>
-                    <div className={cl("popout")}>
+                    <Popover width={460} style={POPOUT_STYLE}>
                         <RadarApp variant="popout" close={() => setShow(false)} />
-                    </div>
+                    </Popover>
                 </ErrorBoundary>
             )}
         >
             {(_, { isShown }) => (
                 <HeaderBarIcon
                     ref={buttonRef}
-                    className={classes(cl("btn-titlebar"), unread > 0 && cl("btn-titlebar-hot"))}
+                    className={classes(cl("tb"), unread > 0 && cl("tb-hot"))}
                     onClick={() => setShow(v => !v)}
                     tooltip={isShown ? null : unread ? `Radar – ${unread} unread` : "Radar"}
                     icon={() => (
-                        <span className={cl("titlebar-icon")}>
-                            <RadarLogo />
-                            {badge}
+                        <span className={cl("tb-icon")}>
+                            <RadarLogo className="vc-ui-tb-icon" />
+                            {unread > 0 && <span className={cl("tb-badge")}>{unread > 99 ? "99+" : unread}</span>}
                         </span>
                     )}
                     selected={isShown}

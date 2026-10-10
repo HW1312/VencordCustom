@@ -1,5 +1,9 @@
+/* FriendDock – only the status dot, voice line and title bar state; popover, lists, switches etc. come from the shared _ui kit */
+
+/* ---------- Title bar ---------- */
+
 .vc-frienddock-titlebtn,
-.vc-frienddock-icon {
+.vc-frienddock-titlebtn svg {
     -webkit-app-region: no-drag;
 }
 
@@ -7,22 +11,10 @@
     position: relative;
 }
 
-.vc-frienddock-titlebtn .vc-frienddock-icon {
-    color: var(--interactive-icon-default, var(--interactive-normal));
-}
-
-.vc-frienddock-titlebtn:hover .vc-frienddock-icon {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-}
-
-.vc-frienddock-titlebtn[class*="selected"] .vc-frienddock-icon {
-    color: var(--interactive-icon-active, var(--interactive-active));
-}
-
 /* Following: green icon + dot so it's obvious you're tied to someone */
-.vc-frienddock-titlebtn-active .vc-frienddock-icon,
-.vc-frienddock-titlebtn-active:hover .vc-frienddock-icon {
-    color: var(--status-positive, #23a55a);
+.vc-frienddock-titlebtn-active .vc-ui-tb-icon,
+.vc-frienddock-titlebtn-active:hover .vc-ui-tb-icon {
+    color: var(--vc-ui-green);
 }
 
 .vc-frienddock-titlebtn-active::after {
@@ -33,155 +25,45 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--status-positive, #23a55a);
-    pointer-events: none;
+    background: var(--vc-ui-green);
+    box-shadow: 0 0 0 2px var(--vc-ui-glass);
 }
 
-/* ---------- Popout ---------- */
-
-.vc-frienddock-popout {
-    width: 360px;
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-    box-sizing: border-box;
-    padding: 14px 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border-radius: 12px;
-    background: var(--background-surface-higher, var(--background-floating));
-    border: 1px solid var(--border-subtle, transparent);
-    box-shadow: var(--shadow-high, 0 8px 16px rgb(0 0 0 / 24%));
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-}
-
-.vc-frienddock-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.vc-frienddock-title {
-    flex: 1;
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.vc-frienddock-muted,
-.vc-frienddock-empty {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.vc-frienddock-empty {
-    padding: 12px 4px;
-    text-align: center;
-}
-
-/* ---------- Dock ---------- */
-
-.vc-frienddock-dock {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.vc-frienddock-banner {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px 6px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--text-default, var(--text-normal));
-    background: rgb(35 165 90 / 15%);
-    border: 1px solid rgb(35 165 90 / 45%);
-}
-
-.vc-frienddock-banner > span {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.vc-frienddock-banner .vc-frienddock-icon {
-    color: var(--status-positive, #23a55a);
-    flex-shrink: 0;
-}
-
-.vc-frienddock-row {
-    display: flex;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-}
-
-.vc-frienddock-row-following {
-    border-color: rgb(35 165 90 / 60%);
-}
-
-.vc-frienddock-row-offline .vc-frienddock-avatar img {
-    opacity: 0.5;
-}
+/* ---------- Friend row ---------- */
 
 .vc-frienddock-avatar {
     position: relative;
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
-.vc-frienddock-avatar img,
-.vc-frienddock-avatar-fallback {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
     display: block;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
+    cursor: pointer;
 }
 
 .vc-frienddock-dot {
     position: absolute;
-    right: -2px;
-    bottom: -2px;
-    width: 10px;
-    height: 10px;
+    right: -1px;
+    bottom: -1px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    border: 3px solid var(--background-surface-higher, var(--background-floating, #232428));
+    border: 2px solid var(--vc-ui-glass);
+    box-sizing: border-box;
 }
 
-.vc-frienddock-dot-online { background: var(--status-positive, #23a55a); }
-.vc-frienddock-dot-idle { background: var(--status-warning, #f0b232); }
-.vc-frienddock-dot-dnd { background: var(--status-danger, #f23f43); }
-.vc-frienddock-dot-offline { background: var(--status-offline, #80848e); }
-.vc-frienddock-dot-streaming { background: var(--twitch, #593695); }
+.vc-frienddock-dot-online { background: var(--vc-ui-green); }
+.vc-frienddock-dot-idle { background: var(--vc-ui-yellow); }
+.vc-frienddock-dot-dnd { background: var(--vc-ui-red); }
+.vc-frienddock-dot-offline { background: var(--vc-ui-gray); }
+.vc-frienddock-dot-streaming { background: var(--vc-ui-purple); }
 
-.vc-frienddock-row-main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+.vc-frienddock-row-offline .vc-frienddock-avatar {
+    opacity: 0.55;
 }
 
-.vc-frienddock-row-head {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
+.vc-frienddock-row-following {
+    box-shadow: inset 3px 0 0 var(--vc-ui-teal);
 }
 
 .vc-frienddock-name {
-    font-weight: 600;
     cursor: pointer;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .vc-frienddock-name:hover {
@@ -189,24 +71,18 @@
 }
 
 .vc-frienddock-status-text {
-    font-size: 11px;
-    color: var(--text-muted);
+    font-size: 12px;
+    color: var(--vc-ui-dim);
     white-space: nowrap;
 }
 
-.vc-frienddock-activity {
-    font-size: 12px;
-    color: var(--text-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+/* ---------- Voice line ---------- */
 
 .vc-frienddock-voice-row {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 2px;
+    margin-top: 6px;
 }
 
 .vc-frienddock-voice,
@@ -220,15 +96,16 @@
 }
 
 .vc-frienddock-voice {
-    color: var(--status-positive, #23a55a);
+    color: var(--vc-ui-green);
 }
 
-.vc-frienddock-voice-none {
-    color: var(--text-muted);
+.vc-frienddock-voice > svg {
+    flex: none;
 }
 
-.vc-frienddock-voice .vc-frienddock-icon {
-    flex-shrink: 0;
+.vc-frienddock-voice-none,
+.vc-frienddock-voice-place {
+    color: var(--vc-ui-dim);
 }
 
 .vc-frienddock-voice-text {
@@ -237,162 +114,20 @@
     white-space: nowrap;
 }
 
-.vc-frienddock-voice-place {
-    color: var(--text-muted);
-}
-
 .vc-frienddock-voice-count {
-    flex-shrink: 0;
-    padding: 0 5px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-}
-
-.vc-frienddock-voice-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-.vc-frienddock-together {
+    flex: none;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
     font-size: 11px;
     font-weight: 600;
-    color: var(--status-positive, #23a55a);
 }
 
-/* ---------- Buttons ---------- */
-
-.vc-frienddock-btn {
-    display: inline-flex;
+.vc-frienddock-voice-actions,
+.vc-frienddock-manage-actions {
+    display: flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 8px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    color: var(--text-default, var(--text-normal));
-    background: var(--background-modifier-accent, rgb(128 128 128 / 20%));
-}
-
-.vc-frienddock-btn:hover:not(:disabled) {
-    filter: brightness(1.15);
-}
-
-.vc-frienddock-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.vc-frienddock-btn-brand {
-    background: var(--brand-500, #5865f2);
-    color: #fff;
-}
-
-.vc-frienddock-btn-following {
-    background: var(--status-positive, #23a55a);
-    color: #fff;
-}
-
-.vc-frienddock-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--interactive-icon-default, var(--interactive-normal));
-    cursor: pointer;
-}
-
-.vc-frienddock-icon-btn:hover:not(:disabled) {
-    color: var(--interactive-icon-hover, var(--interactive-hover));
-    background: var(--background-modifier-hover, rgb(128 128 128 / 15%));
-}
-
-.vc-frienddock-icon-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-
-.vc-frienddock-icon-btn-danger:hover:not(:disabled) {
-    color: var(--status-danger, #f23f43);
-}
-
-/* ---------- Settings ---------- */
-
-.vc-frienddock-settings,
-.vc-frienddock-manager {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    color: var(--text-default, var(--text-normal));
-}
-
-.vc-frienddock-section-title {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--text-muted);
-}
-
-.vc-frienddock-search {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-subtle, var(--background-modifier-accent));
-    background: var(--input-background, var(--background-secondary, rgb(0 0 0 / 15%)));
-    color: var(--text-default, var(--text-normal));
-    font-size: 14px;
-    outline: none;
-}
-
-.vc-frienddock-search:focus {
-    border-color: var(--brand-500, #5865f2);
-}
-
-.vc-frienddock-manage-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.vc-frienddock-manage-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    border-radius: 8px;
-    background: var(--background-modifier-accent, rgb(128 128 128 / 8%));
-}
-
-.vc-frienddock-mini-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-}
-
-.vc-frienddock-manage-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.vc-frienddock-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
+    flex: none;
 }

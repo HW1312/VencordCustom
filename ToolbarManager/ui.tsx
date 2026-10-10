@@ -11,9 +11,10 @@ import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { classes } from "@utils/misc";
 import { findComponentByCodeLazy } from "@webpack";
-import { Alerts, ContextMenuApi, Menu, Modal, openModal, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
+import { ContextMenuApi, Menu, showToast, Tooltip, useEffect, useRef, useState } from "@webpack/common";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
+import { Badge, Button, confirm, Empty, IconButton, ICONS, Note, openWindow, Row, Section, Segmented, Sheet, TextField } from "../_ui";
 import { activate, ATTR_ANCHOR, collapsedItemsNear, ItemHit, positionUnderDock, sanitizeSvg, stripUnsafe } from "./dom";
 import { settings } from "./index";
 import {
@@ -208,7 +209,7 @@ function TitleDock() {
                         if (el) openDockMenu(e, "title", el);
                     }}
                     tooltip="More icons"
-                    icon={() => <DotsIcon className={cl("dock-icon")} />}
+                    icon={() => <DotsIcon className={classes(cl("dock-icon"), "vc-ui-tb-icon")} />}
                 />
             )}
         </>
@@ -400,18 +401,15 @@ function BarEditor({ bar }: { bar: Bar; }) {
     };
 
     return (
-        <div className={cl("card")} ref={rootRef}>
-            <div className={cl("card-title")}>
-                <span>{BAR_LABEL[bar]}</span>
-                <span className={cl("count")}>{keys.length}</span>
-            </div>
-
+        <Section title={BAR_LABEL[bar]} right={<Badge>{keys.length}</Badge>}>
+            <div className={cl("editor")} ref={rootRef}>
             {keys.length === 0 && (
-                <div className={cl("empty")}>
-                    {bar === "chat"
+                <Empty
+                    icon={DOTS_PATH}
+                    title={bar === "chat"
                         ? "No buttons detected yet - open a chat once and they will show up here."
                         : "No icons detected yet - the title bar will be scanned on its next re-render."}
-                </div>
+                />
             )}
 
             {keys.length > 0 && ZONES.map(zone => {
@@ -461,7 +459,8 @@ function BarEditor({ bar }: { bar: Bar; }) {
                     </div>
                 );
             })}
-        </div>
+            </div>
+        </Section>
     );
 }
 
@@ -480,57 +479,56 @@ function Profiles() {
         showToast(`Profile “${n}” saved`, "success");
     };
 
-    const reset = () => Alerts.show({
-        title: "Reset everything?",
-        body: "All buttons become visible again and are shown in Discord's order. Detected buttons and custom profiles are kept.",
-        confirmText: "Reset",
-        cancelText: "Cancel",
-        onConfirm: resetAll
-    });
+    const reset = async () => {
+        if (await confirm({
+            title: "Reset everything?",
+            body: "All buttons become visible again and are shown in Discord's order. Detected buttons and custom profiles are kept.",
+            confirmText: "Reset",
+            cancelText: "Cancel",
+            destructive: true
+        })) resetAll();
+    };
 
     return (
-        <div className={cl("card")}>
-            <div className={cl("card-title")}><span>Profiles</span></div>
+        <Section title="Profiles">
             <div className={cl("profiles")}>
                 {BUILTIN_PROFILES.map(p => (
-                    <button type="button" key={p.id} className={cl("btn")} title={p.hint} onClick={() => applyBuiltinProfile(p.id)}>
+                    <Button key={p.id} variant="gray" small title={p.hint} onClick={() => applyBuiltinProfile(p.id)}>
                         {p.label}
-                    </button>
+                    </Button>
                 ))}
-                <button type="button" className={classes(cl("btn"), cl("btn-danger"))} onClick={reset}>Reset</button>
+                <Button variant="destructive" small onClick={reset}>Reset</Button>
             </div>
 
-            {d.profiles.length > 0 && (
-                <div className={cl("custom-profiles")}>
-                    {d.profiles.map(p => (
-                        <div key={p.id} className={cl("custom-profile")}>
-                            <span className={cl("row-name")}>{p.name}</span>
-                            <button type="button" className={cl("btn")} onClick={() => applyCustomProfile(p)}>Apply</button>
-                            <button
-                                type="button"
-                                className={classes(cl("icon-btn"), cl("icon-btn-danger"))}
-                                title="Delete profile"
-                                onClick={() => update(dd => { dd.profiles = dd.profiles.filter(x => x.id !== p.id); })}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <div className={cl("save-row")}>
-                <input
-                    className={cl("input")}
-                    value={name}
-                    maxLength={40}
-                    placeholder="Save current setup as a profile…"
-                    onChange={e => setName(e.currentTarget.value)}
-                    onKeyDown={e => { if (e.key === "Enter") save(); }}
+            {d.profiles.map(p => (
+                <Row
+                    key={p.id}
+                    title={p.name}
+                    trailing={<>
+                        <Button variant="tinted" small onClick={() => applyCustomProfile(p)}>Apply</Button>
+                        <IconButton
+                            icon={ICONS.trash}
+                            label="Delete profile"
+                            destructive
+                            onClick={() => update(dd => { dd.profiles = dd.profiles.filter(x => x.id !== p.id); })}
+                        />
+                    </>}
                 />
-                <button type="button" className={cl("btn")} disabled={!name.trim()} onClick={save}>Save</button>
-            </div>
-        </div>
+            ))}
+
+            <Row
+                title={
+                    <TextField
+                        value={name}
+                        maxLength={40}
+                        placeholder="Save current setup as a profile…"
+                        onChange={setName}
+                        onKeyDown={e => { if (e.key === "Enter") save(); }}
+                    />
+                }
+                trailing={<Button small disabled={!name.trim()} onClick={save}>Save</Button>}
+            />
+        </Section>
     );
 }
 
@@ -543,53 +541,49 @@ const MENU_MODES: { value: "right" | "shift" | "off"; label: string; }[] = [
 function ContextMenuOption() {
     const { contextMenu } = settings.use(["contextMenu"]);
     return (
-        <div className={cl("card")}>
-            <div className={cl("card-title")}><span>Quick menu on buttons</span></div>
-            <div className={cl("segmented")}>
-                {MENU_MODES.map(m => (
-                    <button
-                        type="button"
-                        key={m.value}
-                        className={classes(cl("segment"), contextMenu === m.value && cl("segment-visible"))}
-                        onClick={() => settings.store.contextMenu = m.value}
-                    >
-                        {m.label}
-                    </button>
-                ))}
-            </div>
-            <div className={cl("muted")}>
+        <Section
+            title="Quick menu on buttons"
+            footer={<>
                 {contextMenu === "right" && "Right-clicking a button shows “Hide / Move to ⋯ menu”. Shift + right-click shows the button's original menu."}
                 {contextMenu === "shift" && "Only Shift + right-click shows “Hide / Move to ⋯ menu” - a normal right-click stays unchanged."}
                 {contextMenu === "off" && "No quick menu - settings only here."}
+            </>}
+        >
+            <div className={cl("segmented")}>
+                <Segmented value={contextMenu} options={MENU_MODES} onChange={v => settings.store.contextMenu = v} />
             </div>
-        </div>
+        </Section>
     );
 }
 
 // ---------------------------------------------------------------- Settings
 
-function ManagerPanel() {
+const HEADER = { title: "Toolbar Manager", icon: DOTS_PATH, iconColor: "indigo" as const };
+
+function ManagerContent() {
     return (
-        <div className={cl("settings")}>
-            <div className={cl("hint")}>
+        <>
+            <Note>
                 Drag icons to reorder them, or into another row to show, tuck away or hide them. Click an icon for options.
                 Buttons show up here once Discord has displayed them.
-            </div>
+            </Note>
             {BARS.map(bar => <BarEditor key={bar} bar={bar} />)}
             <Profiles />
             <ContextMenuOption />
-        </div>
+        </>
     );
 }
 
-export const SettingsPanel = ErrorBoundary.wrap(ManagerPanel, { noop: true });
+export const SettingsPanel = ErrorBoundary.wrap(() => (
+    <Sheet embedded header={{ ...HEADER, subtitle: "Sort, hide or tuck away toolbar buttons" }}>
+        <ManagerContent />
+    </Sheet>
+), { noop: true });
 
 export function openManagerModal() {
-    openModal(props => (
-        <Modal {...props} size="md" title="Toolbar Manager" actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}>
-            <ErrorBoundary>
-                <ManagerPanel />
-            </ErrorBoundary>
-        </Modal>
-    ));
+    openWindow(close => (
+        <Sheet header={HEADER} onClose={close} actions={[{ label: "Close", onClick: close }]}>
+            <ManagerContent />
+        </Sheet>
+    ), { size: "medium" });
 }

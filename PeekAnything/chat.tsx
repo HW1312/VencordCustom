@@ -12,6 +12,7 @@ import {
 } from "@webpack/common";
 
 // Bot buttons, selects and "Components V2" layouts (which many bots use instead of embeds now)
+import { Spinner } from "../_ui";
 import { MessageComponents } from "../ChatPopout/components";
 import { cl, logger } from "./index";
 
@@ -360,7 +361,7 @@ export function ChatPreview({ channelId, guildId, messageId }: { channelId: stri
     }, [messages != null, messageId]);
 
     if (error) return <div className={cl("center")}>{error}</div>;
-    if (!messages) return <div className={cl("center")}><span className={cl("spinner")} /></div>;
+    if (!messages) return <div className={cl("center")}><Spinner size={18} /></div>;
     if (!messages.length) return <div className={cl("center")}>No messages yet.</div>;
 
     const rows: React.ReactElement[] = [];

@@ -8,7 +8,6 @@ import "./ui.css";
 
 import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Switch } from "@components/Switch";
 import { getCurrentChannel, getTheme, Theme } from "@utils/discord";
 import { classes } from "@utils/misc";
 import { IconComponent } from "@utils/types";
@@ -16,9 +15,13 @@ import type { Channel } from "@vencord/discord-types";
 import { findCssClassesLazy } from "@webpack";
 import {
     ChannelStore, DraftStore, EmojiStore, GuildMemberStore, GuildRoleStore, GuildScheduledEventStore, GuildStore,
-    Modal, openModal, Parser, SelectedChannelStore, showToast, useMemo, UserStore, UserUtils, useState
+    Parser, SelectedChannelStore, showToast, useMemo, UserStore, UserUtils, useState
 } from "@webpack/common";
 import type { ReactNode } from "react";
+
+import {
+    Button, Empty, Field, IconButton, ICONS, Note, openWindow, Pill, Pills, Row, SearchField, Section, Segmented, Sheet, State, TextArea, TextField, ToggleRow, UiColor
+} from "../_ui";
 
 import {
     channelDisplayName, channelLink, DecodedToken, decodeText, emojiCdnUrl, emojiSyntax, eventLink, formatDate, FormatEntry, getRecentMessages,
@@ -31,30 +34,18 @@ const MarkupClasses = findCssClassesLazy("markup", "codeContainer");
 
 // ---------------------------------------------------------------- Icons
 
-const ICONS = {
+const ICON_COLOR: UiColor = "teal";
+
+const FI = {
     hub: "M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4Zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4Z",
-    copy: "M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z",
     insert: "M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7h-2z",
     star: "M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
-    starOutline: "M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z",
-    search: "M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
-    close: "M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
-    refresh: "M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+    starOutline: "M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"
 };
-
-type IconName = keyof typeof ICONS;
-
-function Icon({ name, size = 16, className }: { name: IconName; size?: number; className?: string; }) {
-    return (
-        <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden>
-            <path fill="currentColor" d={ICONS[name]} />
-        </svg>
-    );
-}
 
 export const FormatHubIcon: IconComponent = ({ height = 20, width = 20, className }) => (
     <svg viewBox="0 0 24 24" width={width} height={height} className={className} aria-hidden>
-        <path fill="currentColor" d={ICONS.hub} />
+        <path fill="currentColor" d={FI.hub} />
     </svg>
 );
 
@@ -108,32 +99,28 @@ function EntryRow({ entry, ctx, onRemove }: { entry: FormatEntry; ctx: HubContex
                 <span className={cl("entry-label")}>{entry.label}</span>
                 {entry.hint && <span className={cl("entry-hint")}>{entry.hint}</span>}
                 <div className={cl("entry-actions")}>
-                    <button className={cl("btn")} onClick={() => copyFormat(saved)} title="Copy to clipboard">
-                        <Icon name="copy" size={14} /> Copy
-                    </button>
-                    <button
-                        className={classes(cl("btn"), cl("btn-brand"))}
+                    <Button variant="gray" small icon={ICONS.copy} title="Copy to clipboard" onClick={() => copyFormat(saved)}>Copy</Button>
+                    <Button
+                        small
+                        icon={FI.insert}
                         title="Insert into the chat input"
                         onClick={() => {
                             if (insertFormat(saved) && settings.store.closeOnInsert) ctx.close();
                         }}
                     >
-                        <Icon name="insert" size={14} /> Insert
-                    </button>
+                        Insert
+                    </Button>
                     {onRemove
-                        ? (
-                            <button className={classes(cl("icon-btn"))} onClick={onRemove} title="Remove from history">
-                                <Icon name="close" size={16} />
-                            </button>
-                        )
+                        ? <IconButton icon={ICONS.close} label="Remove from history" onClick={onRemove} />
                         : (
-                            <button
-                                className={classes(cl("icon-btn"), fav && cl("star-on"))}
-                                onClick={() => toggleFavorite(saved)}
-                                title={fav ? "Remove from favorites" : "Add to favorites"}
-                            >
-                                <Icon name={fav ? "star" : "starOutline"} size={18} />
-                            </button>
+                            <span className={classes(cl("star"), fav && cl("star-on"))}>
+                                <IconButton
+                                    icon={fav ? FI.star : FI.starOutline}
+                                    label={fav ? "Remove from favorites" : "Add to favorites"}
+                                    active={fav}
+                                    onClick={() => toggleFavorite(saved)}
+                                />
+                            </span>
                         )}
                 </div>
             </div>
@@ -146,7 +133,7 @@ function EntryRow({ entry, ctx, onRemove }: { entry: FormatEntry; ctx: HubContex
 }
 
 function EntryList({ entries, ctx, empty }: { entries: FormatEntry[]; ctx: HubContext; empty?: string; }) {
-    if (!entries.length) return <div className={cl("empty")}>{empty ?? "No entries"}</div>;
+    if (!entries.length) return <Empty title={empty ?? "No entries"} />;
     return (
         <div className={cl("entries")}>
             {entries.map(e => <EntryRow key={e.label + e.syntax} entry={e} ctx={ctx} />)}
@@ -156,50 +143,11 @@ function EntryList({ entries, ctx, empty }: { entries: FormatEntry[]; ctx: HubCo
 
 // ---------------------------------------------------------------- Building blocks
 
-function SearchField({ value, onChange, placeholder }: { value: string; onChange(v: string): void; placeholder: string; }) {
+function LabeledField({ label, value, onChange, placeholder, mono }: { label: string; value: string; onChange(v: string): void; placeholder?: string; mono?: boolean; }) {
     return (
-        <div className={cl("search")}>
-            <Icon name="search" size={16} />
-            <input value={value} placeholder={placeholder} onChange={e => onChange(e.currentTarget.value)} spellCheck={false} />
-            {value && (
-                <button className={cl("icon-btn")} onClick={() => onChange("")} title="Clear">
-                    <Icon name="close" size={14} />
-                </button>
-            )}
-        </div>
-    );
-}
-
-function TextField({ label, value, onChange, placeholder, mono }: { label: string; value: string; onChange(v: string): void; placeholder?: string; mono?: boolean; }) {
-    return (
-        <label className={cl("field")}>
-            <span>{label}</span>
-            <input className={classes(cl("input"), mono && cl("mono"))} value={value} placeholder={placeholder} spellCheck={false} onChange={e => onChange(e.currentTarget.value)} />
-        </label>
-    );
-}
-
-function Chips<T extends string>({ options, value, onChange }: { options: { value: T; label: string; count?: number; }[]; value: T; onChange(v: T): void; }) {
-    return (
-        <div className={cl("chips")}>
-            {options.map(o => (
-                <button key={o.value} className={classes(cl("chip"), o.value === value && cl("chip-active"))} onClick={() => onChange(o.value)}>
-                    {o.label}{o.count != null && <span className={cl("chip-count")}>{o.count}</span>}
-                </button>
-            ))}
-        </div>
-    );
-}
-
-function Section({ title, children, extra }: { title: string; children: ReactNode; extra?: ReactNode; }) {
-    return (
-        <div className={cl("section")}>
-            <div className={cl("section-title")}>
-                <span>{title}</span>
-                {extra}
-            </div>
-            {children}
-        </div>
+        <Field label={label}>
+            <TextField className={mono ? cl("mono") : undefined} value={value} placeholder={placeholder} spellCheck={false} onChange={onChange} />
+        </Field>
     );
 }
 
@@ -353,7 +301,7 @@ function EntityPicker({ items, selected, onSelect, placeholder, grid, emptyText 
 
     return (
         <div className={cl("picker")}>
-            <SearchField value={query} onChange={setQuery} placeholder={placeholder} />
+            <SearchField value={query} onChange={setQuery} placeholder={placeholder} spellCheck={false} />
             <div className={classes(cl("picker-list"), grid && cl("picker-grid"))}>
                 {shown.map(item => (
                     <button
@@ -373,7 +321,7 @@ function EntityPicker({ items, selected, onSelect, placeholder, grid, emptyText 
                         )}
                     </button>
                 ))}
-                {!shown.length && <div className={cl("empty")}>{items.length ? "No matches" : emptyText ?? "Nothing found"}</div>}
+                {!shown.length && <Empty title={items.length ? "No matches" : emptyText ?? "Nothing found"} />}
             </div>
             {filtered.length > shown.length && (
                 <div className={cl("muted")}>… and {filtered.length - shown.length} more – refine your search</div>
@@ -459,7 +407,8 @@ function MentionsTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set: 
     return (
         <div className={cl("split")}>
             <div className={cl("side")}>
-                <Chips<MentionKind>
+                <Segmented<MentionKind>
+                    small
                     value={kind}
                     onChange={setKind}
                     options={[
@@ -477,12 +426,12 @@ function MentionsTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set: 
                     placeholder="Search users, roles, channels or commands …"
                     emptyText={kind === "command" ? "No commands loaded – type \"/\" once in chat, then reopen" : undefined}
                 />
-                <Section title="Manual command">
+                <Section title="Manual command" plain>
                     <div className={cl("fields")}>
-                        <TextField label="Name" value={sel.cmdName} onChange={v => set({ cmdName: v.replace(/^\//, "") })} placeholder="name" />
-                        <TextField label="Group" value={sel.cmdGroup} onChange={v => set({ cmdGroup: v })} placeholder="optional" />
-                        <TextField label="Subcommand" value={sel.cmdSub} onChange={v => set({ cmdSub: v })} placeholder="optional" />
-                        <TextField label="ID" value={sel.cmdId} onChange={v => set({ cmdId: v.trim() })} placeholder="123…" mono />
+                        <LabeledField label="Name" value={sel.cmdName} onChange={v => set({ cmdName: v.replace(/^\//, "") })} placeholder="name" />
+                        <LabeledField label="Group" value={sel.cmdGroup} onChange={v => set({ cmdGroup: v })} placeholder="optional" />
+                        <LabeledField label="Subcommand" value={sel.cmdSub} onChange={v => set({ cmdSub: v })} placeholder="optional" />
+                        <LabeledField label="ID" value={sel.cmdId} onChange={v => set({ cmdId: v.trim() })} placeholder="123…" mono />
                     </div>
                 </Section>
             </div>
@@ -513,9 +462,9 @@ function NavigationTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set
     return (
         <div className={cl("split")}>
             <div className={cl("side")}>
-                <div className={cl("info")}>
+                <Note>
                     These formats always work on the server the message is sent on – "id" is meant literally.
-                </div>
+                </Note>
                 <EntityPicker
                     items={roles}
                     selected={selectedIds(sel)}
@@ -598,10 +547,10 @@ function TimestampsTab({ ctx }: { ctx: HubContext; }) {
     return (
         <div className={cl("split")}>
             <div className={cl("side")}>
-                <Section title="Date & time">
+                <Section title="Date & time" plain>
                     <input
                         type="datetime-local"
-                        className={cl("input")}
+                        className={classes("vc-ui-field", cl("datetime"))}
                         value={toLocalInput(date)}
                         onChange={e => {
                             const d = new Date(e.currentTarget.value);
@@ -611,23 +560,23 @@ function TimestampsTab({ ctx }: { ctx: HubContext; }) {
                     />
                     <div className={cl("muted")}>{formatDate(date)} · Unix {unix}</div>
                 </Section>
-                <Section title="Quick picks">
-                    <div className={cl("quick")}>
+                <Section title="Quick picks" plain>
+                    <Pills>
                         {QUICK_TIMES.map(q => (
-                            <button key={q.label} className={cl("chip")} onClick={() => setDate(q.get())}>{q.label}</button>
+                            <Pill key={q.label} onClick={() => setDate(q.get())}>{q.label}</Pill>
                         ))}
-                    </div>
+                    </Pills>
                 </Section>
-                <Section title="Use from value">
-                    <SearchField value={raw} onChange={setRaw} placeholder="Unix time, snowflake ID, <t:…> or date" />
+                <Section title="Use from value" plain>
+                    <SearchField value={raw} onChange={setRaw} placeholder="Unix time, snowflake ID, <t:…> or date" spellCheck={false} />
                     {raw && (
                         parsedRaw != null
                             ? (
-                                <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => { setUnix(parsedRaw); setRaw(""); }}>
+                                <Button small onClick={() => { setUnix(parsedRaw); setRaw(""); }}>
                                     Apply: {formatDate(new Date(parsedRaw * 1000))}
-                                </button>
+                                </Button>
                             )
-                            : <div className={cl("bad")}>Not recognized</div>
+                            : <State tone="bad">Not recognized</State>
                     )}
                 </Section>
             </div>
@@ -663,7 +612,8 @@ function EmojisTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set: Se
         <div className={cl("split")}>
             <div className={cl("side")}>
                 {ctx.guildId && (
-                    <Chips<"guild" | "all">
+                    <Segmented<"guild" | "all">
+                        small
                         value={all ? "all" : "guild"}
                         onChange={v => setAll(v === "all")}
                         options={[{ value: "guild", label: "This server" }, { value: "all", label: "All servers" }]}
@@ -726,12 +676,12 @@ function MarkdownTab({ ctx }: { ctx: HubContext; }) {
     return (
         <div className={cl("split")}>
             <div className={cl("side")}>
-                <SearchField value={filter} onChange={setFilter} placeholder="Search formats (e.g. spoiler, list) …" />
-                <Section title="Sample content">
+                <SearchField value={filter} onChange={setFilter} placeholder="Search formats (e.g. spoiler, list) …" spellCheck={false} />
+                <Section title="Sample content" plain>
                     <div className={cl("fields")}>
-                        <TextField label="Text" value={text} onChange={setText} />
-                        <TextField label="Code language" value={lang} onChange={setLang} placeholder="js, py, diff, ansi …" mono />
-                        <TextField label="Link URL" value={url} onChange={setUrl} mono />
+                        <LabeledField label="Text" value={text} onChange={setText} />
+                        <LabeledField label="Code language" value={lang} onChange={setLang} placeholder="js, py, diff, ansi …" mono />
+                        <LabeledField label="Link URL" value={url} onChange={setUrl} mono />
                     </div>
                 </Section>
             </div>
@@ -781,7 +731,8 @@ function LinksTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set: Set
     return (
         <div className={cl("split")}>
             <div className={cl("side")}>
-                <Chips<LinkKind>
+                <Segmented<LinkKind>
+                    small
                     value={kind}
                     onChange={setKind}
                     options={[
@@ -797,8 +748,8 @@ function LinksTab({ ctx, sel, set }: { ctx: HubContext; sel: Selection; set: Set
                     placeholder={kind === "message" ? "Search messages in the current channel …" : kind === "channel" ? "Search channels …" : "Search events …"}
                     emptyText={kind === "message" ? "No loaded messages in this channel" : kind === "event" ? "No events on this server" : undefined}
                 />
-                <Section title="Invite">
-                    <TextField label="Invite code or link" value={invite} onChange={setInvite} placeholder="e.g. abc123" mono />
+                <Section title="Invite" plain>
+                    <LabeledField label="Invite code or link" value={invite} onChange={setInvite} placeholder="e.g. abc123" mono />
                 </Section>
             </div>
             <EntryList entries={entries} ctx={ctx} />
@@ -833,13 +784,13 @@ function TokenRow({ token, onFetched }: { token: DecodedToken; onFetched(): void
             </div>
             <div className={cl("entry-actions")}>
                 {token.fetchUserId && (
-                    <button className={cl("btn")} disabled={loading} onClick={() => fetchUser(token.fetchUserId!)}>
-                        <Icon name="refresh" size={14} /> {loading ? "Loading …" : "Fetch"}
-                    </button>
+                    <Button variant="gray" small icon={ICONS.refresh} disabled={loading} onClick={() => fetchUser(token.fetchUserId!)}>
+                        {loading ? "Loading …" : "Fetch"}
+                    </Button>
                 )}
-                <button className={cl("btn")} onClick={() => copyFormat({ label: token.kind, syntax: token.raw })}>
-                    <Icon name="copy" size={14} /> Copy
-                </button>
+                <Button variant="gray" small icon={ICONS.copy} onClick={() => copyFormat({ label: token.kind, syntax: token.raw })}>
+                    Copy
+                </Button>
             </div>
         </div>
     );
@@ -861,29 +812,29 @@ function DecoderTab({ ctx }: { ctx: HubContext; }) {
     return (
         <div className={cl("decoder")}>
             <div className={cl("decoder-input")}>
-                <textarea
-                    className={classes(cl("input"), cl("textarea"))}
+                <TextArea
+                    className={cl("textarea")}
                     value={text}
                     placeholder="Paste raw text, e.g. a copied message with <@123…>, <t:…>, links …"
                     spellCheck={false}
-                    onChange={e => setText(e.currentTarget.value)}
+                    onChange={setText}
                 />
                 <div className={cl("row")}>
-                    <button className={cl("btn")} onClick={takeDraft} disabled={!ctx.channel}>Use draft</button>
-                    <button className={cl("btn")} onClick={() => setText("")} disabled={!text}>Clear</button>
+                    <Button variant="gray" small onClick={takeDraft} disabled={!ctx.channel}>Use draft</Button>
+                    <Button variant="gray" small onClick={() => setText("")} disabled={!text}>Clear</Button>
                     <span className={cl("muted")}>
                         {tokens.length} token{tokens.length === 1 ? "" : "s"} found{bad ? ` · ${bad} unknown/invalid` : ""}
                     </span>
                 </div>
                 {text && (
-                    <Section title="Preview">
+                    <Section title="Preview" plain>
                         <Preview syntax={text} channelId={ctx.channel?.id} />
                     </Section>
                 )}
             </div>
             <div className={cl("tokens")}>
                 {tokens.map(t => <TokenRow key={t.index + t.raw} token={t} onFetched={() => setVersion(v => v + 1)} />)}
-                {!tokens.length && <div className={cl("empty")}>{text ? "No Discord formats found in the text" : "Paste text on the left – every mention, emoji, timestamp and link is resolved here."}</div>}
+                {!tokens.length && <Empty icon={FI.hub} title={text ? "No Discord formats found in the text" : "Paste text on the left – every mention, emoji, timestamp and link is resolved here."} />}
             </div>
         </div>
     );
@@ -898,16 +849,18 @@ function FavoritesTab({ ctx }: { ctx: HubContext; }) {
         <div className={cl("columns")}>
             <Section
                 title={`Favorites (${favorites.length})`}
-                extra={favorites.length > 0 && (
-                    <button className={cl("link-btn")} onClick={() => { settings.store.favorites = []; }}>Remove all</button>
+                plain
+                right={favorites.length > 0 && (
+                    <Button variant="plain" small color="red" onClick={() => { settings.store.favorites = []; }}>Remove all</Button>
                 )}
             >
                 <EntryList entries={favorites} ctx={ctx} empty="No favorites yet – click the star on a format." />
             </Section>
             <Section
                 title={`Recently used (${recent.length}/${MAX_RECENT})`}
-                extra={recent.length > 0 && (
-                    <button className={cl("link-btn")} onClick={() => { settings.store.recent = []; }}>Clear history</button>
+                plain
+                right={recent.length > 0 && (
+                    <Button variant="plain" small onClick={() => { settings.store.recent = []; }}>Clear history</Button>
                 )}
             >
                 {recent.length
@@ -923,7 +876,7 @@ function FavoritesTab({ ctx }: { ctx: HubContext; }) {
                             ))}
                         </div>
                     )
-                    : <div className={cl("empty")}>Copied or inserted formats appear here.</div>}
+                    : <Empty title="Copied or inserted formats appear here." />}
             </Section>
         </div>
     );
@@ -968,25 +921,24 @@ function HubContent({ ctx }: { ctx: HubContext; }) {
     }
 
     return (
-        <div className={cl("hub")}>
-            <div className={cl("tabs")} role="tablist">
-                {TABS.map(t => (
-                    <button
-                        key={t.id}
-                        role="tab"
-                        aria-selected={t.id === tab}
-                        className={classes(cl("tab"), t.id === tab && cl("tab-active"))}
-                        onClick={() => setTab(t.id)}
-                    >
-                        {t.label}
-                        {t.id === "favorites" && favorites.length > 0 && <span className={cl("chip-count")}>{favorites.length}</span>}
-                    </button>
-                ))}
-            </div>
+        <Sheet
+            header={{ title: "FormatHub", subtitle: contextSubtitle(ctx.channel), icon: FI.hub, iconColor: ICON_COLOR }}
+            onClose={ctx.close}
+            height="82vh"
+            top={
+                <div className={cl("tabs")}>
+                    <Segmented<TabId>
+                        value={tab}
+                        onChange={setTab}
+                        options={TABS.map(t => ({ value: t.id, label: t.label, count: t.id === "favorites" ? favorites.length : undefined }))}
+                    />
+                </div>
+            }
+        >
             <ErrorBoundary message="This tab could not be displayed.">
-                <div className={cl("content")}>{content}</div>
+                {content}
             </ErrorBoundary>
-        </div>
+        </Sheet>
     );
 }
 
@@ -998,72 +950,52 @@ function contextSubtitle(channel: Channel | undefined) {
 
 export function openFormatHub(channel?: Channel) {
     const ch = channel ?? getCurrentChannel();
-    openModal(props => {
-        const ctx: HubContext = {
-            channel: ch,
-            guildId: ch?.guild_id ?? null,
-            close: props.onClose
-        };
-        return (
-            <ErrorBoundary>
-                <Modal {...props} size="xl" title="FormatHub" subtitle={contextSubtitle(ch)}>
-                    <HubContent ctx={ctx} />
-                </Modal>
-            </ErrorBoundary>
-        );
-    });
+    openWindow(close => (
+        <HubContent ctx={{ channel: ch, guildId: ch?.guild_id ?? null, close }} />
+    ), { size: "large", className: cl("window") });
 }
 
 // ---------------------------------------------------------------- Settings
 
-function Option({ label, description, setting }: { label: string; description?: string; setting: "closeOnInsert" | "spaceAfterInsert" | "contextMenus" | "trackRecent"; }) {
+type BoolSetting = "closeOnInsert" | "spaceAfterInsert" | "contextMenus" | "trackRecent";
+
+function Option({ label, description, setting }: { label: string; description?: string; setting: BoolSetting; }) {
     const value = settings.use([setting])[setting];
-    return (
-        <label className={cl("option")}>
-            <span className={cl("option-text")}>
-                <span>{label}</span>
-                {description && <span className={cl("muted")}>{description}</span>}
-            </span>
-            <Switch checked={value} onChange={v => { settings.store[setting] = v; }} />
-        </label>
-    );
+    return <ToggleRow title={label} subtitle={description} checked={value} onChange={v => { settings.store[setting] = v; }} />;
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => {
     const { favorites, recent } = settings.use(["favorites", "recent"]);
 
     return (
-        <div className={cl("settings")}>
-            <div className={cl("settings-hero")}>
-                <FormatHubIcon width={28} height={28} />
-                <div className={cl("option-text")}>
-                    <span className={cl("settings-title")}>FormatHub</span>
-                    <span className={cl("muted")}>Open the window via the button in the chat bar or here.</span>
-                </div>
-                <button className={classes(cl("btn"), cl("btn-brand"))} onClick={() => openFormatHub()}>Open</button>
-            </div>
-
-            <div className={cl("card")}>
+        <Sheet
+            embedded
+            header={{
+                title: "FormatHub",
+                subtitle: "Open the window via the button in the chat bar or here.",
+                icon: FI.hub,
+                iconColor: ICON_COLOR,
+                actions: <Button onClick={() => openFormatHub()}>Open</Button>
+            }}
+        >
+            <Section>
                 <Option label="Close window after inserting" setting="closeOnInsert" />
                 <Option label="Space after inserting" description="So you can keep typing right away" setting="spaceAfterInsert" />
                 <Option label="“Copy as format” in right-click menu" description="Users, roles, channels, servers, messages & emojis" setting="contextMenus" />
                 <Option label="Remember recently used formats" description={`The last ${MAX_RECENT} copied/inserted formats`} setting="trackRecent" />
-            </div>
+            </Section>
 
-            <div className={cl("card")}>
-                <div className={cl("row")}>
-                    <span>{favorites.length} favorites · {recent.length} in history</span>
-                    <div className={cl("entry-actions")}>
-                        <button className={cl("btn")} disabled={!recent.length} onClick={() => { settings.store.recent = []; }}>Clear history</button>
-                        <button className={classes(cl("btn"), cl("btn-danger"))} disabled={!favorites.length} onClick={() => { settings.store.favorites = []; }}>Delete favorites</button>
-                    </div>
-                </div>
-            </div>
-
-            <div className={cl("muted")}>
-                Tip: Slash commands only appear after Discord has loaded them (type "/" once in chat). Invalid or unknown IDs are marked red in the decoder.
-            </div>
-        </div>
+            <Section footer={'Tip: Slash commands only appear after Discord has loaded them (type "/" once in chat). Invalid or unknown IDs are marked red in the decoder.'}>
+                <Row
+                    title={`${favorites.length} favorites · ${recent.length} in history`}
+                    trailing={
+                        <div className={cl("entry-actions")}>
+                            <Button variant="gray" small disabled={!recent.length} onClick={() => { settings.store.recent = []; }}>Clear history</Button>
+                            <Button variant="destructive" small disabled={!favorites.length} onClick={() => { settings.store.favorites = []; }}>Delete favorites</Button>
+                        </div>
+                    }
+                />
+            </Section>
+        </Sheet>
     );
 }, { noop: true });
-
