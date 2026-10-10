@@ -9,11 +9,12 @@ import { showNotice } from "@api/Notices";
 import { isPluginEnabled, pluginRequiresRestart, plugins, startDependenciesRecursive, startPlugin, stopPlugin } from "@api/PluginManager";
 import { definePluginSettings, Settings } from "@api/Settings";
 import { Logger } from "@utils/Logger";
-import definePlugin, { OptionType, Plugin } from "@utils/types";
+import definePlugin, { OptionType, Plugin, PluginNative } from "@utils/types";
 import { showToast } from "@webpack/common";
 
-import { titleBarSlot } from "../_ui";
+import { notify, titleBarSlot } from "../_ui";
 import added from "./added.json";
+import { hubThemes } from "./themes";
 import { openHubModal, renderTitleBarButton, SettingsPanel } from "./ui";
 
 export const logger = new Logger("PluginHub");
@@ -129,6 +130,37 @@ export function setEnabled(p: Plugin, enable: boolean) {
     pluginSettings.enabled = enable;
 }
 
+// ---------------------------------------------------------------- Theme updates
+
+const Native = VencordNative.pluginHelpers.PluginHub as PluginNative<typeof import("./native")>;
+const THEME_CHECK_FIRST = 20_000;
+const THEME_CHECK_EVERY = 30 * 60_000;
+let themeTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Installed Theme Hub themes update themselves (from the repo, without a VoidCord update). Returns how many did. */
+export async function updateThemes() {
+    let updated = 0;
+    for (const theme of hubThemes) {
+        try {
+            const version = await Native.updateTheme(theme.id);
+            if (!version) continue;
+            updated++;
+            notify({ title: `${theme.name} updated to v${version}`, kind: "success", app: "Theme Hub" });
+        } catch (e) {
+            logger.warn(`Could not update ${theme.name}`, e);
+        }
+    }
+    return updated;
+}
+
+function scheduleThemeUpdates(delay: number) {
+    clearTimeout(themeTimer);
+    themeTimer = setTimeout(async () => {
+        await updateThemes();
+        scheduleThemeUpdates(THEME_CHECK_EVERY);
+    }, delay);
+}
+
 // ---------------------------------------------------------------- Plugin
 
 export default definePlugin({
@@ -151,6 +183,14 @@ export default definePlugin({
     ],
 
     renderTitleBarButton: titleBarSlot("PluginHub", renderTitleBarButton),
+
+    start() {
+        scheduleThemeUpdates(THEME_CHECK_FIRST);
+    },
+
+    stop() {
+        clearTimeout(themeTimer);
+    },
 
     toolboxActions: {
         "Plugin Hub": () => openHubModal()

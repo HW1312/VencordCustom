@@ -1,5 +1,6 @@
 /*
- * PluginHub – Theme Hub tab: install, update, apply and remove the themes bundled with the plugin
+ * PluginHub – Theme Hub tab: install, update, apply and remove the themes bundled with the plugin.
+ * Installed themes also update themselves from the repo (index.tsx → native.ts updateTheme); the button checks now.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -7,8 +8,8 @@ import { Settings, useSettings } from "@api/Settings";
 import { PluginNative } from "@utils/types";
 import { showToast, useEffect, useState } from "@webpack/common";
 
-import { Badge, Button, Empty, Group, IconButton, ICONS, Note, Row, Section, Toggle } from "../_ui";
-import { logger } from "./index";
+import { Badge, Button, Empty, Group, IconButton, ICONS, Note, Row, Section, Spinner, Toggle } from "../_ui";
+import { logger, updateThemes } from "./index";
 import catalog from "./themes.json";
 
 const Native = VencordNative.pluginHelpers.PluginHub as PluginNative<typeof import("./native")>;
@@ -144,6 +145,18 @@ export function ThemesTab({ query }: { query: string; }) {
     };
     useEffect(refresh, []);
 
+    const [checking, setChecking] = useState(false);
+    const checkUpdates = async () => {
+        setChecking(true);
+        try {
+            const updated = await updateThemes();
+            if (!updated) showToast("All themes are up to date", "message");
+        } finally {
+            setChecking(false);
+            refresh();
+        }
+    };
+
     const q = query.trim().toLowerCase();
     const shown = q
         ? hubThemes.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q))
@@ -154,6 +167,9 @@ export function ThemesTab({ query }: { query: string; }) {
             <Note>
                 <span className="vc-pluginhub-restart">
                     <span>Applying a theme here turns off the other Theme Hub themes. Your own themes stay as they are.</span>
+                    <Button variant="plain" small icon={checking ? undefined : ICONS.refresh} disabled={checking} onClick={checkUpdates}>
+                        {checking && <Spinner />}{checking ? "Checking …" : "Check for theme updates"}
+                    </Button>
                     <Button variant="plain" small icon={ICONS.folder} onClick={() => VencordNative.themes.openFolder()}>Open themes folder</Button>
                 </span>
             </Note>

@@ -1,15 +1,16 @@
 /**
  * @name Apple Liquid Glass
  * @author 5406
- * @version 1.1.4
- * @description Dark, frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window.
+ * @version 1.2.0
+ * @description Frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window – follows Discord's Light, Ash, Dark and Onyx appearance.
  */
 
 /* ==========================================================================
    APPLE LIQUID GLASS
    --------------------------------------------------------------------------
-   A dark, layered, translucent redesign inspired by Apple's Liquid Glass
-   (macOS Tahoe / iOS 26). Pure CSS: no JavaScript, no plugins, no external
+   A layered, translucent redesign inspired by Apple's Liquid Glass
+   (macOS Tahoe / iOS 26). Follows Discord's appearance setting: Light, Ash,
+   Dark and Onyx each get their own palette (section 3b). Pure CSS: no JavaScript, no plugins, no external
    assets.
 
    CSS cannot reproduce Apple's real-time refractive shaders. This theme
@@ -68,6 +69,16 @@
     --alg-text-primary: #f5f5f7;
     --alg-text-secondary: #98989f;
     --alg-text-tertiary: #6c6c70;
+    --alg-text-strong: #ffffff;           /* hovered / active text */
+    --alg-text-body: #e6e6eb;             /* message text */
+    --alg-icon: #d4d4da;
+    --alg-level-5: #3a3a3c;               /* highest raised surface */
+    --alg-link: #4da3ff;
+    --alg-mention-text: #8cc4ff;
+    --alg-code-background: rgba(0, 0, 0, 0.28);
+    /* Overlays (fills, hairlines) are this color with low alpha: white on dark, black on light */
+    --alg-ink-rgb: 255, 255, 255;
+    --alg-color-scheme: dark;
     --alg-badge-red: #ff453a;             /* unread / mention badges (macOS system red) */
 
     /* Glass material */
@@ -97,6 +108,8 @@
     --alg-ambient-1: rgba(255, 255, 255, 0.045);
     --alg-ambient-2: rgba(255, 255, 255, 0.025);
     --alg-ambient-3: rgba(255, 255, 255, 0.015);
+    --alg-wallpaper-top: #141415;
+    --alg-wallpaper-bottom: #0b0b0c;
 
     /* Typography */
     --alg-font-text: "SF Pro Text", "SF Pro", -apple-system, BlinkMacSystemFont,
@@ -134,11 +147,11 @@
     --alg-accent-ring: 0 0 0 3px rgba(var(--alg-accent-rgb), 0.28);
 
     /* Neutral fills (Apple "system fill" family) */
-    --alg-fill-1: rgba(255, 255, 255, 0.035);
-    --alg-fill-2: rgba(255, 255, 255, 0.06);
-    --alg-fill-3: rgba(255, 255, 255, 0.09);
-    --alg-fill-4: rgba(255, 255, 255, 0.13);
-    --alg-separator: rgba(255, 255, 255, 0.07);
+    --alg-fill-1: rgba(var(--alg-ink-rgb), 0.035);
+    --alg-fill-2: rgba(var(--alg-ink-rgb), 0.06);
+    --alg-fill-3: rgba(var(--alg-ink-rgb), 0.09);
+    --alg-fill-4: rgba(var(--alg-ink-rgb), 0.13);
+    --alg-separator: rgba(var(--alg-ink-rgb), 0.07);
 
     /* Glass recipes */
     --alg-glass-tint: rgba(var(--alg-glass-rgb), var(--alg-glass-opacity));
@@ -166,7 +179,7 @@
         radial-gradient(60vmax 50vmax at 8% 0%, var(--alg-ambient-1), transparent 60%),
         radial-gradient(55vmax 45vmax at 100% 100%, var(--alg-ambient-2), transparent 60%),
         radial-gradient(40vmax 35vmax at 70% 20%, var(--alg-ambient-3), transparent 65%),
-        linear-gradient(160deg, #141415 0%, var(--alg-background-color) 45%, #0b0b0c 100%);
+        linear-gradient(160deg, var(--alg-wallpaper-top) 0%, var(--alg-background-color) 45%, var(--alg-wallpaper-bottom) 100%);
 }
 
 
@@ -201,7 +214,7 @@
     --control-brand-foreground: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
     --control-brand-foreground-new: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
     --text-brand: color-mix(in srgb, var(--alg-accent-color) 70%, #fff);
-    --text-link: #4da3ff;
+    --text-link: var(--alg-link);
     --border-focus: var(--alg-accent-color);
     --control-primary-background-default: var(--alg-accent-color);
     --control-primary-background-hover: color-mix(in srgb, var(--alg-accent-color) 88%, #fff);
@@ -222,21 +235,21 @@
 
     /* Text */
     --text-strong: var(--alg-text-primary);
-    --text-default: #e6e6eb;
-    --text-normal: #e6e6eb;
+    --text-default: var(--alg-text-body);
+    --text-normal: var(--alg-text-body);
     --text-subtle: var(--alg-text-secondary);
     --text-muted: var(--alg-text-secondary);
     --header-primary: var(--alg-text-primary);
     --header-secondary: var(--alg-text-secondary);
     --interactive-text-default: var(--alg-text-secondary);
     --interactive-text-hover: var(--alg-text-primary);
-    --interactive-text-active: #ffffff;
+    --interactive-text-active: var(--alg-text-strong);
     --interactive-normal: var(--alg-text-secondary);
     --interactive-hover: var(--alg-text-primary);
-    --interactive-active: #ffffff;
+    --interactive-active: var(--alg-text-strong);
     --channels-default: var(--alg-text-secondary);
     --channel-icon: var(--alg-text-tertiary);
-    --icon-default: #d4d4da;
+    --icon-default: var(--alg-icon);
     --icon-muted: var(--alg-text-tertiary);
     --icon-strong: var(--alg-text-primary);
 
@@ -271,16 +284,16 @@
     /* Raised surfaces (popouts, cards, menus, modals) */
     --background-surface-high: var(--alg-level-3);
     --background-surface-higher: var(--alg-level-4);
-    --background-surface-highest: #3a3a3c;
+    --background-surface-highest: var(--alg-level-5);
     --background-floating: var(--alg-level-4);
     --bg-surface-raised: var(--alg-level-3);
     --modal-background: var(--alg-level-2);
     --modal-footer-background: var(--alg-level-1);
     --card-background-default: var(--alg-level-3);
     --card-secondary-bg: var(--alg-level-4);
-    --embed-background: rgba(255, 255, 255, 0.04);
-    --embed-background-alternate: rgba(255, 255, 255, 0.06);
-    --background-code: rgba(0, 0, 0, 0.28);
+    --embed-background: rgba(var(--alg-ink-rgb), 0.04);
+    --embed-background-alternate: rgba(var(--alg-ink-rgb), 0.06);
+    --background-code: var(--alg-code-background);
     --channeltextarea-background: var(--alg-level-3);
 
     /* Interaction fills */
@@ -303,7 +316,7 @@
     --message-mentioned-background-default: rgba(255, 214, 10, 0.07);
     --message-mentioned-background-hover: rgba(255, 214, 10, 0.1);
     --mention-background: rgba(var(--alg-accent-rgb), 0.2);
-    --mention-foreground: #8cc4ff;
+    --mention-foreground: var(--alg-mention-text);
 
     /* Reactions */
     --reaction-background-default: var(--alg-fill-2);
@@ -318,7 +331,7 @@
     /* Inputs */
     --input-background-default: var(--alg-level-3);
     --input-border-default: var(--alg-glass-border);
-    --input-border-hover: rgba(255, 255, 255, 0.16);
+    --input-border-hover: rgba(var(--alg-ink-rgb), 0.16);
     --input-border-active: var(--alg-accent-color);
     --input-placeholder-text-default: var(--alg-text-tertiary);
     --input-text-default: var(--alg-text-primary);
@@ -326,8 +339,8 @@
     /* Borders */
     --border-subtle: var(--alg-separator);
     --border-muted: var(--alg-glass-border);
-    --border-normal: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-normal: rgba(var(--alg-ink-rgb), 0.12);
+    --border-strong: rgba(var(--alg-ink-rgb), 0.18);
     --chat-border: var(--alg-separator);
 
     /* Overlays and shadows */
@@ -338,20 +351,113 @@
     --shadow-high: var(--alg-floating-shadow);
 
     /* Scrollbars */
-    --scrollbar-thin-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-thin-thumb: rgba(var(--alg-ink-rgb), 0.16);
     --scrollbar-thin-track: transparent;
-    --scrollbar-auto-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-auto-thumb: rgba(var(--alg-ink-rgb), 0.16);
     --scrollbar-auto-track: transparent;
-    --scrollbar-auto-scrollbar-color-thumb: rgba(255, 255, 255, 0.16);
+    --scrollbar-auto-scrollbar-color-thumb: rgba(var(--alg-ink-rgb), 0.16);
     --scrollbar-auto-scrollbar-color-track: transparent;
 
     /* Progress, sliders, spoilers */
     --progressbar-indicator-background: var(--alg-accent-color);
     --progressbar-track-background: var(--alg-fill-3);
     --slider-track-background: var(--alg-fill-4);
-    --spoiler-hidden-background: rgba(255, 255, 255, 0.14);
-    --spoiler-hidden-background-hover: rgba(255, 255, 255, 0.2);
+    --spoiler-hidden-background: rgba(var(--alg-ink-rgb), 0.14);
+    --spoiler-hidden-background-hover: rgba(var(--alg-ink-rgb), 0.2);
     --spoiler-revealed-background: var(--alg-fill-2);
+}
+
+
+/* ==========================================================================
+   3b. APPEARANCE MODES
+   Discord's Appearance setting puts a class on <html>: Light = theme-light,
+   Ash = theme-dark, Dark = theme-darker, Onyx = theme-midnight. Each gets its
+   own palette; everything else is built from these variables. Dark is the
+   palette from section 1.
+   ========================================================================== */
+
+/* Ash: a lighter graphite */
+html.theme-dark:not(#alg) {
+    --alg-background-color: #1a1a1c;
+    --alg-surface-color: #28282b;
+    --alg-level-1: #222225;
+    --alg-level-2: #28282b;
+    --alg-level-3: #313134;
+    --alg-level-4: #39393c;
+    --alg-level-5: #46464a;
+    --alg-glass-rgb: 46, 46, 50;
+    --alg-wallpaper-top: #222225;
+    --alg-wallpaper-bottom: #151517;
+}
+
+/* Onyx: true black (OLED) */
+html.theme-midnight:not(#alg) {
+    --alg-background-color: #000000;
+    --alg-surface-color: #0e0e0f;
+    --alg-level-1: #070707;
+    --alg-level-2: #0b0b0c;
+    --alg-level-3: #161618;
+    --alg-level-4: #1e1e20;
+    --alg-level-5: #2a2a2d;
+    --alg-glass-rgb: 16, 16, 18;
+    --alg-glass-border: rgba(255, 255, 255, 0.08);
+    --alg-ambient-1: rgba(255, 255, 255, 0.025);
+    --alg-ambient-2: rgba(255, 255, 255, 0.015);
+    --alg-ambient-3: transparent;
+    --alg-wallpaper-top: #050505;
+    --alg-wallpaper-bottom: #000000;
+}
+
+/* Light: Apple's light appearance – white and light gray glass, black text */
+html.theme-light:not(#alg) {
+    --alg-accent-color: #007aff;
+    --alg-accent-rgb: 0, 122, 255;
+
+    --alg-background-color: #e8e8ed;
+    --alg-surface-color: #ffffff;
+    --alg-level-1: #f2f2f7;
+    --alg-level-2: #ffffff;
+    --alg-level-3: #f2f2f7;
+    --alg-level-4: #ffffff;
+    --alg-level-5: #e5e5ea;
+    --alg-text-primary: #1d1d1f;
+    --alg-text-secondary: #6e6e73;
+    --alg-text-tertiary: #8e8e93;
+    --alg-text-strong: #000000;
+    --alg-text-body: #1d1d1f;
+    --alg-icon: #3a3a3c;
+    --alg-link: #0066cc;
+    --alg-mention-text: #0a63c9;
+    --alg-code-background: rgba(0, 0, 0, 0.05);
+    --alg-badge-red: #ff3b30;
+    --alg-ink-rgb: 0, 0, 0;
+    --alg-color-scheme: light;
+
+    --alg-glass-rgb: 248, 248, 250;
+    --alg-glass-opacity: 0.72;
+    --alg-glass-opacity-floating: 0.88;
+    --alg-glass-border: rgba(0, 0, 0, 0.08);
+    --alg-glass-highlight: rgba(255, 255, 255, 0.85);
+    --alg-glass-sheen: rgba(255, 255, 255, 0.4);
+
+    --alg-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06);
+    --alg-floating-shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.08);
+
+    --alg-ambient-1: rgba(0, 122, 255, 0.05);
+    --alg-ambient-2: rgba(175, 82, 222, 0.035);
+    --alg-ambient-3: rgba(0, 0, 0, 0.02);
+    --alg-wallpaper-top: #f5f5f7;
+    --alg-wallpaper-bottom: #dedee4;
+
+    /* Discord tokens that are set to fixed dark values in section 3 */
+    --background-scrim: rgba(0, 0, 0, 0.3);
+    --shadow-low: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
+    --message-mentioned-background-default: rgba(255, 204, 0, 0.12);
+    --message-mentioned-background-hover: rgba(255, 204, 0, 0.18);
+    --text-brand: var(--alg-accent-color);
+    --control-brand-foreground: var(--alg-accent-color);
+    --control-brand-foreground-new: var(--alg-accent-color);
 }
 
 
@@ -506,7 +612,7 @@ html.custom-theme-background :is([class^="nowPlayingColumn_"], [class*=" nowPlay
 }
 
 html.custom-theme-background :is([class^="nowPlayingColumn_"], [class*=" nowPlayingColumn_"]) :is([class^="itemCard_"], [class*=" itemCard_"]) {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(var(--alg-ink-rgb), 0.06);
 }
 
 html.custom-theme-background :is([class^="callContainer_"], [class*=" callContainer_"]) {
@@ -580,7 +686,7 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
 
 /* Separator: short fading hairline */
 :is([class^="guildSeparator_"], [class*=" guildSeparator_"]) {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+    background: linear-gradient(90deg, transparent, rgba(var(--alg-ink-rgb), 0.16), transparent);
     height: 1px;
     border-radius: 1px;
 }
@@ -633,12 +739,12 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
 /* Selected channel: neutral rounded fill, as in the macOS sidebar */
 :is([class^="modeSelected_"], [class*=" modeSelected_"]) [data-list-item-id^="channels___"],
 :is([class^="modeSelected_"], [class*=" modeSelected_"]) :is([class^="link_"], [class*=" link_"]) {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(var(--alg-ink-rgb), 0.1);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
 :is([class^="modeSelected_"], [class*=" modeSelected_"]) :is([class^="name_"], [class*=" name_"]) {
-    color: #ffffff;
+    color: var(--alg-text-strong);
 }
 
 /* The channel list's own nav paints a solid fill over the glass panel */
@@ -667,7 +773,7 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
 
 :is([class^="unreadMentionsBar_"], [class*=" unreadMentionsBar_"]):is([class^="mention_"], [class*=" mention_"]) {
     background-color: #ff453a;
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(var(--alg-ink-rgb), 0.18);
     color: #ffffff;
 }
 
@@ -710,7 +816,7 @@ html.custom-theme-background :is([class^="callContainer_"], [class*=" callContai
 }
 
 :is([class^="privateChannels_"], [class*=" privateChannels_"]) :is([class^="interactiveSelected_"], [class*=" interactiveSelected_"]) {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(var(--alg-ink-rgb), 0.1);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -958,7 +1064,7 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 
 /* Block quotes */
 :is([class^="blockquoteDivider_"], [class*=" blockquoteDivider_"]) {
-    background-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(var(--alg-ink-rgb), 0.22);
     border-radius: var(--alg-radius-pill);
 }
 
@@ -1010,7 +1116,7 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 }
 
 :is([class^="form_"], [class*=" form_"]):has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"])) :is([class^="channelTextArea_"], [class*=" channelTextArea_"]):not(:has(:is([class^="channelTextArea_"], [class*=" channelTextArea_"]))):hover {
-    border-color: rgba(255, 255, 255, 0.13);
+    border-color: rgba(var(--alg-ink-rgb), 0.13);
 }
 
 /* Focus: brighter rim plus a gentle accent halo */
@@ -1126,15 +1232,15 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 
 /* Activity cards at the top of the member list (music, games) */
 :is([class^="membersWrap_"], [class*=" membersWrap_"]) :is([class^="container_"], [class*=" container_"]):is([class*="usesCardRows_"], [class*="openOnHover_"]) {
-    background-color: rgba(255, 255, 255, 0.04) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background-color: rgba(var(--alg-ink-rgb), 0.04) !important;
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.06) !important;
     border-radius: var(--alg-radius-md) !important;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
     transition: background-color var(--alg-dur-fast) var(--alg-ease);
 }
 
 :is([class^="membersWrap_"], [class*=" membersWrap_"]) :is([class^="container_"], [class*=" container_"]):is([class*="usesCardRows_"], [class*="openOnHover_"]):hover {
-    background-color: rgba(255, 255, 255, 0.07) !important;
+    background-color: rgba(var(--alg-ink-rgb), 0.07) !important;
 }
 
 
@@ -1150,11 +1256,11 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 }
 
 /* Custom profile colors put a light scope (.theme-light) around profiles and their menus/tooltips.
-   Those stay dark glass in this theme, so they need the dark theme's light text back, or it turns
+   In the dark modes those stay dark glass, so they need the dark theme's light text back, or it turns
    dark-on-dark. */
-.theme-light :is([role="menu"], [role="tooltip"]),
-:is([role="menu"], [role="tooltip"]).theme-light,
-.theme-light :is([class^="layer_"], [class*=" layer_"]) [role="menu"] {
+:root:not(.theme-light) .theme-light :is([role="menu"], [role="tooltip"]),
+:root:not(.theme-light) :is([role="menu"], [role="tooltip"]).theme-light,
+:root:not(.theme-light) .theme-light :is([class^="layer_"], [class*=" layer_"]) [role="menu"] {
     color-scheme: dark;
     color: var(--alg-text-primary);
     --text-default: var(--alg-text-primary);
@@ -1282,7 +1388,7 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
     background-image: var(--alg-specular-strong);
     -webkit-backdrop-filter: var(--alg-glass-filter-strong);
     backdrop-filter: var(--alg-glass-filter-strong);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.1);
     border-radius: var(--alg-radius-lg) !important;
     box-shadow: var(--alg-edge), var(--alg-floating-shadow);
     overflow: hidden;
@@ -1374,7 +1480,7 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 /* Window: one graphite surface with a lit rim and deep shadow */
 :is([class^="modal_"], [class*=" modal_"]):has(> :is([class^="modalContent_"], [class*=" modalContent_"])) {
     background: var(--alg-level-1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.1);
     border-radius: var(--alg-radius-xl);
     box-shadow: var(--alg-edge), 0 30px 80px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35);
     overflow: hidden;
@@ -1386,8 +1492,8 @@ li[id^="chat-messages-"]:hover [id^="message-reply-context-"] {
 
 /* Sidebar: floating inset glass panel, as in macOS Tahoe System Settings */
 :is([class^="modalContentInner_"], [class*=" modalContentInner_"]) aside {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025));
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(var(--alg-ink-rgb), 0.05), rgba(var(--alg-ink-rgb), 0.025));
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.07);
     border-radius: var(--alg-radius-lg);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 4px 16px rgba(0, 0, 0, 0.2);
     margin: var(--alg-space-1);
@@ -1477,8 +1583,8 @@ aside nav [role="list"] :is([class^="track_"], [class*=" track_"]) {
 }
 
 :is([class^="categories_"], [class*=" categories_"]) > * > :is([class^="stack_"], [class*=" stack_"]) > :is([class^="container_"], [class*=" container_"]) {
-    background-color: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background-color: rgba(var(--alg-ink-rgb), 0.035);
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.06);
     border-top-width: 0;
     border-radius: 0;
     margin: 0 -12px !important;
@@ -1592,7 +1698,7 @@ button:is([class^="button_"], [class*=" button_"]):is([class*="lookFilled_"], [c
 
 button:is([class*="lookFilled_"], [class*="primary_"]):is([class*="colorBrand_"], [class*="primary_"]):not([class*="colorPrimary_"], [class*="buttonColor_"], [class*="centerButton_"], [class*="primaryDark_"]) {
     background: linear-gradient(180deg, color-mix(in srgb, var(--alg-accent-color) 88%, #fff), var(--alg-accent-color)) !important;
-    border-color: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(var(--alg-ink-rgb), 0.14) !important;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 2px 8px rgba(var(--alg-accent-rgb), 0.25);
     color: #ffffff !important;
 }
@@ -1747,7 +1853,7 @@ input[type="radio"] + div {
     background-image: var(--alg-specular-strong);
     -webkit-backdrop-filter: var(--alg-glass-filter-strong);
     backdrop-filter: var(--alg-glass-filter-strong);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.1) !important;
     border-radius: var(--alg-radius-pill) !important;
     box-shadow: var(--alg-edge), 0 10px 30px rgba(0, 0, 0, 0.45);
     padding-inline: 6px;
@@ -1816,7 +1922,7 @@ button:is([class^="disconnect_"], [class*=" disconnect_"]):hover {
 }
 
 :is([class^="thin_"], [class*=" thin_"], [class^="auto_"], [class*=" auto_"])::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.28);
+    background-color: rgba(var(--alg-ink-rgb), 0.28);
 }
 
 :is([class^="auto_"], [class*=" auto_"])::-webkit-scrollbar-track {
@@ -1831,7 +1937,7 @@ section[role="dialog"] > * > :is([class^="contentWrapper_"], [class*=" contentWr
     background-image: var(--alg-specular-strong);
     -webkit-backdrop-filter: var(--alg-glass-filter-strong);
     backdrop-filter: var(--alg-glass-filter-strong);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(var(--alg-ink-rgb), 0.1) !important;
     border-radius: var(--alg-radius-lg) !important;
     box-shadow: var(--alg-edge), var(--alg-floating-shadow);
     overflow: hidden;
@@ -2017,7 +2123,7 @@ html.reduce-motion :is([class^="tooltip_"], [class*=" tooltip_"])[role="tooltip"
     :root {
         --alg-glass-opacity: 0.85;
         --alg-glass-opacity-floating: 0.95;
-        --alg-glass-border: rgba(255, 255, 255, 0.24);
+        --alg-glass-border: rgba(var(--alg-ink-rgb), 0.24);
         --alg-text-secondary: #c7c7cc;
     }
 }
