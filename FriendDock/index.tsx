@@ -26,6 +26,16 @@ const ChannelActions = findByPropsLazy("selectVoiceChannel", "selectChannel");
 
 /** How long to wait after the followed friend moved before moving along (they sometimes hop quickly) */
 const FOLLOW_DELAY = 400;
+/**
+ * "Join to create" channels: joining one makes a bot create a channel and move the user into it, usually within a
+ * second or two. While the friend sits alone in a channel like that, wait this long for the bot before following -
+ * otherwise we'd join the hub too and the bot would give us our own channel.
+ */
+const HUB_WAIT = 4000;
+const HUB_NAME = /create|erstell|join\s*(to|2|for|&)|join\s*here|\bj2c\b|neuer?\s*(channel|kanal|talk)|new\s*(channel|talk|vc)|➕|\+\s*\w/i;
+/** Moved back to the friend this many times in a short time (e.g. a bot keeps moving us away): pause until they move */
+const MAX_RESYNCS = 3;
+const RESYNC_WINDOW = 30_000;
 
 // ---------------------------------------------------------------- Settings
 
@@ -184,43 +194,73 @@ function leaveVoice() {
 }
 
 // ---------------------------------------------------------------- Follow
+//
+// Following only ends when the user stops it (button, context menu, toolbox) or removes the friend from the dock.
+// Moved away (by a bot, an admin or by hand) → back to the friend. Left voice yourself → paused until the friend
+// switches channels, then it goes on.
 
 let followTimer: ReturnType<typeof setTimeout> | undefined;
 /** Our own voice channel as last seen - only real channel changes count, not mute/deafen updates */
 let myLastChannelId: string | null = null;
+/** Left voice ourselves (or something keeps moving us away): don't pull back in until the friend moves */
+let paused = false;
+/** When we moved back to the friend after being moved away */
+let resyncs: number[] = [];
+/** The friend sits alone in a "join to create" channel since … - waiting for the bot to move them */
+let hubWait: { channelId: string; since: number; } | null = null;
+/** Channel we already said we can't join - don't repeat the toast every time */
+let blockedChannelId: string | null = null;
 
 const followedName = () => {
     const id = settings.store.following;
     return id ? getDisplayName(UserStore.getUser(id), id) : "";
 };
 
+const channelLabel = (channelId: string) => {
+    const info = getVoiceInfo(channelId);
+    return info ? (info.isPrivate ? info.place : "#" + info.channelName) : "their channel";
+};
+
+function resetFollowState() {
+    clearTimeout(followTimer);
+    expectedChannelId = undefined;
+    paused = false;
+    resyncs = [];
+    hubWait = null;
+    blockedChannelId = null;
+}
+
+/** A "join to create" hub with only the friend in it: a bot is about to move them */
+function isCreateHub(channelId: string) {
+    const channel = ChannelStore.getChannel(channelId);
+    if (!channel || channel.isDM() || channel.isMultiUserDM()) return false;
+    const count = Object.keys(VoiceStateStore.getVoiceStatesForChannel(channelId) ?? {}).length;
+    return count <= 1 && HUB_NAME.test(channel.name ?? "");
+}
+
 export function startFollowing(id: string) {
     if (id === UserStore.getCurrentUser()?.id) return;
+    resetFollowState();
     settings.store.following = id;
     myLastChannelId = getMyVoiceChannelId();
 
     const name = getDisplayName(UserStore.getUser(id), id);
     const channelId = VoiceStateStore.getVoiceStateForUser(id)?.channelId;
 
-    if (!channelId) {
-        showToast(`Following ${name} - you'll join when they join voice.`, "message");
-        return;
-    }
-    if (channelId === getMyVoiceChannelId()) {
+    if (!channelId) showToast(`Following ${name} - you'll join when they join voice.`, "message");
+    else if (channelId === getMyVoiceChannelId()) showToast(`Following ${name}.`, "success");
+    else {
         showToast(`Following ${name}.`, "success");
-        return;
+        syncWithFollowed();
     }
-    if (joinVoice(channelId, true)) showToast(`Following ${name}.`, "success");
-    else stopFollowing(true);
 }
 
-export function stopFollowing(quiet = false, reason?: string) {
+export function stopFollowing(quiet = false) {
     const name = followedName();
-    clearTimeout(followTimer);
-    expectedChannelId = undefined;
+    resetFollowState();
     if (!settings.store.following) return;
     settings.store.following = null;
-    if (!quiet) showToast(reason ?? `Stopped following ${name}.`, "message");
+    if (!quiet) showToast(`Stopped following ${name}.`, "message");
 }
 
 export function toggleFollow(id: string) {
@@ -228,26 +268,54 @@ export function toggleFollow(id: string) {
     else startFollowing(id);
 }
 
+function scheduleSync(delay = FOLLOW_DELAY) {
+    clearTimeout(followTimer);
+    followTimer = setTimeout(syncWithFollowed, delay);
+}
+
 /** Move to wherever the followed friend is right now */
 function syncWithFollowed() {
     const id = settings.store.following;
     if (!id) return;
+    clearTimeout(followTimer);
 
     const channelId = VoiceStateStore.getVoiceStateForUser(id)?.channelId ?? null;
     const mine = getMyVoiceChannelId();
-    if (channelId === mine) return;
+    if (channelId === mine) {
+        hubWait = null;
+        return;
+    }
 
-    if (channelId) {
-        if (!joinVoice(channelId, true)) {
-            stopFollowing(true);
+    if (!channelId) {
+        hubWait = null;
+        if (mine && settings.store.leaveWithFriend) {
+            showToast(`${followedName()} left voice - leaving too.`, "message");
+            leaveVoice();
+        }
+        return;
+    }
+    if (paused) return;
+
+    // Don't join a "join to create" hub with them - wait for the bot to move them to their new channel
+    if (isCreateHub(channelId)) {
+        if (hubWait?.channelId !== channelId) hubWait = { channelId, since: Date.now() };
+        if (Date.now() - hubWait.since < HUB_WAIT) {
+            scheduleSync(500);
             return;
         }
-        const info = getVoiceInfo(channelId);
-        showToast(`Following ${followedName()} to ${info ? (info.isPrivate ? info.place : "#" + info.channelName) : "their channel"}`, "message");
-    } else if (mine && settings.store.leaveWithFriend) {
-        showToast(`${followedName()} left voice - leaving too.`, "message");
-        leaveVoice();
     }
+    hubWait = null;
+
+    const blocker = getJoinBlocker(channelId);
+    if (blocker) {
+        if (blockedChannelId !== channelId) {
+            blockedChannelId = channelId;
+            showToast(`${blocker} Still following ${followedName()}.`, "failure");
+        }
+        return;
+    }
+    blockedChannelId = null;
+    if (joinVoice(channelId, true)) showToast(`Following ${followedName()} to ${channelLabel(channelId)}`, "message");
 }
 
 interface VoiceStateChange {
@@ -265,9 +333,10 @@ function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChange[];
 
     for (const vs of voiceStates) {
         if (vs.userId === followed) {
-            // Let the stores settle and ignore quick hops, then go where they are now
-            clearTimeout(followTimer);
-            followTimer = setTimeout(syncWithFollowed, FOLLOW_DELAY);
+            // They moved: follow again even if we were paused. Let the stores settle and ignore quick hops.
+            paused = false;
+            resyncs = [];
+            scheduleSync();
         } else if (vs.userId === myId && vs.sessionId === AuthenticationStore.getSessionId()) {
             const newChannel = vs.channelId ?? null;
             if (newChannel === myLastChannelId) continue;
@@ -278,13 +347,27 @@ function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChange[];
                 expectedChannelId = undefined;
                 continue;
             }
-            // The user moved or left on their own (or was moved) - don't fight them
+            expectedChannelId = undefined;
+
             const friendChannel = VoiceStateStore.getVoiceStateForUser(followed)?.channelId ?? null;
-            if (newChannel !== friendChannel) {
-                stopFollowing(false, newChannel
-                    ? `You switched channels - stopped following ${followedName()}.`
-                    : `You left voice - stopped following ${followedName()}.`);
+            if (newChannel === friendChannel) continue;
+
+            if (!newChannel) {
+                paused = true;
+                if (friendChannel) showToast(`You left voice - still following ${followedName()}, you'll join when they switch channels.`, "message");
+                continue;
             }
+
+            // Moved away (bot, admin or by hand) → back to the friend, unless something keeps moving us
+            const now = Date.now();
+            resyncs = resyncs.filter(t => now - t < RESYNC_WINDOW);
+            if (resyncs.length >= MAX_RESYNCS) {
+                paused = true;
+                showToast(`You keep getting moved - waiting until ${followedName()} switches channels.`, "message");
+                continue;
+            }
+            resyncs.push(now);
+            scheduleSync(FOLLOW_DELAY * 2);
         }
     }
 }
@@ -353,8 +436,7 @@ export default definePlugin({
     },
 
     stop() {
-        clearTimeout(followTimer);
-        expectedChannelId = undefined;
+        resetFollowState();
         settings.store.following = null;
     }
 });

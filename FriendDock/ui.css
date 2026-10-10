@@ -1,4 +1,4 @@
-/* FriendDock – only the status dot, voice line and title bar state; popover, lists, switches etc. come from the shared _ui kit */
+/* FriendDock – logo, friend cards, follow banner and title bar state; popover, sheet, buttons come from the shared _ui kit */
 
 /* ---------- Title bar ---------- */
 
@@ -11,10 +11,10 @@
     position: relative;
 }
 
-/* Following: green icon + dot so it's obvious you're tied to someone */
+/* Following: teal icon + pulsing dot so it's obvious you're tied to someone */
 .vc-frienddock-titlebtn-active .vc-ui-tb-icon,
 .vc-frienddock-titlebtn-active:hover .vc-ui-tb-icon {
-    color: var(--vc-ui-green);
+    color: var(--vc-ui-teal);
 }
 
 .vc-frienddock-titlebtn-active::after {
@@ -25,27 +25,248 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--vc-ui-green);
+    background: var(--vc-ui-teal);
     box-shadow: 0 0 0 2px var(--vc-ui-glass);
+    animation: vc-frienddock-ping 1.8s ease-out infinite;
 }
 
-/* ---------- Friend row ---------- */
+/* ---------- Logo ---------- */
+
+.vc-frienddock-logo {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 28%;
+    background: linear-gradient(145deg, #5ee3f0 0%, #1fb5d6 45%, #2a7fff 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%), inset 0 -2px 6px rgb(0 40 90 / 25%), 0 4px 14px rgb(31 181 214 / 35%);
+}
+
+.vc-frienddock-logo svg {
+    position: relative;
+    z-index: 1;
+    width: 72%;
+    height: 72%;
+    overflow: visible;
+}
+
+.vc-frienddock-logo-back {
+    fill: rgb(255 255 255 / 62%);
+    transform-origin: 11px 24px;
+    animation: vc-frienddock-wave 3.2s var(--vc-ui-ease) infinite;
+}
+
+.vc-frienddock-logo-front {
+    fill: #fff;
+    filter: drop-shadow(0 1px 1.5px rgb(0 50 100 / 35%));
+    transform-origin: 19.5px 25px;
+    animation: vc-frienddock-nod 3.2s var(--vc-ui-ease) infinite;
+}
+
+/* Radar rings – only while following */
+.vc-frienddock-logo-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--vc-ui-teal);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vc-frienddock-logo-following .vc-frienddock-logo-ring {
+    animation: vc-frienddock-radar 2.2s ease-out infinite;
+}
+
+.vc-frienddock-logo-following .vc-frienddock-logo-ring-2 {
+    animation-delay: 1.1s;
+}
+
+@keyframes vc-frienddock-nod {
+    0%, 55%, 100% { transform: translateY(0) rotate(0); }
+    65% { transform: translateY(-1.6px) rotate(-4deg); }
+    75% { transform: translateY(0) rotate(3deg); }
+    85% { transform: translateY(-0.6px) rotate(0); }
+}
+
+@keyframes vc-frienddock-wave {
+    0%, 35%, 100% { transform: translate(0, 0); }
+    45% { transform: translate(-0.8px, -1.2px); }
+    55% { transform: translate(0, 0); }
+}
+
+@keyframes vc-frienddock-radar {
+    0% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.45); }
+}
+
+@keyframes vc-frienddock-ping {
+    0% { box-shadow: 0 0 0 2px var(--vc-ui-glass), 0 0 0 2px color-mix(in srgb, var(--vc-ui-teal) 70%, transparent); }
+    100% { box-shadow: 0 0 0 2px var(--vc-ui-glass), 0 0 0 9px transparent; }
+}
+
+/* ---------- Follow banner ---------- */
+
+.vc-frienddock-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    overflow: hidden;
+    border: 0.5px solid color-mix(in srgb, var(--vc-ui-teal) 45%, transparent);
+    border-radius: 16px;
+    background:
+        radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--vc-ui-teal) 26%, transparent), transparent 70%),
+        var(--vc-ui-group);
+    animation: vc-frienddock-in 0.35s var(--vc-ui-spring);
+}
+
+.vc-frienddock-banner-avatar {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+}
+
+.vc-frienddock-banner-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--vc-ui-teal);
+    animation: vc-frienddock-radar 1.8s ease-out infinite;
+}
+
+.vc-frienddock-banner-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.vc-frienddock-banner-text b {
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-size: 14px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-frienddock-banner-text span {
+    overflow: hidden;
+    color: var(--vc-ui-dim);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- Groups ---------- */
+
+.vc-frienddock-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.vc-frienddock-group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+    color: var(--vc-ui-dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.vc-frienddock-group-title span {
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
+    font-size: 10px;
+    letter-spacing: 0;
+}
+
+/* ---------- Friend card ---------- */
+
+.vc-frienddock-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 10px 10px 12px;
+    border: 0.5px solid var(--vc-ui-sep);
+    border-radius: 16px;
+    background: var(--vc-ui-group);
+    transition: background-color 0.2s var(--vc-ui-ease), border-color 0.2s var(--vc-ui-ease), transform 0.25s var(--vc-ui-spring);
+    animation: vc-frienddock-in 0.35s var(--vc-ui-spring) both;
+}
+
+.vc-frienddock-card:hover {
+    border-color: var(--vc-ui-edge);
+    background: var(--vc-ui-group-hover);
+    transform: translateY(-1px);
+}
+
+.vc-frienddock-card-following {
+    border-color: color-mix(in srgb, var(--vc-ui-teal) 55%, transparent);
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--vc-ui-teal) 14%, transparent), transparent 60%),
+        var(--vc-ui-group);
+}
+
+.vc-frienddock-card-offline .vc-frienddock-avatar,
+.vc-frienddock-card-offline .vc-frienddock-name {
+    opacity: 0.5;
+}
+
+@keyframes vc-frienddock-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
 
 .vc-frienddock-avatar {
     position: relative;
     display: block;
+    flex: none;
+    border-radius: 50%;
     cursor: pointer;
+    transition: transform 0.25s var(--vc-ui-spring);
 }
+
+.vc-frienddock-avatar:hover {
+    transform: scale(1.06);
+}
+
+.vc-frienddock-avatar:active {
+    transform: scale(0.94);
+}
+
+/* Soft ring in the status color */
+.vc-frienddock-avatar::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid var(--vc-frienddock-status, transparent);
+    opacity: 0.55;
+}
+
+.vc-frienddock-avatar-online { --vc-frienddock-status: var(--vc-ui-green); }
+.vc-frienddock-avatar-idle { --vc-frienddock-status: var(--vc-ui-yellow); }
+.vc-frienddock-avatar-dnd { --vc-frienddock-status: var(--vc-ui-red); }
+.vc-frienddock-avatar-streaming { --vc-frienddock-status: var(--vc-ui-purple); }
 
 .vc-frienddock-dot {
     position: absolute;
-    right: -1px;
-    bottom: -1px;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 2px solid var(--vc-ui-glass);
+    right: -2px;
+    bottom: -2px;
+    width: 13px;
+    height: 13px;
     box-sizing: border-box;
+    border: 2.5px solid var(--vc-ui-glass-strong);
+    border-radius: 50%;
 }
 
 .vc-frienddock-dot-online { background: var(--vc-ui-green); }
@@ -54,15 +275,30 @@
 .vc-frienddock-dot-offline { background: var(--vc-ui-gray); }
 .vc-frienddock-dot-streaming { background: var(--vc-ui-purple); }
 
-.vc-frienddock-row-offline .vc-frienddock-avatar {
-    opacity: 0.55;
+.vc-frienddock-card-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding-top: 1px;
 }
 
-.vc-frienddock-row-following {
-    box-shadow: inset 3px 0 0 var(--vc-ui-teal);
+.vc-frienddock-card-top {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
 }
 
 .vc-frienddock-name {
+    overflow: hidden;
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
+    font-size: 14.5px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     cursor: pointer;
 }
 
@@ -70,64 +306,219 @@
     text-decoration: underline;
 }
 
-.vc-frienddock-status-text {
-    font-size: 12px;
-    color: var(--vc-ui-dim);
+.vc-frienddock-status {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
     white-space: nowrap;
 }
 
-/* ---------- Voice line ---------- */
+.vc-frienddock-status-online { color: var(--vc-ui-green); }
+.vc-frienddock-status-idle { color: var(--vc-ui-yellow); }
+.vc-frienddock-status-dnd { color: var(--vc-ui-red); }
+.vc-frienddock-status-streaming { color: var(--vc-ui-purple); }
+.vc-frienddock-status-offline { color: var(--vc-ui-dim); }
 
-.vc-frienddock-voice-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
+.vc-frienddock-activity,
+.vc-frienddock-waiting {
+    overflow: hidden;
+    color: var(--vc-ui-text);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.vc-frienddock-voice,
-.vc-frienddock-voice-none {
-    flex: 1;
-    min-width: 0;
+.vc-frienddock-waiting {
+    color: var(--vc-ui-teal);
+}
+
+/* ---------- Voice chip ---------- */
+
+.vc-frienddock-chip {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 7px;
+    align-self: flex-start;
+    max-width: 100%;
+    margin-top: 4px;
+    padding: 4px 6px 4px 8px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--vc-ui-green) 13%, transparent);
+    color: var(--vc-ui-green);
     font-size: 12px;
 }
 
-.vc-frienddock-voice {
-    color: var(--vc-ui-green);
+.vc-frienddock-chip-together {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vc-ui-green) 45%, transparent);
 }
 
-.vc-frienddock-voice > svg {
-    flex: none;
+.vc-frienddock-chip-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
 }
 
-.vc-frienddock-voice-none,
-.vc-frienddock-voice-place {
-    color: var(--vc-ui-dim);
-}
-
-.vc-frienddock-voice-text {
+.vc-frienddock-chip-text b,
+.vc-frienddock-chip-place {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.vc-frienddock-voice-count {
+.vc-frienddock-chip-text b {
+    font-weight: 600;
+}
+
+.vc-frienddock-chip-place {
+    color: var(--vc-ui-dim);
+    font-size: 11px;
+}
+
+.vc-frienddock-chip-with {
     flex: none;
-    padding: 0 6px;
+    padding: 1px 7px;
     border-radius: 999px;
-    background: var(--vc-ui-field);
-    color: var(--vc-ui-text);
+    background: var(--vc-ui-green);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+.vc-frienddock-chip-more {
+    flex: none;
+    color: var(--vc-ui-dim);
     font-size: 11px;
     font-weight: 600;
 }
 
-.vc-frienddock-voice-actions,
+.vc-frienddock-faces {
+    display: flex;
+    flex: none;
+    padding-left: 4px;
+}
+
+.vc-frienddock-faces img {
+    width: 18px;
+    height: 18px;
+    margin-left: -5px;
+    border: 1.5px solid var(--vc-ui-glass-strong);
+    border-radius: 50%;
+}
+
+/* Equalizer bars */
+.vc-frienddock-bars {
+    display: flex;
+    flex: none;
+    align-items: flex-end;
+    gap: 2px;
+    width: 12px;
+    height: 12px;
+}
+
+.vc-frienddock-bars i {
+    flex: 1;
+    height: 100%;
+    border-radius: 2px;
+    background: currentcolor;
+    transform-origin: bottom;
+    animation: vc-frienddock-eq 1s ease-in-out infinite;
+}
+
+.vc-frienddock-bars i:nth-child(2) { animation-delay: -0.35s; }
+.vc-frienddock-bars i:nth-child(3) { animation-delay: -0.7s; }
+
+@keyframes vc-frienddock-eq {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}
+
+/* ---------- Card actions ---------- */
+
+.vc-frienddock-card-actions {
+    display: flex;
+    flex: none;
+    gap: 6px;
+    align-self: center;
+}
+
+.vc-frienddock-act {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
+    cursor: pointer;
+    transition: background-color 0.2s var(--vc-ui-ease), color 0.2s var(--vc-ui-ease), transform 0.25s var(--vc-ui-spring), box-shadow 0.2s var(--vc-ui-ease);
+}
+
+.vc-frienddock-act:hover:not(:disabled) {
+    color: var(--vc-ui-title);
+    transform: scale(1.08);
+}
+
+.vc-frienddock-act:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.vc-frienddock-act:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-frienddock-act-join:hover:not(:disabled) {
+    background: var(--vc-ui-green);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--vc-ui-green) 45%, transparent);
+    color: #fff;
+}
+
+.vc-frienddock-act-follow:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--vc-ui-teal) 30%, transparent);
+}
+
+.vc-frienddock-act-on,
+.vc-frienddock-act-on:hover:not(:disabled) {
+    background: var(--vc-ui-teal);
+    box-shadow: 0 3px 12px color-mix(in srgb, var(--vc-ui-teal) 50%, transparent);
+    color: #fff;
+}
+
+.vc-frienddock-act-on svg {
+    animation: vc-frienddock-spin 4s linear infinite;
+}
+
+@keyframes vc-frienddock-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---------- Settings ---------- */
+
 .vc-frienddock-manage-actions {
     display: flex;
+    flex: none;
     align-items: center;
     gap: 4px;
-    flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-frienddock-logo *,
+    .vc-frienddock-logo-ring,
+    .vc-frienddock-bars i,
+    .vc-frienddock-act-on svg,
+    .vc-frienddock-banner-pulse,
+    .vc-frienddock-card,
+    .vc-frienddock-titlebtn-active::after {
+        animation: none;
+    }
+}
+
+.vc-frienddock-dock {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }

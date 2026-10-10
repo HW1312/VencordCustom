@@ -19,7 +19,7 @@ import {
 } from "@webpack/common";
 import type { CSSProperties } from "react";
 
-import { Avatar, Badge, Button, Empty, Glyph, Icon, IconButton, ICONS, Popover, RoundButton, Row, SearchField, Section, Sheet, ToggleRow } from "../_ui";
+import { Avatar, Button, Empty, Icon, IconButton, ICONS, Popover, RoundButton, Row, SearchField, Section, Sheet, ToggleRow } from "../_ui";
 import {
     addFavorite, getDisplayName, getJoinBlocker, getMyVoiceChannelId, getVoiceInfo, joinVoice, moveFavorite,
     removeFavorite, settings, stopFollowing, toggleFollow
@@ -32,8 +32,8 @@ const POPOUT_STYLE: CSSProperties = { maxHeight: "min(640px, calc(100vh - 72px))
 // ---------------------------------------------------------------- Icons
 
 const FRIENDS_PATH = "M13 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-8.5 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM13 12c-4 0-7 2-7 5v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2c0-3-3-5-7-5ZM4.5 12C2 12 0 13.5 0 15.5V17a1 1 0 0 0 1 1h3v-1c0-1.9.8-3.6 2.2-4.8-.5-.1-1.1-.2-1.7-.2Z";
-const SPEAKER_PATH = "M12 3a1 1 0 0 0-1-1h-.06a1 1 0 0 0-.74.32L5.92 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.92l4.28 4.68a1 1 0 0 0 .74.32H11a1 1 0 0 0 1-1V3ZM15.1 20.75c-.58.14-1.1-.33-1.1-.92v-.03c0-.5.37-.92.85-1.05a7 7 0 0 0 0-13.5A1.11 1.11 0 0 1 14 4.2v-.03c0-.6.52-1.06 1.1-.92a9 9 0 0 1 0 17.5Z";
-const FOLLOW_PATH = "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z";
+const FOLLOW_PATH = "M12 2a1 1 0 0 1 1 1v1.07A8 8 0 0 1 19.93 11H21a1 1 0 1 1 0 2h-1.07A8 8 0 0 1 13 19.93V21a1 1 0 1 1-2 0v-1.07A8 8 0 0 1 4.07 13H3a1 1 0 1 1 0-2h1.07A8 8 0 0 1 11 4.07V3a1 1 0 0 1 1-1Zm0 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm0 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z";
+const JOIN_PATH = "M12 3a1 1 0 0 0-1.7-.7L5.6 7H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2.6l4.7 4.7A1 1 0 0 0 12 21V3Zm3.5 4.1a1 1 0 0 1 1.4 0 7 7 0 0 1 0 9.8 1 1 0 1 1-1.4-1.4 5 5 0 0 0 0-7 1 1 0 0 1 0-1.4Z";
 const UP_PATH = "M12 7l-6 6h12l-6-6Z";
 const DOWN_PATH = "M12 17l6-6H6l6 6Z";
 const SORT_PATH = "M3 18h6v-2H3v2ZM3 6v2h18V6H3Zm0 7h12v-2H3v2Z";
@@ -103,92 +103,119 @@ function useDockIds(): string[] {
     return key ? key.split(",") : [];
 }
 
-// ---------------------------------------------------------------- Friend row
+// ---------------------------------------------------------------- Logo
 
-function FriendAvatar({ id, status }: { id: string; status: Status; }) {
+/** Two friends in a teal squircle: the front one nods, the back one waves along; radar rings while following */
+export function DockLogo({ size = 42, following }: { size?: number; following?: boolean; }) {
+    return (
+        <span className={classes(cl("logo"), following && cl("logo-following"))} style={{ width: size, height: size }}>
+            <span className={cl("logo-ring")} />
+            <span className={classes(cl("logo-ring"), cl("logo-ring-2"))} />
+            <svg viewBox="0 0 32 32" aria-hidden>
+                <g className={cl("logo-back")}>
+                    <circle cx="11" cy="12.5" r="3.6" />
+                    <path d="M4.5 24.5c0-4 2.9-6.6 6.5-6.6 1.5 0 2.9.4 4 1.2-1.9 1.5-3 3.6-3 5.4Z" />
+                </g>
+                <g className={cl("logo-front")}>
+                    <circle cx="19.5" cy="12" r="4.4" />
+                    <path d="M11.5 25.5c0-4.6 3.6-7.8 8-7.8s8 3.2 8 7.8Z" />
+                </g>
+            </svg>
+        </span>
+    );
+}
+
+// ---------------------------------------------------------------- Friend card
+
+function FriendAvatar({ id, status, size = 42 }: { id: string; status: Status; size?: number; }) {
     const user = useStateFromStores([UserStore], () => UserStore.getUser(id));
     return (
-        <div className={cl("avatar")} onClick={() => openUserProfile(id)} title="Open profile">
-            <Avatar size={36} src={user?.getAvatarURL(undefined, 64, false)} />
+        <div className={classes(cl("avatar"), cl(`avatar-${status}`))} onClick={() => openUserProfile(id)} title="Open profile">
+            <Avatar size={size} src={user?.getAvatarURL(undefined, 96, false)} />
             <span className={classes(cl("dot"), cl(`dot-${status}`))} title={STATUS_LABEL[status]} />
         </div>
     );
 }
 
-function VoiceLine({ id, onAction }: { id: string; onAction?(): void; }) {
-    const channelId = useStateFromStores([VoiceStateStore], () => VoiceStateStore.getVoiceStateForUser(id)?.channelId ?? null);
-    const myChannelId = useStateFromStores([SelectedChannelStore], getMyVoiceChannelId);
+/** Up to 4 avatars of the people in a voice channel */
+function VoiceFaces({ channelId }: { channelId: string; }) {
+    const ids = useStateFromStores([VoiceStateStore], () => Object.keys(VoiceStateStore.getVoiceStatesForChannel(channelId) ?? {}).slice(0, 4).join(","), [channelId]);
+    if (!ids) return null;
+    return (
+        <span className={cl("faces")}>
+            {ids.split(",").map(uid => <img key={uid} src={UserStore.getUser(uid)?.getAvatarURL(undefined, 32, false)} alt="" />)}
+        </span>
+    );
+}
+
+/** Small animated equalizer – "someone's talking in here" */
+const VoiceBars = () => <span className={cl("bars")}><i /><i /><i /></span>;
+
+function VoiceChip({ channelId, together }: { channelId: string; together: boolean; }) {
     // Re-render when the channel's participants or names change
     useStateFromStores([VoiceStateStore, ChannelStore, GuildStore], () =>
-        channelId ? `${Object.keys(VoiceStateStore.getVoiceStatesForChannel(channelId) ?? {}).length}:${ChannelStore.getChannel(channelId)?.name}` : "", [channelId]);
-    const { following } = settings.use(["following"]);
-
-    const isFollowing = following === id;
+        `${Object.keys(VoiceStateStore.getVoiceStatesForChannel(channelId) ?? {}).length}:${ChannelStore.getChannel(channelId)?.name}`, [channelId]);
     const info = getVoiceInfo(channelId);
-    const together = channelId != null && channelId === myChannelId;
-    const blocker = channelId && !together ? getJoinBlocker(channelId) : null;
 
     return (
-        <div className={cl("voice-row")}>
-            {channelId
-                ? (
-                    <div className={classes(cl("voice"), together && cl("voice-together"))} title={info ? `${info.channelName} - ${info.place}` : "In a voice channel"}>
-                        <Icon path={SPEAKER_PATH} size={14} />
-                        <span className={cl("voice-text")}>
-                            {info
-                                ? <>
-                                    <b>{info.isPrivate ? info.place : info.channelName}</b>
-                                    {!info.isPrivate && <span className={cl("voice-place")}> · {info.place}</span>}
-                                </>
-                                : <b>In a voice channel you can't see</b>}
-                        </span>
-                        {info && info.count > 0 && <span className={cl("voice-count")}>{info.count}</span>}
-                    </div>
-                )
-                : <div className={cl("voice-none")}>{isFollowing ? "Waiting for them to join voice…" : "Not in voice"}</div>}
-
-            <div className={cl("voice-actions")}>
-                {channelId && !together && (
-                    <Button small disabled={!info} title={blocker ?? "Join this voice channel"} onClick={() => { if (joinVoice(channelId)) onAction?.(); }}>
-                        Join
-                    </Button>
-                )}
-                {together && <Badge color="green">With you</Badge>}
-                <Button
-                    small
-                    variant={isFollowing ? "filled" : "gray"}
-                    color={isFollowing ? "teal" : undefined}
-                    icon={FOLLOW_PATH}
-                    title={isFollowing ? "Stop following" : "Follow: move along whenever they switch voice channels"}
-                    onClick={() => toggleFollow(id)}
-                >
-                    {isFollowing ? "Following" : "Follow"}
-                </Button>
-            </div>
+        <div className={classes(cl("chip"), together && cl("chip-together"))} title={info ? `${info.channelName} - ${info.place}` : "In a voice channel you can't see"}>
+            <VoiceBars />
+            <span className={cl("chip-text")}>
+                <b>{info ? (info.isPrivate ? info.place : info.channelName) : "Hidden channel"}</b>
+                {info && !info.isPrivate && <span className={cl("chip-place")}>{info.place}</span>}
+            </span>
+            {together ? <span className={cl("chip-with")}>With you</span> : <VoiceFaces channelId={channelId} />}
+            {info && info.count > 4 && !together && <span className={cl("chip-more")}>+{info.count - 4}</span>}
         </div>
     );
 }
 
-function FriendRow({ id, onNavigate }: { id: string; onNavigate?(): void; }) {
+function FriendCard({ id, onNavigate }: { id: string; onNavigate?(): void; }) {
     const user = useStateFromStores([UserStore], () => UserStore.getUser(id));
     const nick = useStateFromStores([RelationshipStore], () => RelationshipStore.getNickname(id));
     const status = useStateFromStores([PresenceStore], () => getStatus(id));
     const activity = useStateFromStores([PresenceStore], () => getActivityText(PresenceStore.getActivities(id) ?? []));
+    const channelId = useStateFromStores([VoiceStateStore], () => VoiceStateStore.getVoiceStateForUser(id)?.channelId ?? null);
+    const myChannelId = useStateFromStores([SelectedChannelStore], getMyVoiceChannelId);
     const { following } = settings.use(["following"]);
 
     const name = nick || getDisplayName(user, id);
+    const isFollowing = following === id;
+    const together = channelId != null && channelId === myChannelId;
+    const blocker = channelId && !together ? getJoinBlocker(channelId) : null;
 
     return (
-        <Row
-            align="top"
-            className={classes(following === id && cl("row-following"), status === "offline" && cl("row-offline"))}
-            leading={<FriendAvatar id={id} status={status} />}
-            title={<span className={cl("name")} title="Open DM" onClick={() => { openPrivateChannel(id); onNavigate?.(); }}>{name}</span>}
-            subtitle={activity ? <span title={activity}>{activity}</span> : undefined}
-            trailing={<span className={cl("status-text")}>{STATUS_LABEL[status]}</span>}
-        >
-            <VoiceLine id={id} onAction={onNavigate} />
-        </Row>
+        <div className={classes(cl("card"), isFollowing && cl("card-following"), status === "offline" && !channelId && cl("card-offline"))}>
+            <FriendAvatar id={id} status={status} />
+            <div className={cl("card-main")}>
+                <div className={cl("card-top")}>
+                    <span className={cl("name")} title="Open DM" onClick={() => { openPrivateChannel(id); onNavigate?.(); }}>{name}</span>
+                    <span className={classes(cl("status"), cl(`status-${status}`))}>{STATUS_LABEL[status]}</span>
+                </div>
+                {activity && <div className={cl("activity")} title={activity}>{activity}</div>}
+                {channelId && <VoiceChip channelId={channelId} together={together} />}
+                {!channelId && isFollowing && <div className={cl("waiting")}>Waiting for them to join voice…</div>}
+            </div>
+            <div className={cl("card-actions")}>
+                {channelId && !together && (
+                    <button
+                        className={classes(cl("act"), cl("act-join"))}
+                        disabled={!!blocker || !getVoiceInfo(channelId)}
+                        title={blocker ?? "Join their voice channel"}
+                        onClick={() => { if (joinVoice(channelId)) onNavigate?.(); }}
+                    >
+                        <Icon path={JOIN_PATH} size={16} />
+                    </button>
+                )}
+                <button
+                    className={classes(cl("act"), cl("act-follow"), isFollowing && cl("act-on"))}
+                    title={isFollowing ? "Stop following" : "Follow: go wherever they go in voice, until you stop it"}
+                    onClick={() => toggleFollow(id)}
+                >
+                    <Icon path={FOLLOW_PATH} size={16} />
+                </button>
+            </div>
+        </div>
     );
 }
 
@@ -197,41 +224,76 @@ function FriendRow({ id, onNavigate }: { id: string; onNavigate?(): void; }) {
 function FollowBanner() {
     const { following } = settings.use(["following"]);
     const user = useStateFromStores([UserStore], () => following ? UserStore.getUser(following) : undefined, [following]);
+    const channelId = useStateFromStores([VoiceStateStore], () => following ? VoiceStateStore.getVoiceStateForUser(following)?.channelId ?? null : null, [following]);
     if (!following) return null;
 
+    const info = getVoiceInfo(channelId);
     return (
-        <Section>
-            <Row
-                leading={<Glyph path={FOLLOW_PATH} color="teal" />}
-                title={<>Following <b>{getDisplayName(user, following)}</b> in voice</>}
-                trailing={<Button small variant="gray" onClick={() => stopFollowing()}>Stop</Button>}
-            />
-        </Section>
+        <div className={cl("banner")}>
+            <span className={cl("banner-avatar")}>
+                <span className={cl("banner-pulse")} />
+                <Avatar size={34} src={user?.getAvatarURL(undefined, 64, false)} />
+            </span>
+            <div className={cl("banner-text")}>
+                <b>Following {getDisplayName(user, following)}</b>
+                <span>{info ? `in ${info.isPrivate ? info.place : "#" + info.channelName}` : "Not in voice – you'll join when they do"}</span>
+            </div>
+            <Button small variant="gray" onClick={() => stopFollowing()}>Stop</Button>
+        </div>
     );
 }
 
+type DockGroup = "voice" | "online" | "offline";
+const GROUP_TITLE: Record<DockGroup, string> = { voice: "In voice", online: "Online", offline: "Offline" };
+
+function useGroups(ids: string[]) {
+    const key = useStateFromStores([PresenceStore, VoiceStateStore], () => ids.map(id =>
+        VoiceStateStore.getVoiceStateForUser(id)?.channelId ? "voice" : getStatus(id) === "offline" ? "offline" : "online"
+    ).join(","), [ids.join(",")]);
+    const groups = key.split(",");
+    return (["voice", "online", "offline"] as DockGroup[])
+        .map(g => ({ group: g, ids: ids.filter((_, i) => groups[i] === g) }))
+        .filter(g => g.ids.length);
+}
+
 function Dock({ onNavigate }: { onNavigate?(): void; }) {
-    const { favorites } = settings.use(["favorites"]);
+    const { favorites, sortByStatus } = settings.use(["favorites", "sortByStatus"]);
     const ids = useDockIds();
+    const groups = useGroups(ids);
+
+    const list = (groupIds: string[]) => groupIds.map(id => (
+        <ErrorBoundary noop key={id}>
+            <FriendCard id={id} onNavigate={onNavigate} />
+        </ErrorBoundary>
+    ));
 
     return (
-        <>
+        <div className={cl("dock")}>
             <FollowBanner />
-            {ids.length > 0 && (
-                <Section>
-                    {ids.map(id => (
-                        <ErrorBoundary noop key={id}>
-                            <FriendRow id={id} onNavigate={onNavigate} />
-                        </ErrorBoundary>
-                    ))}
-                </Section>
-            )}
+            {ids.length > 0 && (sortByStatus
+                ? groups.map(({ group, ids: groupIds }) => (
+                    <div key={group} className={cl("group")}>
+                        <div className={cl("group-title")}>{GROUP_TITLE[group]}<span>{groupIds.length}</span></div>
+                        {list(groupIds)}
+                    </div>
+                ))
+                : <div className={cl("group")}>{list(ids)}</div>)}
             {!favorites.length && (
                 <Empty icon={FRIENDS_PATH} title="No favorites yet" hint="Right-click a friend and choose “Add to Friend Dock”, or add them in the settings." />
             )}
             {favorites.length > 0 && !ids.length && <Empty icon={FRIENDS_PATH} title="All your favorites are offline." />}
-        </>
+        </div>
     );
+}
+
+/** "2 in voice · 5 online" under the title */
+function useSummary() {
+    const { favorites } = settings.use(["favorites"]);
+    return useStateFromStores([PresenceStore, VoiceStateStore], () => {
+        const voice = favorites.filter(id => VoiceStateStore.getVoiceStateForUser(id)?.channelId).length;
+        const online = favorites.filter(id => getStatus(id) !== "offline").length;
+        return [voice && `${voice} in voice`, `${online} online`].filter(Boolean).join(" · ");
+    }, [favorites]);
 }
 
 // ---------------------------------------------------------------- Settings
@@ -305,7 +367,7 @@ const OPTIONS = [
 function Options() {
     const s = settings.use(["showTitleBarButton", "sortByStatus", "hideOffline", "leaveWithFriend"]);
     return (
-        <Section title="Options" footer="Following stops automatically when you switch or leave the voice channel yourself.">
+        <Section title="Options" footer="Following goes on until you press Stop: if you get moved away (e.g. by a “join to create” bot) you're brought back to your friend, if you leave voice yourself you join again when they switch channels.">
             {OPTIONS.map(([key, label, icon, color]) => (
                 <ToggleRow key={key} icon={icon} color={color} title={label} checked={s[key]} onChange={v => settings.store[key] = v} />
             ))}
@@ -314,7 +376,7 @@ function Options() {
 }
 
 export const SettingsPanel = ErrorBoundary.wrap(() => (
-    <Sheet embedded header={{ title: "Friend Dock", subtitle: "Your favorite friends with live status and voice", icon: FRIENDS_PATH, iconColor: "teal" }}>
+    <Sheet embedded header={{ title: "Friend Dock", subtitle: "Your favorite friends with live status and voice", iconNode: <DockLogo /> }}>
         <FavoriteManager />
         <Options />
     </Sheet>
@@ -323,13 +385,15 @@ export const SettingsPanel = ErrorBoundary.wrap(() => (
 // ---------------------------------------------------------------- Title bar
 
 function PopoutPanel({ onClose }: { onClose(): void; }) {
+    const { following } = settings.use(["following"]);
+    const summary = useSummary();
     return (
         <Popover width={380} style={POPOUT_STYLE}>
             <Sheet
                 header={{
                     title: "Friend Dock",
-                    icon: FRIENDS_PATH,
-                    iconColor: "teal",
+                    subtitle: summary,
+                    iconNode: <DockLogo following={!!following} />,
                     actions: <RoundButton icon={ICONS.gear} label="Settings" onClick={() => { onClose(); openPluginModal(plugins.FriendDock); }} />
                 }}
             >
