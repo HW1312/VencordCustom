@@ -16,6 +16,8 @@ export interface KeyRecord {
     kind: "private" | "group";
     partnerId?: string;
     source?: "handshake" | "random" | "password" | "code" | "room";
+    /** Handshake keys: made with the hybrid ECDH + ML-KEM exchange (false = older ECDH-only handshake) */
+    quantumSafe?: boolean;
     key: string;
     safety: string;
     created: number;
@@ -25,6 +27,7 @@ export interface PendingHandshake {
     to: string;
     channelId: string;
     privateJwk: JsonWebKey;
+    kemSeed?: string;
     created: number;
 }
 
@@ -49,6 +52,7 @@ export interface PendingJoin {
     channelId: string;
     keyId: string;
     privateJwk: JsonWebKey;
+    kemSeed?: string;
     created: number;
 }
 
@@ -133,7 +137,7 @@ function uniqueName(name: string) {
 }
 
 /** Adds a key. Returns the existing record (and isNew false) if the same key is already in the keyring. */
-export async function addKey(key: Uint8Array, info: Pick<KeyRecord, "name" | "kind" | "partnerId" | "source">) {
+export async function addKey(key: Uint8Array, info: Pick<KeyRecord, "name" | "kind" | "partnerId" | "source" | "quantumSafe">) {
     const id = await keyIdOf(key);
     const existing = getKey(id);
     if (existing) return { record: existing, isNew: false };

@@ -1,6 +1,7 @@
 /*
  * SecretChat – Secret rooms: chats that are always encrypted, listed in their own area (server list icon), with
- * their own pings instead of Discord's. The room key is handed to new members with an ECDH exchange in the chat:
+ * their own pings instead of Discord's. The room key is handed to new members with a hybrid key exchange in the chat
+ * (ECDH P-256 + ML-KEM-768, see crypto.ts):
  *
  * announce: "🔑 SC1R.<key id>"                                         – this chat is a room with that key
  * join:     "🔑 SC1J.<key id>.<join id>.<public key>"                  – someone without the key asks for it
@@ -18,7 +19,7 @@ import { findByPropsLazy } from "@webpack";
 import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, UserStore } from "@webpack/common";
 
 import { notify } from "../_ui";
-import { decodeText, deriveSharedKey, encodeText, fromB64, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
+import { answerHandshake, completeHandshakeKey, decodeText, encodeText, fromB64, HANDSHAKE_PUBLIC, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
 import { settings } from "./settings";
 import { addInvite, addKey, addRoom, deleteKey, dropRoom, emit, getKey, getKeyBytes, isDismissed, save, state } from "./store";
@@ -29,8 +30,14 @@ const logger = new Logger("SecretChat");
 const SoundActions = findByPropsLazy("playNotificationSound", "showNotification");
 
 const ANNOUNCE_RE = /^🔑 SC1R\.([0-9a-f]{8})$/;
-const JOIN_RE = /^🔑 SC1J\.([0-9a-f]{8})\.([0-9a-f]{16})\.([A-Za-z0-9_-]{80,100})$/;
-const KEY_RE = /^🔑 SC1K\.([0-9a-f]{16})\.(\d{15,21})\.([A-Za-z0-9_-]{80,100})\.([A-Za-z0-9_-]{60,600})$/;
+const JOIN_RE = new RegExp(String.raw`^🔑 SC1J\.([0-9a-f]{8})\.([0-9a-f]{16})\.(${HANDSHAKE_PUBLIC})$`);
+const KEY_RE = new RegExp(String.raw`^🔑 SC1K\.([0-9a-f]{16})\.(\d{15,21})\.(${HANDSHAKE_PUBLIC})\.([A-Za-z0-9_-]{60,600})$`);
+
+/** The room name travels with the key – kept short so the key message stays under Discord's 2000 characters */
+function shortName(name: string) {
+    while (encodeText(name).length > 120) name = name.slice(0, -1);
+    return name;
+}
 
 /** Join requests older than this are not answered automatically when they show up in the history */
 const AUTO_ANSWER_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
@@ -176,9 +183,8 @@ export async function letIn(msg: RoomMessage, manual: boolean) {
             if (answered.has(joinId)) return;
         }
         const key = getKeyBytes(msg.keyId!)!;
-        const name = state.rooms[msg.channelId]?.name ?? "Secret room";
-        const { publicKey, privateJwk } = await newHandshakeKeyPair();
-        const shared = await deriveSharedKey(privateJwk, msg.publicKey!, me, msg.authorId);
+        const name = shortName(state.rooms[msg.channelId]?.name ?? "Secret room");
+        const { publicKey, key: shared } = await answerHandshake(msg.publicKey!, me, msg.authorId);
         const nonce = randomBytes(12);
         const sealed = seal(shared, nonce, concat(key, encodeText(name)), keyAad(joinId, msg.authorId));
         answered.add(joinId);
@@ -201,7 +207,7 @@ async function completeJoin(msg: RoomMessage) {
     if (!me || !pending || busy.has(joinId)) return;
     busy.add(joinId);
     try {
-        const shared = await deriveSharedKey(pending.privateJwk, msg.publicKey!, me, msg.authorId);
+        const { key: shared, quantumSafe } = await completeHandshakeKey(pending, msg.publicKey!, me, msg.authorId);
         const raw = fromB64(msg.sealed!);
         const plain = open(shared, raw.subarray(0, 12), raw.subarray(12), keyAad(joinId, me));
         if (!plain || plain.length < 32) throw new Error("Could not unseal the room key");
@@ -211,7 +217,7 @@ async function completeJoin(msg: RoomMessage) {
         let name = "Secret room";
         try { name = decodeText(plain.subarray(32)) || name; } catch { }
 
-        const { record } = await addKey(key, { name, kind: "group", source: "room" });
+        const { record } = await addKey(key, { name, kind: "group", source: "room", quantumSafe });
         delete state.joins[joinId];
         await addRoom(pending.channelId, record.id, name);
         retryLocked();
@@ -234,8 +240,8 @@ export async function joinRoom(channelId: string, keyId: string) {
     }
     if (Object.values(state.joins).some(j => j.channelId === channelId && j.keyId === keyId)) return;
     const joinId = toHex(randomBytes(8));
-    const { publicKey, privateJwk } = await newHandshakeKeyPair();
-    state.joins[joinId] = { channelId, keyId, privateJwk, created: Date.now() };
+    const { publicKey, privateJwk, kemSeed } = await newHandshakeKeyPair();
+    state.joins[joinId] = { channelId, keyId, privateJwk, kemSeed, created: Date.now() };
     await save();
     sendMessage(channelId, { content: `🔑 SC1J.${keyId}.${joinId}.${publicKey}` }, false);
     notify({ title: isPrivateChat(channelId) ? "Asked to join – a member who is online lets you in automatically" : "Asked to join – a member has to let you in", kind: "info", app: "SecretChat" });

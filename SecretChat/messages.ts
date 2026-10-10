@@ -13,7 +13,7 @@ import { findByProps } from "@webpack";
 import { UserStore } from "@webpack/common";
 
 import { notify } from "../_ui";
-import { decryptEnvelope, deriveSharedKey, encryptMessage, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
+import { answerHandshake, completeHandshakeKey, decryptEnvelope, encryptMessage, HANDSHAKE_PUBLIC, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
 import { isFileText, takeFile } from "./files";
 import { onRoomMessage, processRoomMessage } from "./rooms";
 import { settings } from "./settings";
@@ -36,9 +36,10 @@ const locked = new Map<string, { channelId: string; authorId: string; raw: strin
 /**
  * hello: "🔑 SC1H.<to user id>.<handshake id>.<public key>"  – A asks B
  * ack:   "🔑 SC1A.<handshake id>.<public key>"              – B answers, both now derive the same key
+ * The public key is "<ECDH>~<ML-KEM>" (hybrid, quantum-safe) or only "<ECDH>" from older versions.
  */
-const HELLO_RE = /^🔑 SC1H\.(\d{15,21})\.([0-9a-f]{16})\.([A-Za-z0-9_-]{80,100})$/;
-const ACK_RE = /^🔑 SC1A\.([0-9a-f]{16})\.([A-Za-z0-9_-]{80,100})$/;
+const HELLO_RE = new RegExp(String.raw`^🔑 SC1H\.(\d{15,21})\.([0-9a-f]{16})\.(${HANDSHAKE_PUBLIC})$`);
+const ACK_RE = new RegExp(String.raw`^🔑 SC1A\.([0-9a-f]{16})\.(${HANDSHAKE_PUBLIC})$`);
 
 export interface Handshake {
     type: "hello" | "ack";
@@ -70,8 +71,8 @@ const userName = (id: string) => {
 
 export async function startHandshake(user: User, channelId: string) {
     const hsid = toHex(randomBytes(8));
-    const { publicKey, privateJwk } = await newHandshakeKeyPair();
-    state.pending[hsid] = { to: user.id, channelId, privateJwk, created: Date.now() };
+    const { publicKey, privateJwk, kemSeed } = await newHandshakeKeyPair();
+    state.pending[hsid] = { to: user.id, channelId, privateJwk, kemSeed, created: Date.now() };
     await save();
     sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` }, false);
     notify({ title: `Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, kind: "info", app: "SecretChat" });
@@ -88,9 +89,8 @@ export async function acceptHandshake(hs: Handshake) {
     if (!me || hs.to !== me || busy.has(hs.hsid) || state.handled.includes(hs.hsid)) return;
     busy.add(hs.hsid);
     try {
-        const { publicKey, privateJwk } = await newHandshakeKeyPair();
-        const key = await deriveSharedKey(privateJwk, hs.publicKey, me, hs.authorId);
-        const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake" });
+        const { publicKey, key, quantumSafe } = await answerHandshake(hs.publicKey, me, hs.authorId);
+        const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake", quantumSafe });
         state.handled.push(hs.hsid);
         sendMessage(hs.channelId, { content: `🔑 SC1A.${hs.hsid}.${publicKey}` }, false);
         await finish(record, isNew, hs.channelId, hs.authorId);
@@ -115,8 +115,8 @@ async function completeHandshake(hs: Handshake) {
     if (!pending || !me || pending.to !== hs.authorId || busy.has(hs.hsid)) return;
     busy.add(hs.hsid);
     try {
-        const key = await deriveSharedKey(pending.privateJwk, hs.publicKey, me, hs.authorId);
-        const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake" });
+        const { key, quantumSafe } = await completeHandshakeKey(pending, hs.publicKey, me, hs.authorId);
+        const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake", quantumSafe });
         delete state.pending[hs.hsid];
         state.handled.push(hs.hsid);
         await finish(record, isNew, pending.channelId, hs.authorId);

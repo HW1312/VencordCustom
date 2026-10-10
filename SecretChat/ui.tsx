@@ -133,9 +133,21 @@ function KeyRow({ k, selected, onClick }: { k: KeyRecord; selected: boolean; onC
                 ? <RenameField initial={k.name} onDone={n => { if (n != null) renameKey(k.id, n); setEditing(false); }} />
                 : k.name}
             subtitle={
-                <Tooltip text="Safety code – compare it with the others">
-                    {p => <span {...p} className={cl("safety")}><Icon path={SHIELD_PATH} size={11} />{k.safety}</span>}
-                </Tooltip>
+                <>
+                    <Tooltip text="Safety code – compare it with the others">
+                        {p => <span {...p} className={cl("safety")}><Icon path={SHIELD_PATH} size={11} />{k.safety}</span>}
+                    </Tooltip>
+                    {k.quantumSafe && (
+                        <Tooltip text="Made with the hybrid handshake (ECDH P-256 + ML-KEM-768) – safe against quantum computers">
+                            {p => <span {...p} className={cl("pq")}>Quantum-safe</span>}
+                        </Tooltip>
+                    )}
+                    {k.source === "handshake" && !k.quantumSafe && (
+                        <Tooltip text="Made with the older ECDH-only handshake. Delete it and connect again for a quantum-safe key.">
+                            {p => <span {...p} className={classes(cl("pq"), cl("pq-old"))}>Not quantum-safe</span>}
+                        </Tooltip>
+                    )}
+                </>
             }
             trailing={
                 <span className={cl("key-trailing")} onClick={e => e.stopPropagation()}>

@@ -2,10 +2,12 @@
  * SecretChat – Crypto
  * Messages: ChaCha20-Poly1305 (RFC 8439). Written out here because messages must be decrypted synchronously
  * while Discord dispatches them, and WebCrypto is async only.
- * Keys: ECDH P-256 handshake or PBKDF2 password, both hashed with SHA-512 (WebCrypto, async is fine there).
- * No imports, so the file can be tested with plain Node.
+ * Files: AES-256-GCM (WebCrypto).
+ * Keys: hybrid handshake (ECDH P-256 + ML-KEM-768, post-quantum) or PBKDF2 password, hashed with SHA-512.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+
+import { ml_kem768 } from "@noble/post-quantum/ml-kem.js";
 
 // ---------------------------------------------------------------- ChaCha20
 
@@ -228,7 +230,22 @@ export async function keyFromPassword(password: string) {
 
 const ECDH = { name: "ECDH", namedCurve: "P-256" } as const;
 
-export async function newHandshakeKeyPair() {
+/**
+ * Hybrid handshake: ECDH P-256 (classic) + ML-KEM-768 (FIPS 203, safe against quantum computers). The key needs
+ * both secrets, so an attacker has to break both. Public halves are sent as "<ECDH public>~<ML-KEM part>":
+ * the asking side sends its ML-KEM public key, the answering side the ML-KEM ciphertext.
+ * Without "~" it is an old ECDH-only handshake (still answered, but the key is not quantum-safe).
+ */
+export interface HandshakeHalf {
+    publicKey: string;
+    privateJwk: JsonWebKey;
+    /** 64-byte ML-KEM seed – the secret key is rebuilt from it */
+    kemSeed?: string;
+}
+
+export const HANDSHAKE_PUBLIC = String.raw`[A-Za-z0-9_-]{80,100}(?:~[A-Za-z0-9_-]{1400,1600})?`;
+
+async function ecdhPair() {
     const pair = await crypto.subtle.generateKey(ECDH, true, ["deriveBits"]) as CryptoKeyPair;
     return {
         publicKey: toB64(new Uint8Array(await crypto.subtle.exportKey("raw", pair.publicKey))),
@@ -236,13 +253,58 @@ export async function newHandshakeKeyPair() {
     };
 }
 
-/** ECDH secret → SHA-512 together with both user ids → 32-byte chat key */
-export async function deriveSharedKey(privateJwk: JsonWebKey, theirPublic: string, userA: string, userB: string) {
+async function ecdhSecret(privateJwk: JsonWebKey, theirPublic: string) {
     const priv = await crypto.subtle.importKey("jwk", privateJwk, ECDH, false, ["deriveBits"]);
     const pub = await crypto.subtle.importKey("raw", fromB64(theirPublic), ECDH, false, []);
-    const secret = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: pub }, priv, 256));
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: pub }, priv, 256));
+}
+
+const splitPublic = (p: string) => {
+    const [ecdh, kem] = p.split("~");
+    return { ecdh, kem: kem ? fromB64(kem) : null };
+};
+
+/** Both secrets → SHA-512 together with both user ids (and the ML-KEM ciphertext) → 32-byte chat key */
+async function chatKey(ecdh: Uint8Array, kem: { secret: Uint8Array; cipherText: Uint8Array; } | null, userA: string, userB: string) {
     const ids = [userA, userB].sort().join("|");
-    return (await sha512("SecretChat private key v1", secret, ids)).subarray(0, 32);
+    const hash = kem
+        ? await sha512("SecretChat private key v2", ecdh, kem.secret, kem.cipherText, ids)
+        : await sha512("SecretChat private key v1", ecdh, ids);
+    return hash.subarray(0, 32);
+}
+
+/** The asking side: a fresh ECDH pair + ML-KEM key pair. Keep the half until the answer comes. */
+export async function newHandshakeKeyPair(): Promise<HandshakeHalf> {
+    const { publicKey, privateJwk } = await ecdhPair();
+    const seed = randomBytes(64);
+    const kem = ml_kem768.keygen(seed);
+    return { publicKey: `${publicKey}~${toB64(kem.publicKey)}`, privateJwk, kemSeed: toB64(seed) };
+}
+
+/** The answering side: returns our public half (to send back) and the chat key */
+export async function answerHandshake(theirPublic: string, me: string, them: string) {
+    const their = splitPublic(theirPublic);
+    const { publicKey, privateJwk } = await ecdhPair();
+    const ecdh = await ecdhSecret(privateJwk, their.ecdh);
+    if (!their.kem) return { publicKey, key: await chatKey(ecdh, null, me, them), quantumSafe: false };
+    const { cipherText, sharedSecret } = ml_kem768.encapsulate(their.kem);
+    return {
+        publicKey: `${publicKey}~${toB64(cipherText)}`,
+        key: await chatKey(ecdh, { secret: sharedSecret, cipherText }, me, them),
+        quantumSafe: true
+    };
+}
+
+/** The asking side got the answer: the same chat key from the saved half */
+export async function completeHandshakeKey(half: Pick<HandshakeHalf, "privateJwk" | "kemSeed">, theirPublic: string, me: string, them: string) {
+    const their = splitPublic(theirPublic);
+    const ecdh = await ecdhSecret(half.privateJwk, their.ecdh);
+    // We sent an ML-KEM key, so the answer must use it – otherwise someone stripped it to downgrade the handshake
+    if (half.kemSeed && !their.kem) throw new Error("The answer is missing the post-quantum part");
+    if (!half.kemSeed || !their.kem) return { key: await chatKey(ecdh, null, me, them), quantumSafe: false };
+    const { secretKey } = ml_kem768.keygen(fromB64(half.kemSeed));
+    const secret = ml_kem768.decapsulate(their.kem, secretKey);
+    return { key: await chatKey(ecdh, { secret, cipherText: their.kem }, me, them), quantumSafe: true };
 }
 
 // ---------------------------------------------------------------- Files (async, WebCrypto AES-GCM – fast for MBs)

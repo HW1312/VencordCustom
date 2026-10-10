@@ -17,6 +17,7 @@ import { ChannelStore, FluxDispatcher, Menu, SelectedChannelStore, UserStore } f
 import { notify } from "../_ui";
 import { loadedMessageHooks } from "../ChatPopout/messages";
 import { sendFilesOverrides } from "../ChatPopout/upload";
+import { About } from "./about";
 import { onLockContextMenu, renderTitleBarButton, ServerListIcon } from "./area";
 import { EncryptedFile, interceptUpload, sendFilesOverride } from "./files";
 import { decryptLoaded, intercept, onBeforeEdit, onBeforeSend, retryHandshakes, retryLocked, startHandshake, unwrapMessageActions, wrapMessageActions } from "./messages";
@@ -52,6 +53,7 @@ export default definePlugin({
     authors: [{ name: "5406", id: 1062070744558870548n }],
     tags: ["Chat", "Privacy", "Utility"],
     settings,
+    settingsAboutComponent: About,
     // ChatPopout draws the chat in the rooms window
     dependencies: ["ServerListAPI", "ChatPopout"],
 

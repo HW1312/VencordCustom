@@ -98,6 +98,21 @@
     letter-spacing: 0.04em;
 }
 
+.vc-secretchat-pq {
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--vc-ui-green) 16%, transparent);
+    color: var(--vc-ui-green);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.vc-secretchat-pq-old {
+    background: color-mix(in srgb, var(--vc-ui-orange) 16%, transparent);
+    color: var(--vc-ui-orange);
+}
+
 .vc-secretchat-rename {
     display: block;
     min-width: 0;
