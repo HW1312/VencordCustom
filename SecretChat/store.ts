@@ -28,6 +28,8 @@ export interface PendingHandshake {
     channelId: string;
     privateJwk: JsonWebKey;
     kemSeed?: string;
+    /** Our request message – deleted once it's answered */
+    messageId?: string;
     created: number;
 }
 
@@ -53,6 +55,8 @@ export interface PendingJoin {
     keyId: string;
     privateJwk: JsonWebKey;
     kemSeed?: string;
+    /** Our join message – deleted once we got the key */
+    messageId?: string;
     created: number;
 }
 

@@ -13,11 +13,12 @@ import { findByProps } from "@webpack";
 import { ChannelStore, UserStore } from "@webpack/common";
 
 import { notify } from "../_ui";
+import { ageOf, MessageRef, refOf, removeMessage, STALE } from "./cleanup";
 import { answerHandshake, completeHandshakeKey, decryptEnvelope, encodeText, encryptMessage, fromB64, HANDSHAKE_PUBLIC, newHandshakeKeyPair, open, parseMessage, randomBytes, RUNE_MARKER, seal, toB64, toHex } from "./crypto";
 import { isFileText, takeFile } from "./files";
-import { onRoomMessage, processRoomMessage } from "./rooms";
+import { onRoomDeleted, onRoomMessage, processRoomMessage } from "./rooms";
 import { settings } from "./settings";
-import { addKey, channelKey, containsInviteCode, deleteKey, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
+import { addKey, cancelPending, channelKey, containsInviteCode, deleteKey, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
 const logger = new Logger("SecretChat");
 
@@ -55,6 +56,8 @@ export interface Handshake {
 
 /** message id → handshake, for the card under the message */
 export const handshakes = new Map<string, Handshake>();
+/** handshake id → our answer (accept / decline), deleted when the request disappears */
+const ownAnswers = new Map<string, MessageRef>();
 const busy = new Set<string>();
 
 function parseHandshake(content: string): Omit<Handshake, "authorId" | "channelId"> | null {
@@ -80,6 +83,14 @@ export async function startHandshake(user: User, channelId: string) {
     await save();
     sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` }, false);
     notify({ title: `Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, kind: "info", app: "SecretChat" });
+}
+
+/** Cancels our open requests to this user and deletes the request messages */
+export async function cancelRequest(userId: string) {
+    for (const p of Object.values(state.pending)) {
+        if (p.to === userId && p.messageId) removeMessage({ id: p.messageId, channelId: p.channelId });
+    }
+    await cancelPending(userId);
 }
 
 async function finish(record: KeyRecord, isNew: boolean, channelId: string, partnerId: string) {
@@ -124,6 +135,7 @@ async function onDeclined(hs: Handshake, live: boolean) {
     if (pending && pending.to !== hs.authorId) return;
     if (!pending && hs.authorId !== me) return;
     delete state.pending[hs.hsid];
+    if (pending?.messageId) removeMessage({ id: pending.messageId, channelId: pending.channelId });
     if (!state.declined.includes(hs.hsid)) state.declined.push(hs.hsid);
     if (!state.handled.includes(hs.hsid)) state.handled.push(hs.hsid);
     await save();
@@ -140,6 +152,7 @@ async function completeHandshake(hs: Handshake) {
         const { key, quantumSafe } = await completeHandshakeKey(pending, hs.publicKey, me, hs.authorId);
         const { record, isNew } = await addKey(key, { name: userName(hs.authorId), kind: "private", partnerId: hs.authorId, source: "handshake", quantumSafe });
         delete state.pending[hs.hsid];
+        if (pending.messageId) removeMessage({ id: pending.messageId, channelId: pending.channelId });
         state.handled.push(hs.hsid);
         await finish(record, isNew, pending.channelId, hs.authorId);
     } catch (e) {
@@ -243,6 +256,7 @@ function processMessage(m: any, live: boolean) {
     if (del) {
         keyDeletes.set(m.id, { keyId: del[1], authorId });
         m.content = "";
+        if (authorId === myId() && ageOf(m) > STALE) removeMessage(refOf(m));
         onDeleteRequest(del[1], del[2], authorId);
         return;
     }
@@ -253,6 +267,8 @@ function processMessage(m: any, live: boolean) {
     handshakes.set(m.id, hs);
     // Only the card under the message shows it
     m.content = "";
+    // Not the optimistic copy Discord shows while sending (it has a temporary id)
+    if (authorId === myId() && m.state !== "SENDING") trackOwn(m, hs);
 
     if (hs.type === "decline") {
         if (!state.declined.includes(hs.hsid)) setTimeout(() => onDeclined(hs, live), 0);
@@ -261,6 +277,26 @@ function processMessage(m: any, live: boolean) {
     } else if (live && hs.type === "hello" && hs.to === myId() && !state.handled.includes(hs.hsid)) {
         notify({ title: `${userName(authorId)} wants an encrypted chat with you – accept it under their message`, kind: "info", app: "SecretChat" });
     }
+}
+
+/** Our own handshake messages: remember them to delete them later, or delete them now if they're done */
+function trackOwn(m: any, hs: Handshake) {
+    const ref = refOf(m);
+    if (hs.type === "hello") {
+        const pending = state.pending[hs.hsid];
+        if (pending) {
+            if (pending.messageId !== m.id) {
+                pending.messageId = m.id;
+                setTimeout(save, 0);
+            }
+        } else if (state.handled.includes(hs.hsid) || state.declined.includes(hs.hsid) || ageOf(m) > STALE) {
+            // Answered (maybe on another PC) or cancelled long ago
+            removeMessage(ref);
+        }
+        return;
+    }
+    ownAnswers.set(hs.hsid, ref);
+    if (ageOf(m) > STALE) removeMessage(ref);
 }
 
 /** Messages ChatPopout loads itself from the API (they don't go through the dispatcher) */
@@ -278,7 +314,10 @@ function onDeleted(ids: string[]) {
             delete state.pending[hs.hsid];
             changed = true;
         }
+        // The request is gone → the asking side got our answer, it can go too
+        if (hs?.type === "hello") removeMessage(ownAnswers.get(hs.hsid));
     }
+    onRoomDeleted(ids);
     if (changed) setTimeout(save, 0);
 }
 

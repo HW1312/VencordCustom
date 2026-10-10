@@ -17,10 +17,10 @@ import type { ReactNode } from "react";
 import { Avatar as KitAvatar, Button, confirm, openAlert, Empty, Glyph, Icon, IconButton, ICONS, LinkRow, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, State, TextField } from "../_ui";
 import { RoomCard } from "./area";
 import { keyFromPassword, randomBytes } from "./crypto";
-import { acceptHandshake, declineHandshake, decrypted, deleteKeyForBoth, handshakes, keyDeletes, retryLocked, startHandshake } from "./messages";
+import { acceptHandshake, cancelRequest, declineHandshake, decrypted, deleteKeyForBoth, handshakes, keyDeletes, retryLocked, startHandshake } from "./messages";
 import { chatLabel, makeRoom, pruneStale, roomMessages } from "./rooms";
 import { settings } from "./settings";
-import { addKey, cancelPending, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
+import { addKey, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
 
 const cl = classNameFactory("vc-secretchat-");
 
@@ -217,7 +217,7 @@ function PrivateTab({ channel, current }: { channel: Channel; current: string | 
                     title={userName(id)}
                     trailing={<>
                         <State spinner>Waiting …</State>
-                        <IconButton icon={ICONS.close} label="Cancel request" destructive onClick={() => cancelPending(id)} />
+                        <IconButton icon={ICONS.close} label="Cancel request" destructive onClick={() => cancelRequest(id)} />
                     </>}
                 />
             ) : (

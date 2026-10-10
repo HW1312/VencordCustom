@@ -44,6 +44,11 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true
     },
+    cleanup: {
+        type: OptionType.BOOLEAN,
+        description: "Delete your key exchange messages (requests, answers, room joins) once they're done – keeps the chat clean",
+        default: true
+    },
     roomPings: {
         type: OptionType.BOOLEAN,
         description: "Ping (sound + notification) for new messages in secret rooms – Discord's own notifications are always off there",

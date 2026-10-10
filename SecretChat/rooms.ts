@@ -19,6 +19,7 @@ import { findByPropsLazy } from "@webpack";
 import { ChannelActionCreators, ChannelStore, GuildStore, PrivateChannelSortStore, RestAPI, SelectedChannelStore, SelfPresenceStore, UserStore } from "@webpack/common";
 
 import { notify } from "../_ui";
+import { ageOf, MessageRef, refOf, removeMessage, STALE } from "./cleanup";
 import { answerHandshake, completeHandshakeKey, decodeText, encodeText, fromB64, HANDSHAKE_PUBLIC, keyIdOf, newHandshakeKeyPair, open, randomBytes, seal, toB64, toHex } from "./crypto";
 import { decrypted, LOCKED_TEXT, retryLocked } from "./messages";
 import { settings } from "./settings";
@@ -56,6 +57,17 @@ export interface RoomMessage {
 
 /** message id → room protocol message, for the card under it */
 export const roomMessages = new Map<string, RoomMessage>();
+/** join id → our key message, deleted when the join message disappears (the new member got the key) */
+const ownKeyMessages = new Map<string, MessageRef>();
+
+/** Join messages were deleted → delete our answers to them */
+export function onRoomDeleted(ids: string[]) {
+    for (const id of ids) {
+        const msg = roomMessages.get(id);
+        if (msg?.type === "join") removeMessage(ownKeyMessages.get(msg.joinId!));
+    }
+}
+
 /** Join ids that already got a key – nobody else needs to answer them */
 const answered = new Set<string>();
 const busy = new Set<string>();
@@ -137,7 +149,17 @@ export function processRoomMessage(m: any, live: boolean) {
         }
         case "join": {
             m.content = "";
-            if (msg.authorId === me || answered.has(msg.joinId!)) break;
+            if (msg.authorId === me && m.state !== "SENDING") {
+                const join = state.joins[msg.joinId!];
+                if (join && join.messageId !== m.id) {
+                    join.messageId = m.id;
+                    setTimeout(save, 0);
+                } else if (!join && ageOf(m) > STALE) {
+                    removeMessage(refOf(m));
+                }
+                break;
+            }
+            if (answered.has(msg.joinId!)) break;
             const fresh = live || Date.now() - msg.timestamp < AUTO_ANSWER_MAX_AGE;
             if (fresh && canLetIn(msg) && isPrivateChat(msg.channelId)) setTimeout(() => letIn(msg, false), 0);
             break;
@@ -145,6 +167,10 @@ export function processRoomMessage(m: any, live: boolean) {
         case "key": {
             answered.add(msg.joinId!);
             m.content = "";
+            if (msg.authorId === me && m.state !== "SENDING") {
+                ownKeyMessages.set(msg.joinId!, refOf(m));
+                if (ageOf(m) > STALE) removeMessage(refOf(m));
+            }
             if (msg.to === me && state.joins[msg.joinId!]) setTimeout(() => completeJoin(msg), 0);
             break;
         }
@@ -220,6 +246,7 @@ async function completeJoin(msg: RoomMessage) {
 
         const { record } = await addKey(key, { name, kind: "group", source: "room", quantumSafe });
         delete state.joins[joinId];
+        if (pending.messageId) removeMessage({ id: pending.messageId, channelId: pending.channelId });
         await addRoom(pending.channelId, record.id, name);
         retryLocked();
         notify({ title: `You joined the secret room “${name}”`, kind: "success", app: "SecretChat" });
