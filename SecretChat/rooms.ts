@@ -112,11 +112,12 @@ export function processRoomMessage(m: any, live: boolean) {
         timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now()
     };
     roomMessages.set(m.id, msg);
+    // Only the card under the message shows it
     const me = myId();
 
     switch (msg.type) {
         case "announce": {
-            m.content = "🔑 *Made this chat a secret room*";
+            m.content = "";
             const room = state.rooms[msg.channelId];
             if (room?.keyId === msg.keyId) break;
             if (getKeyBytes(msg.keyId!)) {
@@ -135,7 +136,7 @@ export function processRoomMessage(m: any, live: boolean) {
             break;
         }
         case "join": {
-            m.content = "🔑 *Asked to join the secret room*";
+            m.content = "";
             if (msg.authorId === me || answered.has(msg.joinId!)) break;
             const fresh = live || Date.now() - msg.timestamp < AUTO_ANSWER_MAX_AGE;
             if (fresh && canLetIn(msg) && isPrivateChat(msg.channelId)) setTimeout(() => letIn(msg, false), 0);
@@ -143,7 +144,7 @@ export function processRoomMessage(m: any, live: boolean) {
         }
         case "key": {
             answered.add(msg.joinId!);
-            m.content = msg.to === me ? "🔑 *Let you into the secret room*" : `🔑 *Let ${userName(msg.to)} into the secret room*`;
+            m.content = "";
             if (msg.to === me && state.joins[msg.joinId!]) setTimeout(() => completeJoin(msg), 0);
             break;
         }

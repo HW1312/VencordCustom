@@ -42,6 +42,144 @@
     min-width: 180px;
 }
 
+.vc-secretchat-decide-group {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* Just the icon – no box, no outline */
+.vc-secretchat-decide {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: none;
+    outline: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.25s var(--vc-ui-spring), color 0.15s;
+}
+
+.vc-secretchat-decide:disabled {
+    cursor: default;
+}
+
+.vc-secretchat-decide svg {
+    overflow: visible;
+}
+
+.vc-secretchat-decide path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+}
+
+.vc-secretchat-decide-yes {
+    color: var(--vc-ui-green);
+}
+
+.vc-secretchat-decide-no {
+    color: var(--vc-ui-dim);
+}
+
+/* Hover: the icon draws itself again (✕ line after line) and grows a little */
+.vc-secretchat-decide-idle:hover {
+    transform: scale(1.15);
+}
+
+.vc-secretchat-decide-idle:hover path {
+    animation: vc-secretchat-draw 0.45s ease-out both;
+}
+
+.vc-secretchat-decide-no.vc-secretchat-decide-idle:hover {
+    color: var(--vc-ui-red);
+}
+
+.vc-secretchat-decide-no.vc-secretchat-decide-idle:hover path + path {
+    animation-delay: 0.15s;
+}
+
+/* Click: squeeze */
+.vc-secretchat-decide-idle:active {
+    transform: scale(0.75);
+    transition-duration: 0.08s;
+}
+
+.vc-secretchat-decide:focus-visible {
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--vc-ui-blue);
+}
+
+/* Busy: a ring spins while the chat is secured */
+.vc-secretchat-decide-busy {
+    animation: vc-secretchat-pop 0.35s var(--vc-ui-spring);
+}
+
+.vc-secretchat-decide-no.vc-secretchat-decide-busy,
+.vc-secretchat-decide-no.vc-secretchat-decide-done {
+    color: var(--vc-ui-red);
+}
+
+.vc-secretchat-decide-spin {
+    animation: vc-secretchat-spin 0.8s linear infinite;
+}
+
+.vc-secretchat-decide-spin circle {
+    stroke-dasharray: 57;
+    animation: vc-secretchat-arc 1.2s ease-in-out infinite;
+}
+
+/* Done: the icon draws in with a pop */
+.vc-secretchat-decide-done {
+    animation: vc-secretchat-pop 0.4s var(--vc-ui-spring);
+}
+
+.vc-secretchat-decide-done path {
+    animation: vc-secretchat-draw 0.35s ease-out both;
+}
+
+.vc-secretchat-decide-done path + path {
+    animation-delay: 0.12s;
+}
+
+.vc-secretchat-decide-hidden {
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+}
+
+@keyframes vc-secretchat-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes vc-secretchat-pop {
+    0% { transform: scale(0.7); }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes vc-secretchat-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes vc-secretchat-arc {
+    0% { stroke-dashoffset: 54; }
+    50% { stroke-dashoffset: 14; }
+    100% { stroke-dashoffset: 54; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-secretchat-decide,
+    .vc-secretchat-decide path,
+    .vc-secretchat-decide-busy,
+    .vc-secretchat-decide-done {
+        transition: none;
+        animation: none !important;
+    }
+}
+
 /* ---------------------------------------------------------------- Keyring window */
 
 .vc-secretchat-top {

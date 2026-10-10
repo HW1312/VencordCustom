@@ -176,16 +176,20 @@ export function IconButton({ icon, label, onClick, destructive, disabled, active
     icon: string; label: string; onClick(e: React.MouseEvent): void; destructive?: boolean; disabled?: boolean; active?: boolean;
 }) {
     return (
-        <button
-            type="button"
-            title={label}
-            aria-label={label}
-            disabled={disabled}
-            className={classes(cl("icon-btn"), destructive && cl("icon-btn-destructive"), active && cl("icon-btn-active"))}
-            onClick={e => { e.stopPropagation(); onClick(e); }}
-        >
-            <Icon path={icon} size={16} />
-        </button>
+        <Tooltip text={label}>
+            {(tip: any) => (
+                <button
+                    {...tip}
+                    type="button"
+                    aria-label={label}
+                    disabled={disabled}
+                    className={classes(cl("icon-btn"), destructive && cl("icon-btn-destructive"), active && cl("icon-btn-active"))}
+                    onClick={e => { e.stopPropagation(); onClick(e); }}
+                >
+                    <Icon path={icon} size={16} />
+                </button>
+            )}
+        </Tooltip>
     );
 }
 

@@ -356,6 +356,8 @@
     justify-content: center;
     gap: 6px;
     height: 32px;
+    /* wide buttons (flex: 1) in a column would otherwise shrink to the text height */
+    min-height: 32px;
     padding: 0 16px;
     border: none;
     border-radius: 16px;
@@ -379,6 +381,7 @@
 
 .vc-ui-btn-small {
     height: 26px;
+    min-height: 26px;
     padding: 0 12px;
     border-radius: 13px;
     font-size: 12.5px;

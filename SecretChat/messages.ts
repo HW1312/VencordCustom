@@ -10,14 +10,14 @@ import { sendMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { User } from "@vencord/discord-types";
 import { findByProps } from "@webpack";
-import { UserStore } from "@webpack/common";
+import { ChannelStore, UserStore } from "@webpack/common";
 
 import { notify } from "../_ui";
-import { answerHandshake, completeHandshakeKey, decryptEnvelope, encryptMessage, HANDSHAKE_PUBLIC, newHandshakeKeyPair, parseMessage, randomBytes, RUNE_MARKER, toHex } from "./crypto";
+import { answerHandshake, completeHandshakeKey, decryptEnvelope, encodeText, encryptMessage, fromB64, HANDSHAKE_PUBLIC, newHandshakeKeyPair, open, parseMessage, randomBytes, RUNE_MARKER, seal, toB64, toHex } from "./crypto";
 import { isFileText, takeFile } from "./files";
 import { onRoomMessage, processRoomMessage } from "./rooms";
 import { settings } from "./settings";
-import { addKey, channelKey, containsInviteCode, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
+import { addKey, channelKey, containsInviteCode, deleteKey, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
 const logger = new Logger("SecretChat");
 
@@ -36,13 +36,15 @@ const locked = new Map<string, { channelId: string; authorId: string; raw: strin
 /**
  * hello: "🔑 SC1H.<to user id>.<handshake id>.<public key>"  – A asks B
  * ack:   "🔑 SC1A.<handshake id>.<public key>"              – B answers, both now derive the same key
+ * no:    "🔑 SC1N.<handshake id>"                           – B declines, A stops waiting
  * The public key is "<ECDH>~<ML-KEM>" (hybrid, quantum-safe) or only "<ECDH>" from older versions.
  */
 const HELLO_RE = new RegExp(String.raw`^🔑 SC1H\.(\d{15,21})\.([0-9a-f]{16})\.(${HANDSHAKE_PUBLIC})$`);
 const ACK_RE = new RegExp(String.raw`^🔑 SC1A\.([0-9a-f]{16})\.(${HANDSHAKE_PUBLIC})$`);
+const DECLINE_RE = /^🔑 SC1N\.([0-9a-f]{16})$/;
 
 export interface Handshake {
-    type: "hello" | "ack";
+    type: "hello" | "ack" | "decline";
     hsid: string;
     publicKey: string;
     /** hello only */
@@ -60,6 +62,8 @@ function parseHandshake(content: string): Omit<Handshake, "authorId" | "channelI
     if (m) return { type: "hello", to: m[1], hsid: m[2], publicKey: m[3] };
     m = ACK_RE.exec(content);
     if (m) return { type: "ack", hsid: m[1], publicKey: m[2] };
+    m = DECLINE_RE.exec(content);
+    if (m) return { type: "decline", hsid: m[1], publicKey: "" };
     return null;
 }
 
@@ -103,9 +107,27 @@ export async function acceptHandshake(hs: Handshake) {
     }
 }
 
-export async function ignoreHandshake(hs: Handshake) {
+/** Declines the request and tells the other side, so they stop waiting */
+export async function declineHandshake(hs: Handshake) {
+    if (state.handled.includes(hs.hsid)) return;
+    state.handled.push(hs.hsid);
+    if (!state.declined.includes(hs.hsid)) state.declined.push(hs.hsid);
+    sendMessage(hs.channelId, { content: `🔑 SC1N.${hs.hsid}` }, false);
+    await save();
+}
+
+/** The other side declined our request */
+async function onDeclined(hs: Handshake, live: boolean) {
+    const pending = state.pending[hs.hsid];
+    const me = myId();
+    // Only the person we asked can decline (or we ourselves on another PC)
+    if (pending && pending.to !== hs.authorId) return;
+    if (!pending && hs.authorId !== me) return;
+    delete state.pending[hs.hsid];
+    if (!state.declined.includes(hs.hsid)) state.declined.push(hs.hsid);
     if (!state.handled.includes(hs.hsid)) state.handled.push(hs.hsid);
     await save();
+    if (live && pending) notify({ title: `${userName(hs.authorId)} declined the encrypted chat`, kind: "attention", app: "SecretChat" });
 }
 
 /** Our hello was answered: derive the key with our saved half */
@@ -127,6 +149,52 @@ async function completeHandshake(hs: Handshake) {
         busy.delete(hs.hsid);
         emit();
     }
+}
+
+// ---------------------------------------------------------------- Deleting a 1:1 key for both
+
+/**
+ * "🔑 SC1D.<key id>.<proof>" – the proof is an empty ChaCha20-Poly1305 seal with the key itself, so only someone
+ * who has the key can ask to delete it (Discord or anyone else can't make the partner lose their key).
+ */
+const DELETE_RE = /^🔑 SC1D\.([0-9a-f]{8})\.([A-Za-z0-9_-]{30,60})$/;
+const deleteAad = (keyId: string, authorId: string) => encodeText(`SC1D|${keyId}|${authorId}`);
+
+/** message id → the key delete it stands for, for the card under it */
+export const keyDeletes = new Map<string, { keyId: string; authorId: string; }>();
+
+/** Sends the delete request into the DM with the partner, then deletes the key here. False if there is no DM. */
+export async function deleteKeyForBoth(record: KeyRecord) {
+    const me = myId();
+    const key = getKeyBytes(record.id);
+    const channelId = record.partnerId && ChannelStore.getDMFromUserId(record.partnerId);
+    if (!me || !key || !channelId) return false;
+    const nonce = randomBytes(12);
+    const proof = new Uint8Array(12 + 16);
+    proof.set(nonce);
+    proof.set(seal(key, nonce, new Uint8Array(0), deleteAad(record.id, me)), 12);
+    sendMessage(channelId, { content: `🔑 SC1D.${record.id}.${toB64(proof)}` }, false);
+    await deleteKey(record.id);
+    return true;
+}
+
+function onDeleteRequest(keyId: string, proofText: string, authorId: string) {
+    const record = getKey(keyId);
+    const key = getKeyBytes(keyId);
+    const me = myId();
+    // Only 1:1 keys, and only from the partner (or yourself on another PC)
+    if (!record || !key || record.kind !== "private" || (authorId !== record.partnerId && authorId !== me)) return;
+    try {
+        const proof = fromB64(proofText);
+        if (proof.length !== 28 || !open(key, proof.subarray(0, 12), proof.subarray(12), deleteAad(keyId, authorId))) return;
+    } catch {
+        return;
+    }
+    setTimeout(async () => {
+        if (!getKey(keyId)) return;
+        await deleteKey(keyId);
+        if (authorId !== me) notify({ title: `${userName(authorId)} deleted your encrypted chat key – start a new encrypted chat to talk securely again`, kind: "attention", app: "SecretChat" });
+    }, 0);
 }
 
 // ---------------------------------------------------------------- Incoming
@@ -171,13 +239,24 @@ function processMessage(m: any, live: boolean) {
 
     if (processRoomMessage(m, live)) return;
 
+    const del = DELETE_RE.exec(content);
+    if (del) {
+        keyDeletes.set(m.id, { keyId: del[1], authorId });
+        m.content = "";
+        onDeleteRequest(del[1], del[2], authorId);
+        return;
+    }
+
     const parsed = parseHandshake(content);
     if (!parsed) return;
     const hs: Handshake = { ...parsed, authorId, channelId: m.channel_id };
     handshakes.set(m.id, hs);
-    m.content = hs.type === "hello" ? "🔑 *Asked for an encrypted chat*" : "🔑 *Accepted the encrypted chat*";
+    // Only the card under the message shows it
+    m.content = "";
 
-    if (hs.type === "ack" && state.pending[hs.hsid]) {
+    if (hs.type === "decline") {
+        if (!state.declined.includes(hs.hsid)) setTimeout(() => onDeclined(hs, live), 0);
+    } else if (hs.type === "ack" && state.pending[hs.hsid]) {
         setTimeout(() => completeHandshake(hs), 0);
     } else if (live && hs.type === "hello" && hs.to === myId() && !state.handled.includes(hs.hsid)) {
         notify({ title: `${userName(authorId)} wants an encrypted chat with you – accept it under their message`, kind: "info", app: "SecretChat" });

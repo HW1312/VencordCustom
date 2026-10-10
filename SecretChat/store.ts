@@ -66,6 +66,8 @@ interface State {
     pending: Record<string, PendingHandshake>;
     /** handshake ids that were accepted / ignored / completed */
     handled: string[];
+    /** handshake ids that were declined (by us or the other side) */
+    declined: string[];
     /** channel id → room */
     rooms: Record<string, Room>;
     /** channel id → invite */
@@ -80,7 +82,7 @@ interface State {
 
 const STORE_KEY = "SecretChat_state";
 
-const empty = (): State => ({ keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [], rooms: {}, invites: {}, joins: {}, left: [], dismissed: [] });
+const empty = (): State => ({ keys: [], channels: {}, lastUsed: {}, pending: {}, handled: [], declined: [], rooms: {}, invites: {}, joins: {}, left: [], dismissed: [] });
 
 export const state: State = empty();
 const keyBytes = new Map<string, Uint8Array>();

@@ -14,10 +14,10 @@ import { Channel, Message } from "@vencord/discord-types";
 import { showToast, Tooltip, UserStore, useState } from "@webpack/common";
 import type { ReactNode } from "react";
 
-import { Avatar as KitAvatar, Button, confirm, Empty, Glyph, Icon, IconButton, ICONS, LinkRow, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, State, TextField } from "../_ui";
+import { Avatar as KitAvatar, Button, confirm, openAlert, Empty, Glyph, Icon, IconButton, ICONS, LinkRow, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, State, TextField } from "../_ui";
 import { RoomCard } from "./area";
 import { keyFromPassword, randomBytes } from "./crypto";
-import { acceptHandshake, decrypted, handshakes, ignoreHandshake, retryLocked, startHandshake } from "./messages";
+import { acceptHandshake, declineHandshake, decrypted, deleteKeyForBoth, handshakes, keyDeletes, retryLocked, startHandshake } from "./messages";
 import { chatLabel, makeRoom, pruneStale, roomMessages } from "./rooms";
 import { settings } from "./settings";
 import { addKey, cancelPending, channelKey, deleteKey, getKey, inviteCode, KeyRecord, parseInviteCode, renameKey, setChannelKey, toggleChannel, useStore } from "./store";
@@ -108,6 +108,22 @@ export function RenameField({ initial, onDone }: { initial: string; onDone(name:
 }
 
 async function confirmDelete(k: KeyRecord) {
+    if (k.kind === "private" && k.partnerId) {
+        const partner = userName(k.partnerId);
+        const choice = await openAlert({
+            title: `Delete “${k.name}”?`,
+            body: `Messages sent with this key can't be read anymore. “For both” also deletes it on ${partner}'s PC as soon as their SecretChat sees the request in your DM.`,
+            icon: ICONS.trash,
+            iconColor: "red",
+            buttons: [{ label: "Cancel" }, { label: "Only for me", variant: "gray" }, { label: "Delete for both", variant: "destructive" }]
+        });
+        if (choice === 1) deleteKey(k.id);
+        else if (choice === 2 && !await deleteKeyForBoth(k)) {
+            showToast(`No DM with ${partner} – deleted only for you`, "message");
+            deleteKey(k.id);
+        }
+        return;
+    }
     const ok = await confirm({
         title: `Delete “${k.name}”?`,
         body: "Messages sent with this key can't be read on this PC anymore.",
@@ -423,9 +439,76 @@ export function LockDecoration({ message }: { message: Message; }) {
 }
 
 /** Below handshake messages (accept / waiting) and below decrypted key codes (add key) */
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+/** Line icons (Lucide style) – pathLength 1 lets CSS draw them in */
+const DecisionIcon = ({ accept }: { accept?: boolean; }) => (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {accept
+            ? <path pathLength={1} d="M20 6 9 17l-5-5" />
+            : <><path pathLength={1} d="M18 6 6 18" /><path pathLength={1} d="m6 6 12 12" /></>}
+    </svg>
+);
+
+type DecisionPhase = "idle" | "busy" | "done";
+
+/**
+ * ✓ / ✕ of a request card: just the icon. Hover draws it again, click pops it, then a ring spins while the key
+ * is made / the request is put away, and the icon draws in once it's done.
+ */
+function DecisionButton({ accept, label, hidden, onStart, onClick, onFinished }: {
+    accept?: boolean; label: string; hidden?: boolean;
+    onStart(): void; onClick(): Promise<unknown>; onFinished(): void;
+}) {
+    const [phase, setPhase] = useState<DecisionPhase>("idle");
+    const run = async () => {
+        if (phase !== "idle") return;
+        onStart();
+        setPhase("busy");
+        try {
+            await Promise.all([onClick(), sleep(900)]);
+        } finally {
+            setPhase("done");
+            await sleep(650);
+            onFinished();
+        }
+    };
+    return (
+        <Tooltip text={label} shouldShow={phase === "idle" && !hidden}>
+            {p => (
+                <button
+                    {...p}
+                    type="button"
+                    aria-label={label}
+                    disabled={phase !== "idle" || hidden}
+                    className={classes(cl("decide"), accept ? cl("decide-yes") : cl("decide-no"), cl(`decide-${phase}`), hidden && cl("decide-hidden"))}
+                    onClick={run}
+                >
+                    {phase === "busy"
+                        ? <svg className={cl("decide-spin")} viewBox="0 0 24 24" width="22" height="22" aria-hidden><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+                        : <DecisionIcon accept={accept} />}
+                </button>
+            )}
+        </Tooltip>
+    );
+}
+
 export function MessageCard({ message }: { message: Message; }) {
     const s = useStore();
+    /** The ✓ / ✕ that was clicked – the buttons stay until its animation is over */
+    const [deciding, setDeciding] = useState<"yes" | "no" | null>(null);
     if (roomMessages.has(message.id)) return <RoomCard message={message} />;
+    const del = keyDeletes.get(message.id);
+    if (del) {
+        return (
+            <div className={cl("card")}>
+                <Icon path={ICONS.trash} size={18} />
+                <span className={cl("card-text")}>
+                    {del.authorId === UserStore.getCurrentUser()?.id ? "You deleted the encrypted chat key for both of you" : `${userName(del.authorId)} deleted the encrypted chat key`}
+                </span>
+            </div>
+        );
+    }
     const hs = handshakes.get(message.id);
     const me = UserStore.getCurrentUser()?.id;
 
@@ -445,21 +528,30 @@ export function MessageCard({ message }: { message: Message; }) {
     let text: ReactNode;
     let buttons: ReactNode = null;
     if (hs.type === "hello") {
-        if (hs.to === me && !s.handled.includes(hs.hsid)) {
-            text = <>{userName(hs.authorId)} wants an encrypted 1:1 chat</>;
+        if (hs.to === me && (deciding || !s.handled.includes(hs.hsid))) {
+            text = deciding === "yes" ? <>Securing the chat with {userName(hs.authorId)} …</>
+                : deciding === "no" ? <>Declining the request …</>
+                    : <>{userName(hs.authorId)} wants an encrypted 1:1 chat</>;
+            const done = () => setDeciding(null);
             buttons = (
-                <>
-                    <Button small color={SC_COLOR} onClick={() => acceptHandshake(hs)}>Accept</Button>
-                    <Button small variant="gray" onClick={() => ignoreHandshake(hs)}>Ignore</Button>
-                </>
+                <span className={cl("decide-group")}>
+                    <DecisionButton accept label="Accept" hidden={deciding === "no"} onStart={() => setDeciding("yes")} onClick={() => acceptHandshake(hs)} onFinished={done} />
+                    <DecisionButton label="Decline" hidden={deciding === "yes"} onStart={() => setDeciding("no")} onClick={() => declineHandshake(hs)} onFinished={done} />
+                </span>
             );
         } else if (hs.to === me) {
-            text = <>Request from {userName(hs.authorId)} answered</>;
+            text = s.declined.includes(hs.hsid)
+                ? <>You declined the request from {userName(hs.authorId)}</>
+                : <>You accepted the request from {userName(hs.authorId)}</>;
         } else if (hs.authorId === me) {
-            text = s.pending[hs.hsid] ? <>Waiting for {userName(hs.to)} …</> : <>Request to {userName(hs.to)} answered</>;
+            text = s.pending[hs.hsid] ? <>Waiting for {userName(hs.to)} …</>
+                : s.declined.includes(hs.hsid) ? <>{userName(hs.to)} declined your request</>
+                    : <>Request to {userName(hs.to)} answered</>;
         } else {
             text = <>Encrypted chat request to {userName(hs.to)}</>;
         }
+    } else if (hs.type === "decline") {
+        text = hs.authorId === me ? <>You declined the encrypted chat</> : <>{userName(hs.authorId)} declined the encrypted chat</>;
     } else {
         text = hs.authorId !== me && s.pending[hs.hsid] ? <>Connecting …</> : <>Encrypted 1:1 chat set up</>;
     }
