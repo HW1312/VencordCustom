@@ -19,10 +19,11 @@ import { PluginNative } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
 import { Constants, MessageActions, PendingReplyStore, RestAPI, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
 
-import { Button, notify } from "../_ui";
+import { Button, ICONS, notify } from "../_ui";
 import { attachmentOf, formatBytes, sendFiles as sendPlainFiles, uploadLimit, uploadOne } from "../ChatPopout/upload";
 import { uploadForLink } from "../GofileUpload";
 import { decryptFile, encryptFile, encryptMessage, randomBytes, toHex } from "./crypto";
+import { openFileInfo } from "./fileinfo";
 import { settings } from "./settings";
 import { channelKey, getKeyBytes, isLoaded } from "./store";
 
@@ -338,6 +339,17 @@ export function EncryptedFile({ message }: { message: Message; }) {
         </span>
     );
 
+    const infoButton = (
+        <button
+            className={cl("file-info")}
+            title="Where is it stored, how is it encrypted – with a check"
+            aria-label="File info"
+            onClick={e => { e.stopPropagation(); openFileInfo(info, fetchBytes, pickFile); }}
+        >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={ICONS.info} /></svg>
+        </button>
+    );
+
     if (kind !== "file" && !error && (auto || url)) {
         const size = box(m);
         return (
@@ -360,6 +372,7 @@ export function EncryptedFile({ message }: { message: Message; }) {
                     <audio className={cl("file-audio")} src={url} controls />
                 )}
                 {badge}
+                {infoButton}
             </div>
         );
     }
@@ -374,6 +387,7 @@ export function EncryptedFile({ message }: { message: Message; }) {
                 </span>
             </div>
             {badge}
+            {infoButton}
             {gofile ? (
                 <>
                     <Button small variant="gray" title="Download the .bin there – it can only be opened with the key" onClick={() => VencordNative.native.openExternal(info.url)}>
