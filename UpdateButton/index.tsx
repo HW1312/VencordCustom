@@ -4,6 +4,8 @@
  * (like Discord's green update button on the right). The button is always there and opens a
  * panel with "Check for updates" and the changelog; it turns violet when an update is ready.
  * The changelog are the release notes on GitHub (written by build.mjs from the commit body).
+ * Checks automatically every few minutes (setting) without using up GitHub's API limit: native.ts reads the newest
+ * version from the releases page's redirect, the API is only asked once there really is a new version.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -14,17 +16,19 @@ import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
 import { classes } from "@utils/misc";
 import { relaunch } from "@utils/native";
-import definePlugin, { OptionType } from "@utils/types";
+import definePlugin, { OptionType, PluginNative } from "@utils/types";
 import { checkForUpdates, update } from "@utils/updater";
 import { findComponentByCodeLazy } from "@webpack";
 import { Popout, useEffect, useRef, useState } from "@webpack/common";
 
-import { Badge, Button, Icon, ICONS, Popover, Row, Section, Sheet, Spinner, useListener } from "../_ui";
+import { Badge, Button, Icon, ICONS, notify, Popover, Section, Sheet, Spinner, useListener } from "../_ui";
+import { LOGO } from "./logo";
 
 import gitHash from "~git-hash";
 
 const cl = (name: string) => `vc-updatebtn-${name}`;
 const logger = new Logger("UpdateButton");
+const Native = VencordNative.pluginHelpers.UpdateButton as PluginNative<typeof import("./native")>;
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 
 /** Same repo as REPO in build.mjs */
@@ -32,10 +36,21 @@ const REPO = "HW1312/VencordCustom";
 
 /** First check after Vencord's own startup check is done, so both don't write the files at the same time */
 const FIRST_CHECK = 60_000;
-const INTERVAL = 30 * 60_000;
 const NOTES_MAX_AGE = 10 * 60_000;
 
 const settings = definePluginSettings({
+    interval: {
+        type: OptionType.SELECT,
+        description: "Check for updates automatically every …",
+        options: [
+            { label: "1 minute", value: 1 },
+            { label: "5 minutes", value: 5, default: true },
+            { label: "15 minutes", value: 15 },
+            { label: "30 minutes", value: 30 },
+            { label: "1 hour", value: 60 }
+        ],
+        onChange: () => schedule(FIRST_CHECK)
+    },
     preview: {
         type: OptionType.BOOLEAN,
         description: "Show the \"update ready\" state for testing (restart does nothing)",
@@ -182,11 +197,45 @@ async function check() {
     }
 }
 
+/**
+ * Automatic check: only the newest version from the releases page (no API limit). Only if it differs from the
+ * installed one, the real check runs and downloads it.
+ */
+async function autoCheck() {
+    if (busy() || state.status === "ready") return;
+    let latest: string | null | undefined;
+    try {
+        latest = await Native.latestTag();
+    } catch (e) {
+        logger.warn("Quick update check failed, using the normal one", e);
+    }
+    if (latest === gitHash) {
+        set({ status: "latest", lastCheck: Date.now(), error: "" });
+        return;
+    }
+    await check();
+    // check() changed it – TypeScript still thinks it can't be "ready"
+    if ((state.status as Status) === "ready") {
+        notify({
+            title: "VoidCord update ready",
+            body: "Restart Discord to apply it – or later, it's installed on the next start.",
+            kind: "info",
+            app: "VoidCord",
+            icon: ICONS.download,
+            onClick: restart,
+            duration: 12_000
+        });
+    }
+}
+
+const intervalMs = () => (Number(settings.store.interval) || 5) * 60_000;
+
 function schedule(delay: number) {
     clearTimeout(timer);
+    if (!canUpdate()) return;
     timer = setTimeout(async () => {
-        await check();
-        if (state.status !== "ready") schedule(INTERVAL);
+        await autoCheck();
+        if (state.status !== "ready") schedule(intervalMs());
     }, delay);
 }
 
@@ -237,6 +286,24 @@ function Changelog({ release, ready }: { release: Release | null; ready: boolean
     );
 }
 
+/** The VoidCord logo with a light running around its ring and a glow – faster and violet when an update is ready */
+function VoidLogo({ size = 64, active }: { size?: number; active?: boolean; }) {
+    return (
+        <span className={classes(cl("logo"), active && cl("logo-active"))} style={{ width: size, height: size }}>
+            <span className={cl("logo-glow")} />
+            <img src={LOGO} width={size} height={size} alt="" draggable={false} />
+            <svg className={cl("logo-orbit")} viewBox="0 0 100 100" aria-hidden>
+                <ellipse cx="50" cy="52" rx="46" ry="17" transform="rotate(-12 50 52)" pathLength={100} />
+            </svg>
+        </span>
+    );
+}
+
+const every = () => {
+    const m = Number(settings.store.interval) || 5;
+    return m >= 60 ? "every hour" : m === 1 ? "every minute" : `every ${m} min`;
+};
+
 function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
     useListener(listeners);
     const s = state;
@@ -257,14 +324,8 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
     const tone = ready ? "purple" : busy() ? "orange" : s.status === "error" ? "red" : "green";
 
     return (
-        <Popover width={320}>
+        <Popover width={330} className={cl("popover")}>
             <Sheet
-                header={{
-                    title: "VencordCustom",
-                    icon: ICONS.download,
-                    iconColor: "purple",
-                    actions: <Badge color="purple" title="All releases on GitHub" onClick={() => window.open(`https://github.com/${REPO}/releases`, "_blank")}>{gitHash}</Badge>
-                }}
                 footer={
                     <div className={cl("actions")}>
                         <Button variant="gray" wide icon={busy() ? undefined : ICONS.refresh} disabled={busy() || ready} onClick={() => check()}>
@@ -274,13 +335,18 @@ function Panel({ ready, preview }: { ready: boolean; preview: boolean; }) {
                     </div>
                 }
             >
-                <Section>
-                    <Row
-                        leading={<span className={classes(cl("dot"), cl(`dot-${tone}`), ready && cl("dot-ready"), busy() && cl("dot-busy"))} />}
-                        title={status}
-                        subtitle={s.status === "error" ? s.error : ago(s.lastCheck)}
-                    />
-                </Section>
+                <div className={classes(cl("hero"), ready && cl("hero-ready"))}>
+                    <VoidLogo active={ready || busy()} />
+                    <div className={cl("hero-name")}>VoidCord</div>
+                    <Badge color="purple" title="All releases on GitHub" onClick={() => window.open(`https://github.com/${REPO}/releases`, "_blank")}>{gitHash}</Badge>
+                    <div className={classes(cl("status"), cl(`status-${tone}`))}>
+                        <span className={classes(cl("dot"), cl(`dot-${tone}`), ready && cl("dot-ready"), busy() && cl("dot-busy"))} />
+                        {status}
+                    </div>
+                    <div className={cl("hero-sub")}>
+                        {s.status === "error" ? s.error : `${ago(s.lastCheck)}${canUpdate() ? ` · checks ${every()}` : ""}`}
+                    </div>
+                </div>
                 <Changelog release={release} ready={ready} />
             </Sheet>
         </Popover>
