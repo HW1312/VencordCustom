@@ -24,6 +24,7 @@ import { attachmentOf, formatBytes, sendFiles as sendPlainFiles, uploadLimit, up
 import { uploadForLink } from "../GofileUpload";
 import { decryptFile, encryptFile, encryptMessage, randomBytes, toHex } from "./crypto";
 import { openFileInfo } from "./fileinfo";
+import { VideoPlayer } from "./player";
 import { settings } from "./settings";
 import { channelKey, getKeyBytes, isLoaded } from "./store";
 
@@ -384,7 +385,7 @@ export function EncryptedFile({ message }: { message: Message; }) {
                         onClick={() => openImageViewer(url, m.n)}
                     />
                 ) : kind === "video" ? (
-                    <video className={cl("file-media")} src={url} controls style={size} />
+                    <VideoPlayer src={url} name={m.n} style={size} />
                 ) : (
                     <audio className={cl("file-audio")} src={url} controls />
                 )}

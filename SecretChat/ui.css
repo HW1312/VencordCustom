@@ -1510,3 +1510,221 @@ video.vc-secretchat-file-media {
     background: rgb(255 255 255 / 20%);
     text-decoration: none;
 }
+
+/* ---------------------------------------------------------------- Video player (player.tsx) */
+
+.vc-secretchat-player-root {
+    position: relative;
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+    outline: none;
+    color: #fff;
+    font-family: var(--vc-ui-font);
+}
+
+.vc-secretchat-player-root:focus-visible {
+    box-shadow: 0 0 0 2px var(--vc-ui-blue);
+}
+
+.vc-secretchat-player-root video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+}
+
+.vc-secretchat-player-big {
+    width: min(92vw, 1400px);
+    height: calc(100vh - 110px);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+    animation: vc-secretchat-viewer-in 0.25s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.vc-secretchat-player-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0;
+}
+
+.vc-secretchat-player-idle,
+.vc-secretchat-player-idle video {
+    cursor: none;
+}
+
+/* Big round play button while paused */
+.vc-secretchat-player-bigplay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    width: 56px;
+    height: 56px;
+    padding: 0 0 0 3px;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 45%);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 18%);
+    color: #fff;
+    cursor: pointer;
+    translate: -50% -50%;
+    backdrop-filter: blur(12px) saturate(1.6);
+    transition: transform 0.25s var(--vc-ui-spring), background-color 0.2s;
+}
+
+.vc-secretchat-player-bigplay:hover {
+    background: rgb(0 0 0 / 60%);
+    transform: scale(1.08);
+}
+
+.vc-secretchat-player-bigplay:active {
+    transform: scale(0.92);
+}
+
+/* Control bar: gradient at the bottom, fades out while playing and the mouse rests */
+.vc-secretchat-player-bar {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 18px 8px 6px;
+    background: linear-gradient(transparent, rgb(0 0 0 / 70%));
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+
+.vc-secretchat-player-idle .vc-secretchat-player-bar {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vc-secretchat-player-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-secretchat-player-spacer {
+    flex: 1;
+}
+
+.vc-secretchat-player-time {
+    flex: none;
+    padding: 0 6px;
+    color: rgb(255 255 255 / 85%);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.vc-secretchat-player-btn {
+    display: grid;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    place-items: center;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: rgb(255 255 255 / 88%);
+    cursor: pointer;
+    transition: color 0.15s, background-color 0.15s, transform 0.2s var(--vc-ui-spring);
+}
+
+.vc-secretchat-player-btn:hover {
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
+}
+
+.vc-secretchat-player-btn:active {
+    transform: scale(0.88);
+}
+
+.vc-secretchat-player-btn-on {
+    color: var(--vc-ui-blue);
+}
+
+.vc-secretchat-player-btn-on:hover {
+    color: var(--vc-ui-blue);
+}
+
+/* Range inputs: thin track, filled up to --p, thumb on hover */
+.vc-secretchat-player-root input[type="range"] {
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    background: none;
+    cursor: pointer;
+    appearance: none;
+}
+
+.vc-secretchat-player-root input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #fff calc(var(--p) * 100%), transparent 0), rgb(255 255 255 / 25%);
+    transition: height 0.15s;
+}
+
+.vc-secretchat-player-seek input[type="range"]::-webkit-slider-runnable-track {
+    background:
+        linear-gradient(90deg, #fff calc(var(--p) * 100%), transparent 0),
+        linear-gradient(90deg, rgb(255 255 255 / 30%) calc(var(--b) * 100%), transparent 0),
+        rgb(255 255 255 / 18%);
+}
+
+
+.vc-secretchat-player-root input[type="range"]::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
+    transform: scale(0);
+    transition: transform 0.15s var(--vc-ui-spring);
+    appearance: none;
+}
+
+.vc-secretchat-player-root input[type="range"]:hover::-webkit-slider-thumb,
+.vc-secretchat-player-root input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1);
+}
+
+.vc-secretchat-player-seek {
+    padding: 0 6px;
+}
+
+/* Volume slider slides open on hover */
+.vc-secretchat-player-volume {
+    display: flex;
+    flex: none;
+    align-items: center;
+}
+
+.vc-secretchat-player-volume input[type="range"] {
+    width: 0;
+    opacity: 0;
+    transition: width 0.2s var(--vc-ui-ease), opacity 0.2s, margin 0.2s;
+}
+
+.vc-secretchat-player-volume:hover input[type="range"],
+.vc-secretchat-player-volume:focus-within input[type="range"] {
+    width: 70px;
+    margin: 0 6px 0 2px;
+    opacity: 1;
+}
+
+/* Small players: only the essentials */
+.vc-secretchat-file .vc-secretchat-player-root:not(.vc-secretchat-player-fullscreen) .vc-secretchat-player-time {
+    font-size: 11px;
+}

@@ -157,9 +157,16 @@ async function updateDirectly(): Promise<boolean> {
     return true;
 }
 
+/** Version downloaded this session (waits for a restart). A newer release on top of it is downloaded too. */
+let downloadedTag: string | null = null;
+
 async function check() {
-    if (busy() || state.status === "ready") return;
-    set({ status: "checking", error: "" });
+    if (busy()) return;
+    // Downloaded through Vencord's updater: no version to compare against, the restart picks it up
+    if (state.status === "ready" && !downloadedTag) return;
+    const wasReady = state.status === "ready";
+    // Quietly in the background while an update already waits – the panel keeps showing it
+    if (!wasReady) set({ status: "checking", error: "" });
 
     // Own dev build: nothing to download, only refresh the changelog
     if (!canUpdate()) {
@@ -178,7 +185,11 @@ async function check() {
     }
     if (latest) {
         try {
-            if (latest === gitHash) {
+            if (latest === downloadedTag) {
+                set({ status: "ready", lastCheck: Date.now() });
+                return;
+            }
+            if (latest === gitHash && !downloadedTag) {
                 set({ status: "latest", lastCheck: Date.now() });
                 loadNotes();
                 return;
@@ -186,11 +197,18 @@ async function check() {
             set({ status: "downloading" });
             loadNotes(true);
             await Native.installRelease(latest);
+            downloadedTag = latest;
             set({ status: "ready", lastCheck: Date.now() });
         } catch (e: any) {
             logger.error("Update failed", e);
-            set({ status: "error", error: String(e?.message ?? e ?? "Unknown error"), lastCheck: Date.now() });
+            // An update that's already downloaded still counts
+            if (wasReady) set({ status: "ready", lastCheck: Date.now() });
+            else set({ status: "error", error: String(e?.message ?? e ?? "Unknown error"), lastCheck: Date.now() });
         }
+        return;
+    }
+    if (wasReady) {
+        set({ status: "ready" });
         return;
     }
 
@@ -223,12 +241,17 @@ async function check() {
     }
 }
 
-/** Automatic check: same as the button (no API limit), plus a notification once an update is ready */
+/**
+ * Automatic check: same as the button (no API limit), plus a notification when an update is ready. Keeps checking
+ * while an update waits for the restart, so a newer release replaces it right away.
+ */
 async function autoCheck() {
-    if (busy() || state.status === "ready") return;
+    if (busy()) return;
+    const before = downloadedTag;
+    const wasReady = state.status === "ready";
     await check();
     // check() changed it – TypeScript still thinks it can't be "ready"
-    if ((state.status as Status) === "ready") {
+    if ((state.status as Status) === "ready" && (!wasReady || downloadedTag !== before)) {
         notify({
             title: "VoidCord update ready",
             body: "Restart Discord to apply it – or later, it's installed on the next start.",
@@ -248,7 +271,7 @@ function schedule(delay: number) {
     if (!canUpdate()) return;
     timer = setTimeout(async () => {
         await autoCheck();
-        if (state.status !== "ready") schedule(intervalMs());
+        schedule(intervalMs());
     }, delay);
 }
 
