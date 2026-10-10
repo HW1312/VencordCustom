@@ -57,7 +57,7 @@ const settings = definePluginSettings({
     },
     showCover: {
         type: OptionType.BOOLEAN,
-        description: "Look up the album cover on Deezer",
+        description: "Show the Spotify album cover (uploaded to Litterbox for 24 hours)",
         default: false,
         hidden: true,
         onChange: () => { resetCover(); refreshPresence(); updateCover(); }
@@ -107,7 +107,7 @@ function updateCover() {
     coverPending = true;
     void (async () => {
         try {
-            const url = safeCoverUrl(await Native.findCover(current.title, current.artist, current.album, current.durationMs));
+            const url = safeCoverUrl(await Native.findCover(current.title, current.artist, current.album));
             if (version !== coverVersion || !running || !settings.store.share || !settings.store.showCover) return;
             if (url) {
                 const asset = (await ApplicationAssetUtils.fetchAssetIds(appId, [url]))[0];
@@ -118,7 +118,7 @@ function updateCover() {
         finally {
             if (version === coverVersion) {
                 coverPending = false;
-                coverRetryAt = Date.now() + 60000;
+                coverRetryAt = Date.now() + 12000;
                 refreshPresence();
             }
         }
@@ -172,10 +172,10 @@ const SettingsPanel = ErrorBoundary.wrap(() => {
     const appId = config.applicationId.trim();
     const validId = isAppId(appId);
     const sharing = running && config.share && validId && track?.playing;
-    const coverState = !config.showCover ? "Off – nothing is sent to Deezer"
+    const coverState = !config.showCover ? "Off – nothing is uploaded"
         : coverAsset ? "Cover ready for Discord"
-            : coverPending ? "Looking up the cover…"
-                : "Title and artist are sent to Deezer while playing";
+            : coverPending ? "Uploading the cover…"
+                : "Only the picture is uploaded to Litterbox, deleted after 24 h";
 
     return (
         <Sheet embedded header={{ title: "Auralis", subtitle: "Your music, without linking your Spotify account", icon: NOTE_PATH, iconColor: "green" }}>

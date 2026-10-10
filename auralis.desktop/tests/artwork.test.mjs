@@ -1,36 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { selectCover, safeCoverUrl, trackKey } from "../artwork.ts";
+import { safeCoverUrl, trackKey } from "../artwork.ts";
 import { createPresence } from "../presence.ts";
 
-const cover = "https://cdn-images.dzcdn.net/images/cover/0123456789abcdef0123456789abcdef/1000x1000-000000-80-0-0.jpg";
-const otherCover = cover.replace("0123456789abcdef0123456789abcdef", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+const cover = "https://litter.catbox.moe/ab12cd.jpg";
 const track = { title: "A Song - Remix", artist: "An Artist", album: "An Album", durationMs: 180500 };
-const row = { title: "A Song (Remix)", artist: { name: "An Artist" }, album: { title: "An Album", cover_xl: cover }, duration: 180 };
 
-test("matches remix punctuation, artist and recording duration", () => {
-    assert.equal(selectCover(track, { data: [row] }), cover);
-});
-test("rejects original versions, other artists, wrong durations and unsafe hosts", () => {
-    for (const change of [{ title: "A Song" }, { artist: { name: "Someone Else" } }, { duration: 280 },
-        { album: { title: "An Album", cover_xl: "https://evil.example/cover.jpg" } }]) {
-        assert.equal(selectCover(track, { data: [{ ...row, ...change }] }), null);
+test("cover links must be own Litterbox uploads over HTTPS with no credentials", () => {
+    for (const url of ["http://litter.catbox.moe/ab12cd.jpg", "data:image/png;base64,test",
+        "https://litter.catbox.moe.evil.example/ab12cd.jpg", cover.replace("https://", "https://user@"),
+        cover.replace("litter.catbox.moe", "litter.catbox.moe:444"), "https://litter.catbox.moe/ab12cd.exe",
+        `${cover}?x=1`, "https://files.catbox.moe/ab12cd.jpg", "https://litter.catbox.moe/../x/ab12cd.jpg", 42, null]) {
+        assert.equal(safeCoverUrl(url), null, String(url));
     }
-});
-test("prefers the source album over compilations", () => {
-    const compilation = { ...row, album: { title: "Compilation", cover_xl: otherCover } };
-    assert.equal(selectCover(track, { data: [compilation, row] }), cover);
-});
-test("cover links must use the specific HTTPS image CDN with no credentials", () => {
-    for (const url of ["http://cdn-images.dzcdn.net/images/cover/test", "data:image/png;base64,test",
-        "https://cdn-images.dzcdn.net.evil.example/images/cover/test", cover.replace("https://", "https://user@"),
-        cover.replace("cdn-images.dzcdn.net", "cdn-images.dzcdn.net:444")]) assert.equal(safeCoverUrl(url), null);
     assert.equal(safeCoverUrl(cover), cover);
-});
-test("unknown results do not invent a cover", () => {
-    for (const value of [null, {}, { data: [] }, { data: [null, {}, { title: "broken" }] }]) {
-        assert.equal(selectCover(track, value), null);
-    }
+    assert.equal(safeCoverUrl("https://litter.catbox.moe/zz9988.png"), "https://litter.catbox.moe/zz9988.png");
 });
 test("track keys distinguish albums and do not collide on separators", () => {
     assert.notEqual(trackKey(track), trackKey({ ...track, album: "Other" }));

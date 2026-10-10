@@ -8,8 +8,9 @@ info. No Spotify OAuth, cookies or account link. Windows only (folder suffix `.d
 - Reads title, artist, album and timeline of Spotify through a hidden PowerShell watcher (Windows media session API),
   polled every 0.5 s. A stuck watcher is dropped after 10 s and restarted.
 - Shares title and artist as a "Listening" activity, optionally with timestamps and a public Spotify search button.
-- Optional album cover (off by default): title and artist are sent to `api.deezer.com`; only covers from
-  `cdn-images.dzcdn.net` are accepted. Covers are cached in memory only.
+- Optional album cover (off by default): the cover Spotify hands to Windows is read locally and uploaded to
+  `litterbox.catbox.moe` (only the picture, no title or account data), which deletes it after 24 hours. Discord needs a
+  public link to show it. Links are cached in memory only.
 - Clears the activity on pause, when Spotify closes, on read errors or when sharing / the plugin is turned off.
 
 The activity is rebuilt from an allowlist of fields – no Spotify user ID, profile URL, session ID or token.
