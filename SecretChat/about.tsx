@@ -16,7 +16,7 @@ export function About() {
             <Note tone="ok">
                 Messages and files are encrypted on your PC before they reach Discord. Discord, Catbox and Gofile only
                 ever get random-looking bytes – only people who have the key can turn them back into the original.
-                There is no SecretChat server: keys go straight from person to person.
+                There is no Unter das OS server: keys go straight from person to person.
             </Note>
 
             <Section title="Algorithms" footer="All of them are open standards used by Signal, WhatsApp, TLS 1.3 (HTTPS) and WireGuard. Nothing is home-made except the code that puts them together.">
@@ -68,12 +68,12 @@ export function About() {
                 <Row title="Keys from the older ECDH-only handshake" subtitle="Recorded handshakes could be broken by a future quantum computer" trailing={<State tone="warn">Not safe</State>} />
             </Section>
 
-            <Section title="What Discord can still see" footer="SecretChat hides what you say, not that you talk.">
+            <Section title="What Discord can still see" footer="Unter das OS hides what you say, not that you talk.">
                 <Row title="Who writes to whom, when, and how often" />
                 <Row title="That a message is encrypted, and roughly how long it is" />
                 <Row title="Roughly how big a file is (original + 16 bytes)" />
                 <Row title="Reactions, names, avatars, chat and server names" />
-                <Row title="Voice and video calls – they are not encrypted by SecretChat" />
+                <Row title="Voice and video calls – they are not encrypted by Unter das OS" />
             </Section>
 
             <Section title="Limits – be honest with yourself">
@@ -94,7 +94,7 @@ export function About() {
                 />
                 <Row
                     title="Not audited"
-                    note="The algorithms are standard, but SecretChat itself was never checked by outside security experts. The ML-KEM code comes from @noble/post-quantum, a well-known library that is self-audited."
+                    note="The algorithms are standard, but Unter das OS itself was never checked by outside security experts. The ML-KEM code comes from @noble/post-quantum, a well-known library that is self-audited."
                     align="top"
                 />
             </Section>

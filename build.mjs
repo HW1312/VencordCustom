@@ -127,14 +127,34 @@ console.log(`Plugins: ${plugins.join(", ") || "(keine)"}`);
 console.log(`Themes: ${themeMeta.map(t => t.name).join(", ") || "(keine)"}`);
 
 // ---- Bauen
-run("pnpm build");
+
+/**
+ * Eigene Einstellungen pro Discord-Client: Vencord legt sonst Stable, PTB und Canary in denselben Ordner
+ * (%APPDATA%\Vencord) – dann hätte Canary nach der Installation alle Plugins von Stable, und ein Plugin, das man
+ * in einem Client ausschaltet, wäre in allen aus. Stable bleibt im alten Ordner, PTB / Canary bekommen
+ * Vencord-ptb / Vencord-canary. Steht ganz oben in patcher.js, also bevor Vencord den Ordner bestimmt.
+ */
+const PER_CLIENT_SETTINGS = "// VoidCord: own settings per Discord client\n"
+    + "try{const{app:a}=require(\"electron\"),p=require(\"path\"),u=a.getPath(\"userData\"),n=p.basename(u).toLowerCase();"
+    + "if(!process.env.VENCORD_USER_DATA_DIR&&n.startsWith(\"discord\")&&n!==\"discord\")"
+    + "process.env.VENCORD_USER_DATA_DIR=p.join(u,\"..\",\"Vencord-\"+n.slice(7))}catch{}\n";
+
+function build(env) {
+    run(`pnpm build${env ? " --standalone" : ""}`, VENCORD, env);
+    const patcher = join(VENCORD, "dist", "patcher.js");
+    // After "use strict" – in front of it, the bundle would no longer run in strict mode
+    const code = readFileSync(patcher, "utf8").replace('"use strict";', `"use strict";${PER_CLIENT_SETTINGS}`);
+    writeFileSync(patcher, code);
+}
+
+build();
 
 if (args.has("--inject")) run("pnpm inject");
 
 // ---- Paket für Freunde
 // Der Updater im Paket schaut auf REPO statt aufs offizielle Vencord, überschreibt also die eigenen Plugins nicht
 if (args.has("--package")) {
-    run("pnpm build --standalone", VENCORD, { VENCORD_REMOTE: REPO, VENCORD_HASH: hash });
+    build({ VENCORD_REMOTE: REPO, VENCORD_HASH: hash });
 
     rmSync(RELEASE, { recursive: true, force: true });
     mkdirSync(join(FILES, "dist"), { recursive: true });
@@ -145,7 +165,7 @@ if (args.has("--package")) {
     }
 
     // dist/ wieder auf den normalen Build für dein eigenes Discord zurücksetzen
-    run("pnpm build");
+    build();
     for (const f of ["Installer.ps1", "logo.png", "icon.png"])
         cpSync(join(ROOT, "share", f), join(FILES, f));
     // Shown in the installer window

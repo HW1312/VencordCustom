@@ -16,7 +16,7 @@ import { notify } from "../_ui";
 import { ageOf, MessageRef, refOf, removeMessage, STALE } from "./cleanup";
 import { answerHandshake, completeHandshakeKey, decryptEnvelope, encodeText, encryptMessage, fromB64, HANDSHAKE_PUBLIC, newHandshakeKeyPair, open, parseMessage, randomBytes, RUNE_MARKER, seal, toB64, toHex } from "./crypto";
 import { isFileText, takeFile } from "./files";
-import { onRoomDeleted, onRoomMessage, processRoomMessage } from "./rooms";
+import { onRoomDeleted, onRoomMessage, processRoomMessage, roomMessages } from "./rooms";
 import { settings } from "./settings";
 import { addKey, cancelPending, channelKey, containsInviteCode, deleteKey, emit, getKey, getKeyBytes, isLoaded, KeyRecord, save, setChannelKey, state } from "./store";
 
@@ -82,7 +82,7 @@ export async function startHandshake(user: User, channelId: string) {
     state.pending[hsid] = { to: user.id, channelId, privateJwk, kemSeed, created: Date.now() };
     await save();
     sendMessage(channelId, { content: `🔑 SC1H.${user.id}.${hsid}.${publicKey}` }, false);
-    notify({ title: `Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, kind: "info", app: "SecretChat" });
+    notify({ title: `Asked ${userName(user.id)} for an encrypted chat – waiting for them to accept`, kind: "info", app: "Unter das OS" });
 }
 
 /** Cancels our open requests to this user and deletes the request messages */
@@ -96,7 +96,7 @@ export async function cancelRequest(userId: string) {
 async function finish(record: KeyRecord, isNew: boolean, channelId: string, partnerId: string) {
     await setChannelKey(channelId, record.id);
     retryLocked();
-    notify({ title: `${isNew ? "Encrypted chat with" : "Already connected with"} ${userName(partnerId)} – safety code ${record.safety}`, kind: "success", app: "SecretChat" });
+    notify({ title: `${isNew ? "Encrypted chat with" : "Already connected with"} ${userName(partnerId)} – safety code ${record.safety}`, kind: "success", app: "Unter das OS" });
 }
 
 export async function acceptHandshake(hs: Handshake) {
@@ -111,7 +111,7 @@ export async function acceptHandshake(hs: Handshake) {
         await finish(record, isNew, hs.channelId, hs.authorId);
     } catch (e) {
         logger.error("Accepting the handshake failed", e);
-        notify({ title: "Could not accept the encrypted chat", kind: "error", app: "SecretChat" });
+        notify({ title: "Could not accept the encrypted chat", kind: "error", app: "Unter das OS" });
     } finally {
         busy.delete(hs.hsid);
         emit();
@@ -139,7 +139,7 @@ async function onDeclined(hs: Handshake, live: boolean) {
     if (!state.declined.includes(hs.hsid)) state.declined.push(hs.hsid);
     if (!state.handled.includes(hs.hsid)) state.handled.push(hs.hsid);
     await save();
-    if (live && pending) notify({ title: `${userName(hs.authorId)} declined the encrypted chat`, kind: "attention", app: "SecretChat" });
+    if (live && pending) notify({ title: `${userName(hs.authorId)} declined the encrypted chat`, kind: "attention", app: "Unter das OS" });
 }
 
 /** Our hello was answered: derive the key with our saved half */
@@ -157,7 +157,7 @@ async function completeHandshake(hs: Handshake) {
         await finish(record, isNew, pending.channelId, hs.authorId);
     } catch (e) {
         logger.error("Completing the handshake failed", e);
-        notify({ title: "Could not finish the encrypted chat setup", kind: "error", app: "SecretChat" });
+        notify({ title: "Could not finish the encrypted chat setup", kind: "error", app: "Unter das OS" });
     } finally {
         busy.delete(hs.hsid);
         emit();
@@ -206,7 +206,7 @@ function onDeleteRequest(keyId: string, proofText: string, authorId: string) {
     setTimeout(async () => {
         if (!getKey(keyId)) return;
         await deleteKey(keyId);
-        if (authorId !== me) notify({ title: `${userName(authorId)} deleted your encrypted chat key – start a new encrypted chat to talk securely again`, kind: "attention", app: "SecretChat" });
+        if (authorId !== me) notify({ title: `${userName(authorId)} deleted your encrypted chat key – start a new encrypted chat to talk securely again`, kind: "attention", app: "Unter das OS" });
     }, 0);
 }
 
@@ -275,7 +275,7 @@ function processMessage(m: any, live: boolean) {
     } else if (hs.type === "ack" && state.pending[hs.hsid]) {
         setTimeout(() => completeHandshake(hs), 0);
     } else if (live && hs.type === "hello" && hs.to === myId() && !state.handled.includes(hs.hsid)) {
-        notify({ title: `${userName(authorId)} wants an encrypted chat with you – accept it under their message`, kind: "info", app: "SecretChat" });
+        notify({ title: `${userName(authorId)} wants an encrypted chat with you – accept it under their message`, kind: "info", app: "Unter das OS" });
     }
 }
 
@@ -321,10 +321,17 @@ function onDeleted(ids: string[]) {
     if (changed) setTimeout(save, 0);
 }
 
+const isProtocolMessage = (id: string) => handshakes.has(id) || keyDeletes.has(id) || roomMessages.has(id);
+
 export function intercept(action: any) {
     try {
-        if (action.type === "MESSAGE_DELETE") onDeleted([action.id]);
-        else if (action.type === "MESSAGE_DELETE_BULK" && Array.isArray(action.ids)) onDeleted(action.ids);
+        if (action.type === "MESSAGE_DELETE") {
+            // MessageLogger keeps deleted messages – not our key exchange messages (its own flag for "really remove")
+            if (isProtocolMessage(action.id)) action.mlDeleted = true;
+            onDeleted([action.id]);
+        } else if (action.type === "MESSAGE_DELETE_BULK" && Array.isArray(action.ids)) {
+            onDeleted(action.ids);
+        }
         if (action.message) {
             const live = action.type === "MESSAGE_CREATE" && !action.optimistic;
             processMessage(action.message, live);
@@ -396,13 +403,13 @@ const isPrepared = (content: string) => content.startsWith("🔑 SC1") || parseM
 function outgoing(channelId: string, content: string): string | null {
     // The keyring loads a moment after start – never let an "on" chat slip out unencrypted
     if (!isLoaded()) {
-        notify({ title: "SecretChat is still loading its keys – try again in a second", kind: "error", app: "SecretChat" });
+        notify({ title: "Unter das OS is still loading its keys – try again in a second", kind: "error", app: "Unter das OS" });
         return null;
     }
     const record = channelKey(channelId);
     if (!record) {
         if (containsInviteCode(content)) {
-            notify({ title: "That's a secret key code – only send it in an encrypted chat (turn SecretChat on here first)", kind: "error", app: "SecretChat" });
+            notify({ title: "That's a secret key code – only send it in an encrypted chat (turn Unter das OS on here first)", kind: "error", app: "Unter das OS" });
             return null;
         }
         return content;
@@ -415,7 +422,7 @@ function outgoing(channelId: string, content: string): string | null {
 
     const encrypted = encryptMessage(record.id, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
-        notify({ title: "Too long for one encrypted message (about 1,400 characters max) – split it up", kind: "error", app: "SecretChat" });
+        notify({ title: "Too long for one encrypted message (about 1,400 characters max) – split it up", kind: "error", app: "Unter das OS" });
         return null;
     }
     return encrypted;
@@ -428,12 +435,12 @@ function outgoingEdit(messageId: string, content: string): string | null {
     const key = getKeyBytes(keyId);
     const me = myId();
     if (!key || !me) {
-        notify({ title: `The key "${getKey(keyId)?.name ?? keyId}" was deleted – this message can't be edited anymore`, kind: "error", app: "SecretChat" });
+        notify({ title: `The key "${getKey(keyId)?.name ?? keyId}" was deleted – this message can't be edited anymore`, kind: "error", app: "Unter das OS" });
         return null;
     }
     const encrypted = encryptMessage(keyId, key, me, content);
     if (encrypted.length > MAX_LENGTH) {
-        notify({ title: "Too long for one encrypted message (about 1,400 characters max)", kind: "error", app: "SecretChat" });
+        notify({ title: "Too long for one encrypted message (about 1,400 characters max)", kind: "error", app: "Unter das OS" });
         return null;
     }
     return encrypted;

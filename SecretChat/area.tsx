@@ -25,6 +25,9 @@ import { closeRoomsWindow, openRoomsWindow, toggleRoomsWindow, toIconDataUrl } f
 
 const cl = classNameFactory("vc-secretchat-");
 
+/** Server list hover name – "Secret rooms" was the default before the rename */
+const hoverName = (name?: string) => !name || name === "Secret rooms" ? "Unter das OS" : name;
+
 // ---------------------------------------------------------------- Unread
 
 /** Number of unread messages, -1 = unread but no count known, 0 = read */
@@ -49,7 +52,7 @@ export function toggleEmergency() {
     settings.store.emergency = on;
     applyEmergency(on);
     if (on) closeRoomsWindow();
-    notify({ title: on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", kind: on ? "attention" : "success", app: "SecretChat" });
+    notify({ title: on ? "Emergency stop on – all messages are encrypted again" : "Emergency stop off – messages are readable again", kind: on ? "attention" : "success", app: "Unter das OS" });
 }
 
 /**
@@ -75,7 +78,7 @@ function pickServerListPicture() {
         if (!file) return;
         const data = await toIconDataUrl(file, 128);
         if (data) settings.store.serverListPicture = data;
-        else notify({ title: "That image couldn't be read", kind: "error", app: "SecretChat" });
+        else notify({ title: "That image couldn't be read", kind: "error", app: "Unter das OS" });
     };
     input.click();
 }
@@ -86,7 +89,7 @@ function openLockMenu(e: MouseEvent) {
     const toolbarHit = Settings.plugins.ToolbarManager?.enabled ? hitTest(e.target) : null;
     const onServerList = !!(e.target as Element | null)?.closest?.(`.${cl("sl-btn")}`);
     ContextMenuApi.openContextMenu(e as any, () => (
-        <Menu.Menu navId="vc-secretchat-lock" onClose={ContextMenuApi.closeContextMenu} aria-label="SecretChat">
+        <Menu.Menu navId="vc-secretchat-lock" onClose={ContextMenuApi.closeContextMenu} aria-label="Unter das OS">
             <Menu.MenuItem
                 id="vc-secretchat-emergency"
                 label={on ? "Turn off emergency stop" : "Emergency stop"}
@@ -143,12 +146,12 @@ export function ServerListIcon() {
     return (
         <div className={cl("sl")}>
             {count !== 0 && <span className={cl("sl-pill")} />}
-            <Tooltip text={emergency ? `${serverListName || "Secret rooms"} – emergency stop is on (right-click)` : serverListName || "Secret rooms"} position="right">
+            <Tooltip text={emergency ? `${hoverName(serverListName)} – emergency stop is on (right-click)` : hoverName(serverListName)} position="right">
                 {p => (
                     <button
                         {...p}
                         className={classes(cl("sl-btn"), serverListPicture && cl("sl-btn-picture"), emergency && cl("sl-btn-stop"))}
-                        aria-label={serverListName || "Secret rooms"}
+                        aria-label={hoverName(serverListName)}
                         onClick={toggleRoomsWindow}
                     >
                         {serverListPicture && !emergency
@@ -176,7 +179,7 @@ function TitleBarButton() {
             <HeaderBarIcon
                 className={classes(cl("tb"), count !== 0 && !emergency && cl("tb-unread"), emergency && cl("tb-stop"))}
                 onClick={toggleRoomsWindow}
-                tooltip={emergency ? "SecretChat – emergency stop is on (right-click)" : count > 0 ? `Secret rooms · ${count} new` : "Secret rooms"}
+                tooltip={emergency ? "Unter das OS – emergency stop is on (right-click)" : count > 0 ? `Unter das OS · ${count} new` : "Unter das OS"}
                 icon={() => <LockIcon width={20} height={20} className={classes(cl("tb-icon"), "vc-ui-tb-icon")} />}
             />
         </div>

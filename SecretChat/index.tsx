@@ -8,6 +8,7 @@
  */
 
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { migratePluginSettings } from "@api/Settings";
 import { addServerListElement, removeServerListElement, ServerListRenderPosition } from "@api/ServerList";
 import { Logger } from "@utils/Logger";
 import definePlugin from "@utils/types";
@@ -29,6 +30,9 @@ import { closeRoomsWindow } from "./window";
 
 const logger = new Logger("SecretChat");
 
+// Was called SecretChat – keeps its settings (and that it's turned on)
+migratePluginSettings("Unter das OS", "SecretChat");
+
 const userContext: NavContextMenuPatchCallback = (children, { user }: { user?: User; }) => {
     if (!user || user.bot || user.id === UserStore.getCurrentUser()?.id) return;
 
@@ -40,7 +44,7 @@ const userContext: NavContextMenuPatchCallback = (children, { user }: { user?: U
             action={() => {
                 // Prefer the DM with them – otherwise the request goes into the chat that is open
                 const channelId = ChannelStore.getDMFromUserId(user.id) ?? SelectedChannelStore.getChannelId();
-                if (!channelId) return notify({ title: "Open a chat with them first", kind: "error", app: "SecretChat" });
+                if (!channelId) return notify({ title: "Open a chat with them first", kind: "error", app: "Unter das OS" });
                 startHandshake(user, channelId);
             }}
         />
@@ -48,8 +52,8 @@ const userContext: NavContextMenuPatchCallback = (children, { user }: { user?: U
 };
 
 export default definePlugin({
-    name: "SecretChat",
-    description: "End-to-end encrypted messages: only people with SecretChat and your key can read them, everyone else sees random characters",
+    name: "Unter das OS",
+    description: "End-to-end encrypted messages: only people with Unter das OS and your key can read them, everyone else sees random characters",
     authors: [{ name: "5406", id: 1062070744558870548n }],
     tags: ["Chat", "Privacy", "Utility"],
     settings,

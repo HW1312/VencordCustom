@@ -1273,7 +1273,7 @@ function nativeWindow(): any {
 }
 
 function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSidebar, onClose }: {
-    info: ReturnType<typeof useChannelInfo>; windowKey: string; channelId: string; guildId: string | null; sidebar: boolean; onToggleSidebar(): void;
+    info: ReturnType<typeof useChannelInfo> & { iconNode?: ReactNode; }; windowKey: string; channelId: string; guildId: string | null; sidebar: boolean; onToggleSidebar(): void;
     /** Embedded in the main window: no window buttons, closing is up to the host */
     onClose?(): void;
 }) {
@@ -1292,9 +1292,9 @@ function TitleBar({ info, windowKey, channelId, guildId, sidebar, onToggleSideba
             >
                 <Icon path={SIDEBAR_PATH} size={16} />
             </button>
-            {info.icon
+            {info.iconNode ?? (info.icon
                 ? <img className={cl("title-icon")} src={info.icon} alt="" />
-                : <span className={classes(cl("title-icon"), cl("title-icon-text"))}>{(info.name || "?").slice(0, 1)}</span>}
+                : <span className={classes(cl("title-icon"), cl("title-icon-text"))}>{(info.name || "?").slice(0, 1)}</span>)}
             <div className={cl("title-text")}>
                 <div className={cl("title-name")}>{title}</div>
                 {info.subtitle && <div className={cl("title-sub")}>{info.subtitle}</div>}
@@ -1511,6 +1511,8 @@ export interface ChatWindowProps {
     emptyView?: ReactNode;
     /** Window title while no channel is open */
     title?: string;
+    /** Picture next to that title (instead of its first letter) */
+    titleIcon?: ReactNode;
     /** Extra class on the window root, for a different look */
     className?: string;
     /** Rendered inside the main window (e.g. SecretChat's rooms window) instead of a popout – called by the close button */
@@ -1525,14 +1527,14 @@ export interface ChatWindowProps {
     sendFiles?(channel: any, files: File[], messageReference?: unknown): Promise<void>;
 }
 
-function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: CustomSidebar, emptyView, title, className, onClose, hideMessage, renderMessages, attachmentNote, sendFiles: hostSendFiles }: ChatWindowProps) {
+function ChatWindowInner({ channelId: initialChannelId, windowKey, sidebar: CustomSidebar, emptyView, title, titleIcon, className, onClose, hideMessage, renderMessages, attachmentNote, sendFiles: hostSendFiles }: ChatWindowProps) {
     const rootRef = useRef<HTMLDivElement>(null);
     // The window can switch channels via the sidebar; the window key stays that of the first channel
     const [channelId, setChannelId] = useState(initialChannelId);
     // The opener can switch the channel too (e.g. SecretChat opening a room in its already open window)
     useEffect(() => setChannelId(initialChannelId), [initialChannelId]);
     const channelInfo = useChannelInfo(channelId);
-    const info = !channelInfo.channel && title ? { ...channelInfo, name: title, subtitle: "", prefix: "" } : channelInfo;
+    const info = !channelInfo.channel && title ? { ...channelInfo, name: title, subtitle: "", prefix: "", iconNode: titleIcon } : channelInfo;
     const { sidebar: sidebarSetting } = settings.use(["sidebar"]);
     const [sidebar, setSidebar] = useState(CustomSidebar ? true : sidebarSetting);
 

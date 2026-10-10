@@ -17,6 +17,7 @@ import { Button, Empty, Group, Icon, ICONS, notify, RoundButton, Row, SearchFiel
 import { ChatSidebarProps, ChatWindow } from "../ChatPopout/chat";
 import { Badge, unreadOf } from "./area";
 import { sendEncryptedFiles } from "./files";
+import { SecretLogo } from "./logo";
 import { handshakes, isSendGuarded } from "./messages";
 import { NativeMessageList } from "./nativelist";
 import { chatLabel, createRoom, deleteRoomForEveryone, isJoining, isOwnedGroup, joinRoom, pruneStale, reannounce, roomMessages, userName, windowView } from "./rooms";
@@ -56,7 +57,7 @@ let root: Root | null = null;
 /** Opens the rooms window over Discord (or switches the room if it's open already) */
 export function openRoomsWindow(channelId?: string) {
     if (settings.store.emergency) {
-        notify({ title: "Emergency stop is on", body: "Right-click the lock to turn it off", kind: "attention", app: "SecretChat" });
+        notify({ title: "Emergency stop is on", body: "Right-click the lock to turn it off", kind: "attention", app: "Unter das OS" });
         return;
     }
     if (channelId) select(channelId);
@@ -74,7 +75,7 @@ export function openRoomsWindow(channelId?: string) {
         );
     } catch (e) {
         closeRoomsWindow();
-        notify({ title: "Couldn't open the SecretChat window", kind: "error", app: "SecretChat" });
+        notify({ title: "Couldn't open the Unter das OS window", kind: "error", app: "Unter das OS" });
     }
 }
 
@@ -137,7 +138,7 @@ function RoomsWindow() {
     if (!isSendGuarded()) {
         return (
             <div className={cl("win-empty")}>
-                <Empty icon={LOCK_PATH} title="SecretChat couldn't secure sending here" hint="Write in Discord itself (lock in the chat bar)" />
+                <Empty icon={LOCK_PATH} title="Unter das OS couldn't secure sending here" hint="Write in Discord itself (lock in the chat bar)" />
             </div>
         );
     }
@@ -147,7 +148,8 @@ function RoomsWindow() {
             channelId={channelId}
             windowKey={WINDOW_KEY}
             sidebar={RoomSidebar}
-            title="Secret rooms"
+            title="Unter das OS"
+            titleIcon={<SecretLogo locked size={26} />}
             className={cl("chatwin")}
             hideMessage={hideMessage}
             renderMessages={renderMessages}
@@ -211,7 +213,7 @@ function RoomSidebar({ current, onSelect }: ChatSidebarProps) {
         <div ref={rootRef} className={cl("side")}>
             <div className={cl("side-head")}>
                 <Icon path={LOCK_PATH} size={16} />
-                <span>Secret rooms</span>
+                <span>Unter das OS</span>
                 <RoundButton
                     icon={creating ? ICONS.close : ICONS.plus}
                     label={creating ? "Cancel" : "New room"}
@@ -430,7 +432,7 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
             select(channelId);
             onDone();
         } catch (e) {
-            notify({ title: "Could not create the group", body: "Discord may want a captcha – create it by hand and use the lock there", kind: "error", app: "SecretChat" });
+            notify({ title: "Could not create the group", body: "Discord may want a captcha – create it by hand and use the lock there", kind: "error", app: "Unter das OS" });
             setBusy(false);
         }
     };
@@ -467,7 +469,7 @@ function NewRoomPanel({ onDone }: { onDone(): void; }) {
                         if (!file) return;
                         const data = await toIconDataUrl(file);
                         if (data) setIcon(data);
-                        else notify({ title: "That image couldn't be read", kind: "error", app: "SecretChat" });
+                        else notify({ title: "That image couldn't be read", kind: "error", app: "Unter das OS" });
                     }}
                 />
             </div>

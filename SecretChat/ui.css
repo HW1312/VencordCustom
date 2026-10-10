@@ -180,6 +180,176 @@
     }
 }
 
+/* ---------------------------------------------------------------- Open request (square card) */
+
+.vc-secretchat-request {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    box-sizing: border-box;
+    width: 290px;
+    margin-top: 6px;
+    padding: 24px 18px 16px;
+    border: 0.5px solid var(--vc-ui-edge);
+    border-radius: 22px;
+    background:
+        radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--vc-ui-green) 15%, transparent), transparent 70%),
+        var(--vc-ui-group);
+    color: var(--vc-ui-text);
+    font-family: var(--vc-ui-font);
+    text-align: center;
+    animation: vc-secretchat-request-in 0.4s var(--vc-ui-spring);
+}
+
+.vc-secretchat-request .vc-ui-avatar {
+    box-shadow: 0 6px 20px rgb(0 0 0 / 30%);
+}
+
+.vc-secretchat-request-avatar {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.vc-secretchat-request-lock {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--vc-ui-glass-strong);
+    border-radius: 50%;
+    background: var(--vc-ui-green);
+    color: #fff;
+}
+
+.vc-secretchat-request-name {
+    max-width: 100%;
+    overflow: hidden;
+    /* room for descenders (g, y) – overflow: hidden would cut them otherwise */
+    padding-bottom: 2px;
+    line-height: 1.3;
+    color: var(--vc-ui-title);
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-secretchat-request-sub {
+    font-size: 14px;
+}
+
+.vc-secretchat-request .vc-secretchat-pq {
+    margin: 6px 0 0;
+    padding: 3px 10px;
+    font-size: 12px;
+}
+
+.vc-secretchat-request-actions {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin-top: 12px;
+    font-size: 13px;
+}
+
+.vc-secretchat-request-actions .vc-secretchat-decide {
+    width: 48px;
+    height: 48px;
+}
+
+.vc-secretchat-request-actions .vc-secretchat-decide svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Outgoing: you ··· 🔒 ··· them */
+.vc-secretchat-request-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.vc-secretchat-request-link-lock {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--vc-ui-green);
+    color: #fff;
+    animation: vc-secretchat-lock-pulse 1.8s ease-out infinite;
+}
+
+.vc-secretchat-request-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.vc-secretchat-request-dots i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--vc-ui-green);
+    opacity: 0.2;
+    animation: vc-secretchat-dot 1.2s ease-in-out infinite;
+}
+
+.vc-secretchat-request-dots i:nth-child(2) { animation-delay: 0.15s; }
+.vc-secretchat-request-dots i:nth-child(3) { animation-delay: 0.3s; }
+.vc-secretchat-request-dots + .vc-secretchat-request-link-lock + .vc-secretchat-request-dots i:nth-child(1) { animation-delay: 0.6s; }
+.vc-secretchat-request-dots + .vc-secretchat-request-link-lock + .vc-secretchat-request-dots i:nth-child(2) { animation-delay: 0.75s; }
+.vc-secretchat-request-dots + .vc-secretchat-request-link-lock + .vc-secretchat-request-dots i:nth-child(3) { animation-delay: 0.9s; }
+
+.vc-secretchat-request-cancel {
+    margin-top: 12px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: var(--vc-ui-dim);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, transform 0.2s var(--vc-ui-spring);
+}
+
+.vc-secretchat-request-cancel:hover {
+    background: color-mix(in srgb, var(--vc-ui-red) 14%, transparent);
+    color: var(--vc-ui-red);
+}
+
+.vc-secretchat-request-cancel:active {
+    transform: scale(0.92);
+}
+
+@keyframes vc-secretchat-request-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes vc-secretchat-dot {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.25); }
+}
+
+@keyframes vc-secretchat-lock-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--vc-ui-green) 55%, transparent); }
+    70%, 100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-secretchat-request,
+    .vc-secretchat-request-link-lock,
+    .vc-secretchat-request-dots i {
+        animation: none;
+    }
+}
+
 /* ---------------------------------------------------------------- Keyring window */
 
 .vc-secretchat-top {
@@ -1116,3 +1286,162 @@ video.vc-secretchat-file-media {
     word-break: break-all;
     user-select: text;
 }
+/* ---------------------------------------------------------------- Animated app icon (logo.tsx) */
+
+.vc-secretchat-logo-tile {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 28%), inset 0 0.5px 0 rgb(255 255 255 / 40%);
+    background: linear-gradient(150deg, #8e8e93, #48484a);
+    transition: background 0.4s, box-shadow 0.4s;
+    isolation: isolate;
+}
+
+/* The green fades in over the gray, so the change is smooth */
+.vc-secretchat-logo-tile::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(150deg, #4ade80 0%, #22c55e 45%, #0f9f6e 100%);
+    content: "";
+    opacity: 0;
+    transition: opacity 0.45s;
+}
+
+.vc-secretchat-logo-locked::before {
+    opacity: 1;
+}
+
+.vc-secretchat-logo-locked {
+    box-shadow: 0 2px 14px color-mix(in srgb, #22c55e 45%, transparent), inset 0 0.5px 0 rgb(255 255 255 / 45%);
+}
+
+.vc-secretchat-logo-svg {
+    width: 62%;
+    height: 62%;
+    overflow: visible;
+    filter: drop-shadow(0 1.5px 2px rgb(0 0 0 / 22%));
+}
+
+.vc-secretchat-logo-shackle,
+.vc-secretchat-logo-body {
+    transform-box: view-box;
+}
+
+.vc-secretchat-logo-shackle {
+    transform-origin: 42px 31px;
+    transition: transform 0.3s var(--vc-ui-spring);
+}
+
+.vc-secretchat-logo-body {
+    transform-origin: 32px 54px;
+}
+
+.vc-secretchat-logo-hole {
+    fill: #48484a;
+    transition: fill 0.4s;
+}
+
+.vc-secretchat-logo-locked .vc-secretchat-logo-hole {
+    fill: #0f9f6e;
+}
+
+/* Open: shackle up and turned out */
+.vc-secretchat-logo-open .vc-secretchat-logo-shackle {
+    transform: translateY(-7px) rotate(-16deg);
+    animation: vc-secretchat-logo-unlock 0.5s var(--vc-ui-spring);
+}
+
+/* Locked: shackle snaps down, body bounces, keyhole flashes */
+.vc-secretchat-logo-locked .vc-secretchat-logo-shackle {
+    animation: vc-secretchat-logo-lock 0.55s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.vc-secretchat-logo-locked .vc-secretchat-logo-body {
+    animation: vc-secretchat-logo-bounce 0.55s 0.12s ease-out;
+}
+
+.vc-secretchat-logo-locked .vc-secretchat-logo-hole {
+    animation: vc-secretchat-logo-hole 1.4s 0.3s ease-out;
+}
+
+/* Hover: the shackle lifts a little */
+.vc-secretchat-logo-locked:hover .vc-secretchat-logo-shackle {
+    transform: translateY(-2.5px);
+}
+
+.vc-secretchat-logo-open:hover .vc-secretchat-logo-shackle {
+    transform: translateY(-9px) rotate(-22deg);
+}
+
+/* Ripple when it locks */
+.vc-secretchat-logo-ripple {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.vc-secretchat-logo-locked .vc-secretchat-logo-ripple {
+    animation: vc-secretchat-logo-ripple 0.8s 0.15s ease-out both;
+}
+
+/* A light sweeps over the tile every few seconds */
+.vc-secretchat-logo-sheen {
+    position: absolute;
+    inset: -20%;
+    background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 38%) 50%, transparent 62%);
+    pointer-events: none;
+    transform: translateX(-120%);
+    animation: vc-secretchat-logo-sheen 6s 1s ease-in-out infinite;
+}
+
+.vc-secretchat-logo-open .vc-secretchat-logo-sheen {
+    display: none;
+}
+
+@keyframes vc-secretchat-logo-lock {
+    0% { transform: translateY(-7px) rotate(-16deg); }
+    45% { transform: translateY(1.5px) rotate(0deg); }
+    70% { transform: translateY(-1px); }
+    100% { transform: none; }
+}
+
+@keyframes vc-secretchat-logo-unlock {
+    0% { transform: none; }
+    100% { transform: translateY(-7px) rotate(-16deg); }
+}
+
+@keyframes vc-secretchat-logo-bounce {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.08, 0.9); }
+    65% { transform: scale(0.97, 1.04); }
+    100% { transform: scale(1); }
+}
+
+@keyframes vc-secretchat-logo-hole {
+    0%, 100% { fill: #0f9f6e; }
+    30% { fill: #bbf7d0; }
+}
+
+@keyframes vc-secretchat-logo-ripple {
+    0% { box-shadow: inset 0 0 0 0 rgb(255 255 255 / 70%); }
+    100% { box-shadow: inset 0 0 0 30px transparent; }
+}
+
+@keyframes vc-secretchat-logo-sheen {
+    0%, 70% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-secretchat-logo-tile *,
+    .vc-secretchat-logo-tile {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+

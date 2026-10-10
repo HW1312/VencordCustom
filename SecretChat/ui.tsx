@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { Avatar as KitAvatar, Button, confirm, openAlert, Empty, Glyph, Icon, IconButton, ICONS, LinkRow, Note, openWindow, Pill, Pills, Row, Section, Segmented, Sheet, State, TextField } from "../_ui";
 import { RoomCard } from "./area";
+import { SecretLogo } from "./logo";
 import { keyFromPassword, randomBytes } from "./crypto";
 import { acceptHandshake, cancelRequest, declineHandshake, decrypted, deleteKeyForBoth, handshakes, keyDeletes, retryLocked, startHandshake } from "./messages";
 import { chatLabel, makeRoom, pruneStale, roomMessages } from "./rooms";
@@ -61,7 +62,7 @@ export const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
     const active = channelKey(channel.id);
     const tooltip = active
         ? `Encrypted with “${active.name}” · right-click to turn off`
-        : "SecretChat: off · click to choose a key";
+        : "Unter das OS: off · click to choose a key";
 
     return (
         <ChatBarButton
@@ -84,7 +85,8 @@ export const ChatButton: ChatBarButtonFactory = ({ channel, isMainChat }) => {
 
 export function UserAvatar({ userId, size = 32 }: { userId?: string; size?: number; }) {
     const user = userId ? UserStore.getUser(userId) : null;
-    return <KitAvatar src={(user as any)?.getAvatarURL?.(undefined, 64)} size={size} />;
+    // Twice the size for sharp pictures on high-DPI screens
+    return <KitAvatar src={(user as any)?.getAvatarURL?.(undefined, size > 40 ? 160 : 64)} size={size} />;
 }
 
 /** Name field that replaces a row title while renaming; onDone(null) = cancelled */
@@ -112,7 +114,7 @@ async function confirmDelete(k: KeyRecord) {
         const partner = userName(k.partnerId);
         const choice = await openAlert({
             title: `Delete “${k.name}”?`,
-            body: `Messages sent with this key can't be read anymore. “For both” also deletes it on ${partner}'s PC as soon as their SecretChat sees the request in your DM.`,
+            body: `Messages sent with this key can't be read anymore. “For both” also deletes it on ${partner}'s PC as soon as their Unter das OS sees the request in your DM.`,
             icon: ICONS.trash,
             iconColor: "red",
             buttons: [{ label: "Cancel" }, { label: "Only for me", variant: "gray" }, { label: "Delete for both", variant: "destructive" }]
@@ -336,7 +338,7 @@ function RoomSection({ channel }: { channel: Channel; }) {
     const [name, setName] = useState(() => active?.kind === "group" ? active.name : chatLabel(channel.id).slice(0, 64));
     const [busy, setBusy] = useState(false);
 
-    if (room) return <Note tone="ok">Secret room “{room.name}” · pings only through SecretChat</Note>;
+    if (room) return <Note tone="ok">Secret room “{room.name}” · pings only through Unter das OS</Note>;
 
     const create = async () => {
         if (!name.trim() || busy) return;
@@ -378,11 +380,10 @@ function ChatWindow({ channel, close }: { channel: Channel; close(): void; }) {
     return (
         <Sheet
             header={{
-                title: "SecretChat",
+                title: "Unter das OS",
                 subtitle: active ? `Encrypted · ${active.name}` : "Not encrypted",
                 live: !!active,
-                icon: LOCK_PATH,
-                iconColor: SC_COLOR,
+                iconNode: <SecretLogo locked={!!active} />,
                 actions: active && <Button small variant="gray" onClick={() => setChannelKey(channel.id, null)}>Turn off</Button>
             }}
             onClose={close}
@@ -493,6 +494,44 @@ function DecisionButton({ accept, label, hidden, onStart, onClick, onFinished }:
     );
 }
 
+/** Open request: square card with the other person's picture – incoming with ✓ / ✕, outgoing while waiting */
+function RequestCard({ picture, title, subtitle, quantumSafe, children }: {
+    picture: ReactNode; title: ReactNode; subtitle: ReactNode; quantumSafe: boolean; children?: ReactNode;
+}) {
+    return (
+        <div className={cl("request")}>
+            {picture}
+            <b className={cl("request-name")}>{title}</b>
+            <span className={cl("request-sub")}>{subtitle}</span>
+            {quantumSafe && (
+                <Tooltip text="Hybrid key exchange: ECDH P-256 + ML-KEM-768">
+                    {p => <span {...p} className={cl("pq")}>Quantum-safe</span>}
+                </Tooltip>
+            )}
+            {children && <div className={cl("request-actions")}>{children}</div>}
+        </div>
+    );
+}
+
+/** Incoming: their picture with a lock badge */
+const RequestAvatar = ({ userId }: { userId: string; }) => (
+    <span className={cl("request-avatar")}>
+        <UserAvatar userId={userId} size={88} />
+        <span className={cl("request-lock")}><LockIcon width={16} height={16} /></span>
+    </span>
+);
+
+/** Outgoing: you and them, with dots travelling over to them and a pulsing lock in the middle */
+const RequestLink = ({ from, to }: { from: string; to: string; }) => (
+    <span className={cl("request-link")}>
+        <UserAvatar userId={from} size={64} />
+        <span className={cl("request-dots")}><i /><i /><i /></span>
+        <span className={cl("request-link-lock")}><LockIcon width={18} height={18} /></span>
+        <span className={cl("request-dots")}><i /><i /><i /></span>
+        <UserAvatar userId={to} size={64} />
+    </span>
+);
+
 export function MessageCard({ message }: { message: Message; }) {
     const s = useStore();
     /** The ✓ / ✕ that was clicked – the buttons stay until its animation is over */
@@ -528,24 +567,39 @@ export function MessageCard({ message }: { message: Message; }) {
     let text: ReactNode;
     let buttons: ReactNode = null;
     if (hs.type === "hello") {
+        const quantumSafe = hs.publicKey.includes("~");
         if (hs.to === me && (deciding || !s.handled.includes(hs.hsid))) {
-            text = deciding === "yes" ? <>Securing the chat with {userName(hs.authorId)} …</>
-                : deciding === "no" ? <>Declining the request …</>
-                    : <>{userName(hs.authorId)} wants an encrypted 1:1 chat</>;
             const done = () => setDeciding(null);
-            buttons = (
-                <span className={cl("decide-group")}>
+            return (
+                <RequestCard
+                    picture={<RequestAvatar userId={hs.authorId} />}
+                    title={userName(hs.authorId)}
+                    subtitle={deciding === "yes" ? "Securing the chat …" : deciding === "no" ? "Declining …" : "wants an encrypted 1:1 chat"}
+                    quantumSafe={quantumSafe}
+                >
                     <DecisionButton accept label="Accept" hidden={deciding === "no"} onStart={() => setDeciding("yes")} onClick={() => acceptHandshake(hs)} onFinished={done} />
                     <DecisionButton label="Decline" hidden={deciding === "yes"} onStart={() => setDeciding("no")} onClick={() => declineHandshake(hs)} onFinished={done} />
-                </span>
+                </RequestCard>
             );
-        } else if (hs.to === me) {
+        }
+        if (hs.authorId === me && hs.to && s.pending[hs.hsid]) {
+            return (
+                <RequestCard
+                    picture={<RequestLink from={me!} to={hs.to} />}
+                    title={<>Waiting for {userName(hs.to)}</>}
+                    subtitle="to accept your encrypted chat"
+                    quantumSafe={quantumSafe}
+                >
+                    <button type="button" className={cl("request-cancel")} onClick={() => cancelRequest(hs.to!)}>Cancel request</button>
+                </RequestCard>
+            );
+        }
+        if (hs.to === me) {
             text = s.declined.includes(hs.hsid)
                 ? <>You declined the request from {userName(hs.authorId)}</>
                 : <>You accepted the request from {userName(hs.authorId)}</>;
         } else if (hs.authorId === me) {
-            text = s.pending[hs.hsid] ? <>Waiting for {userName(hs.to)} …</>
-                : s.declined.includes(hs.hsid) ? <>{userName(hs.to)} declined your request</>
+            text = s.declined.includes(hs.hsid) ? <>{userName(hs.to)} declined your request</>
                     : <>Request to {userName(hs.to)} answered</>;
         } else {
             text = <>Encrypted chat request to {userName(hs.to)}</>;

@@ -30,7 +30,7 @@ import { channelKey, getKeyBytes, isLoaded } from "./store";
 const logger = new Logger("SecretChat");
 const cl = classNameFactory("vc-secretchat-");
 
-const Native = VencordNative.pluginHelpers.SecretChat as PluginNative<typeof import("./native")>;
+const Native = VencordNative.pluginHelpers["Unter das OS"] as PluginNative<typeof import("./native")>;
 
 /** Start of the decrypted text of a file message */
 export const FILE_MARK = "SCF1:";
@@ -144,11 +144,11 @@ export async function sendEncryptedFiles(channel: Channel, list: File[], message
         // AES-GCM adds 16 bytes
         const external = file.size + 16 > limit;
         if (external && !Settings.plugins.GofileUpload?.enabled) {
-            notify({ title: `${file.name} is larger than your upload limit (${formatBytes(limit)})`, body: "Turn on GofileUpload to send big files encrypted", kind: "error", app: "SecretChat" });
+            notify({ title: `${file.name} is larger than your upload limit (${formatBytes(limit)})`, body: "Turn on GofileUpload to send big files encrypted", kind: "error", app: "Unter das OS" });
             continue;
         }
         if (file.size > EXTERNAL_MAX) {
-            notify({ title: `${file.name} is too large to encrypt (max ${formatBytes(EXTERNAL_MAX)})`, kind: "error", app: "SecretChat" });
+            notify({ title: `${file.name} is too large to encrypt (max ${formatBytes(EXTERNAL_MAX)})`, kind: "error", app: "Unter das OS" });
             continue;
         }
         try {
@@ -182,7 +182,7 @@ export async function sendEncryptedFiles(channel: Channel, list: File[], message
             messageReference = undefined;
         } catch (e) {
             logger.error("Sending an encrypted file failed", e);
-            notify({ title: `Couldn't send ${file.name} encrypted`, kind: "error", app: "SecretChat" });
+            notify({ title: `Couldn't send ${file.name} encrypted`, kind: "error", app: "Unter das OS" });
         }
     }
 }
@@ -198,14 +198,14 @@ export function interceptUpload(files: ArrayLike<File> | null, channel: Channel 
         const list = Array.from(files);
         // The keyring loads a moment after start – never let an "on" chat's files slip out readable
         if (!isLoaded()) {
-            notify({ title: "SecretChat is still loading its keys – try again in a second", kind: "error", app: "SecretChat" });
+            notify({ title: "Unter das OS is still loading its keys – try again in a second", kind: "error", app: "Unter das OS" });
             return true;
         }
         if (!channelKey(channel.id)) return false;
 
         const reply = PendingReplyStore.getPendingReply(channel.id);
         const reference = reply ? MessageActions.getSendMessageOptionsForReply(reply)?.messageReference : undefined;
-        notify({ title: list.length === 1 ? `Sending ${list[0].name} encrypted …` : `Sending ${list.length} files encrypted …`, kind: "info", app: "SecretChat" });
+        notify({ title: list.length === 1 ? `Sending ${list[0].name} encrypted …` : `Sending ${list.length} files encrypted …`, kind: "info", app: "Unter das OS" });
         void sendEncryptedFiles(channel, list, reference);
         return true;
     } catch (e) {

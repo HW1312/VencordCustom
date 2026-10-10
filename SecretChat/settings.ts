@@ -19,13 +19,13 @@ export const settings = definePluginSettings({
     },
     showServerListIcon: {
         type: OptionType.BOOLEAN,
-        description: "Show the SecretChat icon with your secret rooms in the server list",
+        description: "Show the Unter das OS icon with your secret rooms in the server list",
         default: true
     },
     serverListName: {
         type: OptionType.STRING,
         description: "Name shown when hovering the server list icon (e.g. a normal server name, so it doesn't stand out)",
-        default: "Secret rooms"
+        default: "Unter das OS"
     },
     serverListPicture: {
         type: OptionType.STRING,
@@ -35,7 +35,7 @@ export const settings = definePluginSettings({
     },
     showTitleBarButton: {
         type: OptionType.BOOLEAN,
-        description: "Show the SecretChat icon in the title bar at the top (next to Back / Forward)",
+        description: "Show the Unter das OS icon in the title bar at the top (next to Back / Forward)",
         default: true
     },
     emergency: {
