@@ -17,7 +17,7 @@ import { Logger } from "@utils/Logger";
 import { openModal } from "@utils/modal";
 import { PluginNative } from "@utils/types";
 import { Channel, Message } from "@vencord/discord-types";
-import { Constants, MessageActions, PendingReplyStore, RestAPI, SnowflakeUtils, useEffect, UserStore, useState } from "@webpack/common";
+import { Constants, MessageActions, PendingReplyStore, RestAPI, SnowflakeUtils, Tooltip, useEffect, UserStore, useState } from "@webpack/common";
 
 import { Button, ICONS, notify } from "../_ui";
 import { attachmentOf, formatBytes, sendFiles as sendPlainFiles, uploadLimit, uploadOne } from "../ChatPopout/upload";
@@ -358,14 +358,18 @@ export function EncryptedFile({ message }: { message: Message; }) {
     );
 
     const infoButton = (
-        <button
-            className={cl("file-info")}
-            title="Where is it stored, how is it encrypted – with a check"
-            aria-label="File info"
-            onClick={e => { e.stopPropagation(); openFileInfo(info, fetchBytes, pickFile); }}
-        >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d={ICONS.info} /></svg>
-        </button>
+        <Tooltip text="Where is it stored, how is it encrypted – with a check">
+            {(tip: any) => (
+                <button
+                    {...tip}
+                    className={cl("file-info")}
+                    aria-label="File info"
+                    onClick={e => { e.stopPropagation(); openFileInfo(info, fetchBytes, pickFile); }}
+                >
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d={ICONS.info} /></svg>
+                </button>
+            )}
+        </Tooltip>
     );
 
     if (kind !== "file" && !error && (auto || url)) {

@@ -1206,6 +1206,19 @@ video.vc-secretchat-file-media {
     color: #fff;
 }
 
+/* On images and videos the badge and the info icon only show while hovering the media */
+.vc-secretchat-file .vc-secretchat-file-badge,
+.vc-secretchat-file .vc-secretchat-file-info {
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.2s var(--vc-ui-spring), color 0.15s;
+}
+
+.vc-secretchat-file:hover .vc-secretchat-file-badge,
+.vc-secretchat-file:hover .vc-secretchat-file-info,
+.vc-secretchat-file:focus-within .vc-secretchat-file-info {
+    opacity: 1;
+}
+
 .vc-secretchat-file-card {
     display: flex;
     align-items: center;
@@ -1271,13 +1284,20 @@ video.vc-secretchat-file-media {
     color: var(--vc-ui-green);
 }
 
-.vc-secretchat-file .vc-secretchat-file-info {
+/* Just the icon, no circle – a shadow keeps it readable on bright pictures */
+.vc-secretchat-file .vc-secretchat-file-info,
+.vc-secretchat-file .vc-secretchat-file-info:hover {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgb(0 0 0 / 55%);
-    backdrop-filter: blur(10px);
+    top: 5px;
+    right: 5px;
+    background: none;
     color: #fff;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 70%));
+}
+
+.vc-secretchat-file .vc-secretchat-file-info:hover {
+    color: var(--vc-ui-green);
+    transform: scale(1.15);
 }
 
 .vc-secretchat-info-mono {
@@ -1704,24 +1724,94 @@ video.vc-secretchat-file-media {
     padding: 0 6px;
 }
 
-/* Volume slider slides open on hover */
+/* Volume: vertical slider popping up above the button */
 .vc-secretchat-player-volume {
+    position: relative;
     display: flex;
     flex: none;
     align-items: center;
 }
 
-.vc-secretchat-player-volume input[type="range"] {
-    width: 0;
+.vc-secretchat-player-volume-pop {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    display: grid;
+    width: 30px;
+    height: 96px;
+    padding: 10px 0;
+    box-sizing: border-box;
+    place-items: center;
+    border-radius: 15px;
+    background: rgb(20 20 24 / 85%);
+    box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 15%), 0 6px 18px rgb(0 0 0 / 40%);
     opacity: 0;
-    transition: width 0.2s var(--vc-ui-ease), opacity 0.2s, margin 0.2s;
+    pointer-events: none;
+    translate: -50% 6px;
+    backdrop-filter: blur(16px);
+    transition: opacity 0.18s ease, translate 0.22s var(--vc-ui-spring);
 }
 
-.vc-secretchat-player-volume:hover input[type="range"],
-.vc-secretchat-player-volume:focus-within input[type="range"] {
-    width: 70px;
-    margin: 0 6px 0 2px;
+/* Invisible bridge so the mouse can travel from the button up to the slider */
+.vc-secretchat-player-volume-pop::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    height: 8px;
+}
+
+.vc-secretchat-player-volume:hover .vc-secretchat-player-volume-pop,
+.vc-secretchat-player-volume:focus-within .vc-secretchat-player-volume-pop {
     opacity: 1;
+    pointer-events: auto;
+    translate: -50% -4px;
+}
+
+.vc-secretchat-player-volume-pop input[type="range"] {
+    width: 14px;
+    height: 100%;
+    direction: rtl;
+    writing-mode: vertical-lr;
+}
+
+.vc-secretchat-player-volume-pop input[type="range"]::-webkit-slider-runnable-track {
+    width: 4px;
+    height: 100%;
+    margin: 0 auto;
+    background: linear-gradient(0deg, #fff calc(var(--p) * 100%), transparent 0), rgb(255 255 255 / 25%);
+}
+
+.vc-secretchat-player-volume-pop input[type="range"]::-webkit-slider-thumb {
+    margin: 0 0 0 -4px;
+    transform: scale(1);
+}
+
+/* Narrow players (e.g. portrait videos): smaller buttons, no time, no "bigger view" – fullscreen and pop out stay */
+.vc-secretchat-player-root {
+    container-type: inline-size;
+}
+
+@container (max-width: 300px) {
+    .vc-secretchat-player-time,
+    .vc-secretchat-player-btn-expand {
+        display: none;
+    }
+
+    .vc-secretchat-player-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .vc-secretchat-player-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .vc-secretchat-player-bar {
+        padding-inline: 4px;
+    }
 }
 
 /* Small players: only the essentials */

@@ -54,7 +54,7 @@ const Svg = ({ children, size = 18 }: { children: ReactNode; size?: number; }) =
     </svg>
 );
 
-function Ctrl({ label, onClick, active, children }: { label: string; onClick(): void; active?: boolean; children: ReactNode; }) {
+function Ctrl({ label, onClick, active, className, children }: { label: string; onClick(): void; active?: boolean; className?: string; children: ReactNode; }) {
     return (
         <Tooltip text={label}>
             {(tip: any) => (
@@ -62,7 +62,7 @@ function Ctrl({ label, onClick, active, children }: { label: string; onClick(): 
                     {...tip}
                     type="button"
                     aria-label={label}
-                    className={classes(cl("btn"), active && cl("btn-on"))}
+                    className={classes(cl("btn"), active && cl("btn-on"), className)}
                     onClick={e => { e.stopPropagation(); onClick(); }}
                 >
                     {children}
@@ -245,16 +245,19 @@ export function VideoPlayer({ src, name, style, big, autoPlay, startAt }: {
                         <Ctrl label={muted || !volume ? "Unmute (M)" : "Mute (M)"} onClick={() => setVolume(volume || 0.5, !(muted || !volume))}>
                             <Svg>{volumeIcon}</Svg>
                         </Ctrl>
-                        <input
-                            type="range"
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            value={shownVolume}
-                            aria-label="Volume"
-                            style={{ "--p": shownVolume } as CSSProperties}
-                            onChange={e => setVolume(Number(e.currentTarget.value))}
-                        />
+                        {/* Pops up above the button, so it also fits in narrow players */}
+                        <div className={cl("volume-pop")}>
+                            <input
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={shownVolume}
+                                aria-label="Volume"
+                                style={{ "--p": shownVolume } as CSSProperties}
+                                onChange={e => setVolume(Number(e.currentTarget.value))}
+                            />
+                        </div>
                     </div>
                     <span className={cl("time")}>{time(current)} / {time(duration)}</span>
                     <span className={cl("spacer")} />
@@ -267,7 +270,7 @@ export function VideoPlayer({ src, name, style, big, autoPlay, startAt }: {
                         </Ctrl>
                     )}
                     {!big && !fullscreen && (
-                        <Ctrl label="Bigger view" onClick={expand}>
+                        <Ctrl label="Bigger view" onClick={expand} className={cl("btn-expand")}>
                             <Svg>{I.expand}</Svg>
                         </Ctrl>
                     )}
