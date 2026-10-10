@@ -68,8 +68,8 @@ export const settings = definePluginSettings({
 
 // ---------------------------------------------------------------- Entry points
 
-/** Categories, forums and media channels have no messages of their own */
-const NO_MESSAGES = new Set([4, 15, 16]);
+/** Categories have no media. Forums and media channels do: the gallery collects it from their posts. */
+const NO_MESSAGES = new Set([4]);
 
 const channelContext: NavContextMenuPatchCallback = (children, { channel }) => {
     if (!channel || NO_MESSAGES.has(channel.type)) return;

@@ -506,10 +506,10 @@ function Gallery({ channel, onClose }: { channel: Channel; onClose(): void; }) {
     const loadStatus = idx.loading
         ? idx.rateLimited
             ? `Rate limited – waiting ${idx.rateLimited} s…`
-            : `Loading… ${formatNumber(idx.scanned)} messages scanned`
+            : `Loading… ${formatNumber(idx.scanned)} ${idx.forum ? "posts" : "messages"} scanned`
         : idx.done
-            ? `Entire history scanned (${formatNumber(idx.scanned)} messages)`
-            : `${formatNumber(idx.scanned)} messages scanned`;
+            ? `${idx.forum ? "All posts" : "Entire history"} scanned (${formatNumber(idx.scanned)} ${idx.forum ? "posts" : "messages"})`
+            : `${formatNumber(idx.scanned)} ${idx.forum ? "posts" : "messages"} scanned`;
 
     return (
         <Sheet

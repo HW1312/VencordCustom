@@ -1,0 +1,548 @@
+/* SongRadar – logo, listen button, result card, history; popover / sheet / rows come from the shared _ui kit */
+
+/* ---------- Title bar ---------- */
+
+.vc-songradar-titlebtn,
+.vc-songradar-titlebtn * {
+    -webkit-app-region: no-drag;
+}
+
+.vc-songradar-titlebtn-active .vc-songradar-bars {
+    color: var(--vc-ui-blue);
+}
+
+/* ---------- Sound bars ---------- */
+
+.vc-songradar-bars {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 9%;
+    color: currentcolor;
+}
+
+.vc-songradar-bars i {
+    width: 11%;
+    height: 40%;
+    border-radius: 99px;
+    background: currentcolor;
+    transition: height 0.3s var(--vc-ui-ease);
+}
+
+.vc-songradar-bars i:nth-child(2),
+.vc-songradar-bars i:nth-child(4) { height: 65%; }
+
+.vc-songradar-bars i:nth-child(3) { height: 95%; }
+
+.vc-songradar-bars-active i {
+    animation: vc-songradar-bar 0.9s ease-in-out infinite;
+}
+
+.vc-songradar-bars-active i:nth-child(2) { animation-delay: -0.2s; }
+.vc-songradar-bars-active i:nth-child(3) { animation-delay: -0.45s; }
+.vc-songradar-bars-active i:nth-child(4) { animation-delay: -0.1s; }
+.vc-songradar-bars-active i:nth-child(5) { animation-delay: -0.6s; }
+
+@keyframes vc-songradar-bar {
+    0%, 100% { height: 25%; }
+    50% { height: 95%; }
+}
+
+/* ---------- Logo ---------- */
+
+.vc-songradar-logo {
+    position: relative;
+    display: grid;
+    flex: none;
+    overflow: hidden;
+    place-items: center;
+    border-radius: 28%;
+    background: linear-gradient(150deg, #3d9bff 0%, #1460f2 55%, #5b2cf0 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 2px 8px rgb(20 96 242 / 25%);
+    color: #fff;
+}
+
+.vc-songradar-logo .vc-songradar-bars {
+    position: relative;
+    z-index: 1;
+}
+
+/* Radar sweep turning behind the bars */
+.vc-songradar-logo-sweep {
+    position: absolute;
+    inset: -30%;
+    background: conic-gradient(from 0deg, transparent 0deg, rgb(255 255 255 / 0%) 250deg, rgb(255 255 255 / 35%) 360deg);
+    animation: vc-songradar-spin 4s linear infinite;
+}
+
+.vc-songradar-logo-active .vc-songradar-logo-sweep {
+    animation-duration: 1.2s;
+}
+
+@keyframes vc-songradar-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---------- Panel ---------- */
+
+.vc-songradar-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.vc-songradar-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 0 4px;
+    text-align: center;
+}
+
+.vc-songradar-listen {
+    position: relative;
+    display: grid;
+    width: 128px;
+    height: 128px;
+    margin-bottom: 10px;
+    padding: 0;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4da6ff, #1460f2 60%, #4c2bd9);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 8px 24px rgb(20 96 242 / 35%);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.3s var(--vc-ui-spring), box-shadow 0.3s;
+}
+
+.vc-songradar-listen:hover {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 10px 30px rgb(20 96 242 / 50%);
+    transform: scale(1.05);
+}
+
+.vc-songradar-listen:active {
+    transform: scale(0.93);
+}
+
+.vc-songradar-listen > .vc-songradar-bars {
+    position: relative;
+    z-index: 1;
+}
+
+/* Rings that ripple out while listening */
+.vc-songradar-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid #4da6ff;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vc-songradar-listen-active .vc-songradar-ring {
+    animation: vc-songradar-ripple 2.4s ease-out infinite;
+}
+
+.vc-songradar-listen-active .vc-songradar-ring-2 { animation-delay: 0.8s; }
+.vc-songradar-listen-active .vc-songradar-ring-3 { animation-delay: 1.6s; }
+
+@keyframes vc-songradar-ripple {
+    0% { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.7); }
+}
+
+/* Progress around the button */
+.vc-songradar-progress {
+    position: absolute;
+    inset: -7px;
+    width: calc(100% + 14px);
+    height: calc(100% + 14px);
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+
+.vc-songradar-progress circle {
+    fill: none;
+    stroke: #8cc4ff;
+    stroke-dasharray: 100;
+    stroke-linecap: round;
+    stroke-width: 2.5;
+    opacity: 0;
+    transition: stroke-dashoffset 0.15s linear, opacity 0.2s;
+}
+
+.vc-songradar-listen-active .vc-songradar-progress circle {
+    opacity: 1;
+}
+
+.vc-songradar-hero-label {
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
+    font-size: 19px;
+    font-weight: 600;
+}
+
+/* Fixed height: changing hint texts must not move the button */
+.vc-songradar-hero-hint {
+    display: -webkit-box;
+    min-height: 32px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 16px;
+    max-width: 330px;
+    overflow: hidden;
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+    text-overflow: ellipsis;
+}
+
+.vc-songradar-cancel {
+    color: var(--vc-ui-blue);
+}
+
+/* ---------- Result ---------- */
+
+.vc-songradar-result {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 0.5px solid var(--vc-ui-sep);
+    border-radius: 16px;
+    background: var(--vc-ui-group);
+    animation: vc-songradar-in 0.4s var(--vc-ui-spring);
+}
+
+@keyframes vc-songradar-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+
+.vc-songradar-result-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.vc-songradar-result-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vc-songradar-result-title,
+.vc-songradar-result-artist,
+.vc-songradar-result-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-songradar-result-title {
+    color: var(--vc-ui-title);
+    font-family: var(--vc-ui-font-display);
+    font-size: 17px;
+    font-weight: 650;
+}
+
+.vc-songradar-result-artist {
+    color: var(--vc-ui-text);
+    font-size: 13.5px;
+}
+
+.vc-songradar-result-meta {
+    color: var(--vc-ui-dim);
+    font-size: 12px;
+}
+
+.vc-songradar-cover {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--vc-ui-field);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 30%);
+}
+
+.vc-songradar-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vc-songradar-cover-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: rgb(0 0 0 / 35%);
+    color: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.vc-songradar-cover:hover .vc-songradar-cover-play,
+.vc-songradar-cover-playing {
+    opacity: 1;
+}
+
+.vc-songradar-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.vc-songradar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-title);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s, transform 0.2s var(--vc-ui-spring);
+}
+
+.vc-songradar-link:hover {
+    background: color-mix(in srgb, var(--c) 22%, var(--vc-ui-field));
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.vc-songradar-link-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+.vc-songradar-message {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--vc-ui-group);
+    color: var(--vc-ui-dim);
+    font-size: 12.5px;
+    text-align: center;
+    animation: vc-songradar-in 0.3s var(--vc-ui-spring);
+}
+
+.vc-songradar-message b {
+    color: var(--vc-ui-title);
+    font-size: 14px;
+}
+
+.vc-songradar-message-error b {
+    color: var(--vc-ui-red);
+}
+
+/* ---------- History ---------- */
+
+.vc-songradar-history-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px 7px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.vc-songradar-history-row:hover {
+    background: var(--vc-ui-group-hover);
+}
+
+.vc-songradar-history-cover {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--vc-ui-field);
+    object-fit: cover;
+}
+
+.vc-songradar-history-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    font-size: 12px;
+}
+
+.vc-songradar-history-text b,
+.vc-songradar-history-text span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-songradar-history-text b {
+    color: var(--vc-ui-title);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vc-songradar-history-text span {
+    color: var(--vc-ui-dim);
+}
+
+/* ---------- Settings ---------- */
+
+.vc-songradar-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--vc-ui-title);
+    font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vc-songradar-bars i,
+    .vc-songradar-logo-sweep,
+    .vc-songradar-ring,
+    .vc-songradar-result {
+        animation: none !important;
+    }
+}
+
+/* Without sound coming in the button stays calm: no ripples, no progress glow */
+.vc-songradar-listen-active:not(.vc-songradar-listen-alive) .vc-songradar-ring {
+    animation: none;
+}
+
+.vc-songradar-listen-active:not(.vc-songradar-listen-alive) {
+    filter: saturate(0.75);
+}
+
+
+
+
+/* ---------- Platform logos ---------- */
+
+.vc-songradar-platforms {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px;
+}
+
+.vc-songradar-platform {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--vc-ui-field);
+    color: var(--vc-ui-text);
+    transition: background-color 0.18s, color 0.18s, transform 0.25s var(--vc-ui-spring), box-shadow 0.18s;
+}
+
+.vc-songradar-platform:hover {
+    background: color-mix(in srgb, var(--c) 20%, var(--vc-ui-field));
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--c) 25%, transparent);
+    color: var(--c);
+    transform: translateY(-2px) scale(1.06);
+}
+
+.vc-songradar-platform:active {
+    transform: scale(0.92);
+}
+
+.vc-songradar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.vc-songradar-actions > * {
+    justify-content: center;
+}
+
+.vc-songradar-history-cover {
+    display: block;
+}
+
+/* ---------- Preview volume (header) ---------- */
+
+.vc-songradar-volume {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 30px;
+    margin-right: 4px;
+}
+
+.vc-songradar-volume-btn {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--vc-ui-text);
+    cursor: pointer;
+}
+
+.vc-songradar-volume-btn:hover {
+    color: var(--vc-ui-title);
+}
+
+.vc-songradar-volume input[type="range"] {
+    width: 64px;
+    height: 14px;
+    margin: 0;
+    background: none;
+    cursor: pointer;
+    appearance: none;
+}
+
+.vc-songradar-volume input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--vc-ui-blue) calc(var(--p) * 100%), transparent 0), var(--vc-ui-track);
+}
+
+.vc-songradar-volume input[type="range"]::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    margin-top: -4px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+    appearance: none;
+}
+
+/* Header icons: just the glyph, no circle */
+.vc-songradar-bare,
+.vc-songradar-bare:hover {
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+.vc-songradar-bare {
+    color: var(--vc-ui-dim) !important;
+    transition: color 0.15s, transform 0.25s var(--vc-ui-spring);
+}
+
+.vc-songradar-bare:hover {
+    color: var(--vc-ui-title) !important;
+    transform: rotate(45deg);
+}

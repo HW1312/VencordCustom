@@ -1,10 +1,16 @@
 /*
- * MediaGallery – Media index per channel (paging backwards through message history)
+ * MediaGallery – Media index per channel (paging backwards through message history).
+ * Forum and media channels have no messages of their own: there the pictures are in the posts (threads), so it
+ * collects the first message of every post instead – open posts via /post-data (like Discord's forum view),
+ * older ones via the forum's archive search, which already returns the first messages.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 import { Logger } from "@utils/Logger";
-import { Constants, RestAPI } from "@webpack/common";
+import { findStoreLazy } from "@webpack";
+import { ChannelStore, Constants, RestAPI } from "@webpack/common";
+
+const ActiveThreadsStore = findStoreLazy("ActiveThreadsStore");
 
 const logger = new Logger("MediaGallery");
 
@@ -52,6 +58,12 @@ export interface ChannelIndex {
     authors: Map<string, Author>;
     /** ID of the oldest loaded message (for before=) */
     oldestId: string | null;
+    /** Forum / media channel: scans posts instead of messages */
+    forum: boolean;
+    /** Forum: open posts still to load, null = not listed yet */
+    activeQueue: string[] | null;
+    /** Forum: offset in the archive search */
+    archiveOffset: number;
     /** Start of the channel reached */
     done: boolean;
     /** Number of scanned messages */
@@ -69,6 +81,12 @@ export interface ChannelIndex {
 
 const cache = new Map<string, ChannelIndex>();
 
+/** Forum (15) and media (16) channels */
+export const isForum = (channelId: string) => {
+    const type = ChannelStore.getChannel(channelId)?.type;
+    return type === 15 || type === 16;
+};
+
 export function getIndex(channelId: string, guildId: string | null): ChannelIndex {
     let idx = cache.get(channelId);
     if (!idx) {
@@ -79,6 +97,9 @@ export function getIndex(channelId: string, guildId: string | null): ChannelInde
             keys: new Set(),
             authors: new Map(),
             oldestId: null,
+            forum: isForum(channelId),
+            activeQueue: null,
+            archiveOffset: 0,
             done: false,
             scanned: 0,
             loading: false,
@@ -159,7 +180,7 @@ function avatarUrl(a: any): string {
 function extract(idx: ChannelIndex, msg: any) {
     const base = {
         messageId: msg.id as string,
-        channelId: idx.channelId,
+        channelId: (msg.channel_id as string) ?? idx.channelId,
         guildId: idx.guildId,
         authorId: msg.author?.id as string ?? "0",
         timestamp: Date.parse(msg.timestamp) || 0
@@ -265,6 +286,50 @@ function sleep(ms: number, signal: { cancelled: boolean; wake?: () => void; }) {
     });
 }
 
+/** Open posts per /post-data request (Discord's forum view asks for 10 at a time) */
+const POSTS_PER_REQUEST = 10;
+/** Archived posts per search request */
+const ARCHIVE_PAGE = 25;
+
+/** All values of a list or an id → value map */
+const valuesOf = (x: any): any[] => Array.isArray(x) ? x : x && typeof x === "object" ? Object.values(x) : [];
+
+/** One request of a forum: first a batch of open posts, then pages of the archive. Throws like RestAPI (429 etc.). */
+async function loadForumBatch(idx: ChannelIndex) {
+    if (idx.activeQueue === null) {
+        const threads = idx.guildId ? ActiveThreadsStore.getThreadsForParent(idx.guildId, idx.channelId) : null;
+        idx.activeQueue = Object.keys(threads ?? {});
+    }
+
+    if (idx.activeQueue.length) {
+        const ids = idx.activeQueue.slice(0, POSTS_PER_REQUEST);
+        const res = await RestAPI.post({
+            url: `/channels/${idx.channelId}/post-data`,
+            body: { thread_ids: ids },
+            retries: 1
+        });
+        idx.activeQueue = idx.activeQueue.slice(ids.length);
+        for (const post of valuesOf(res?.body?.threads)) {
+            const msg = post?.first_message ?? post?.firstMessage;
+            if (msg) extract(idx, { channel_id: msg.channel_id ?? post.id, ...msg });
+        }
+        idx.scanned += ids.length;
+        return;
+    }
+
+    const res = await RestAPI.get({
+        url: `/channels/${idx.channelId}/threads/search`,
+        query: { archived: true, sort_by: "last_message_time", sort_order: "desc", limit: ARCHIVE_PAGE, offset: idx.archiveOffset },
+        retries: 1
+    });
+    const body = res?.body ?? {};
+    const threads = valuesOf(body.threads);
+    for (const msg of valuesOf(body.first_messages)) extract(idx, msg);
+    idx.archiveOffset += threads.length;
+    idx.scanned += threads.length;
+    if (!body.has_more || !threads.length) idx.done = true;
+}
+
 /**
  * Loads up to `pages` pages (of 100 messages) backwards. Infinity = up to the start of the channel.
  * If a load is already running, nothing happens.
@@ -289,6 +354,12 @@ export async function loadPages(idx: ChannelIndex, pages: number) {
 
             let res: any;
             try {
+                if (idx.forum) {
+                    await loadForumBatch(idx);
+                    loaded++;
+                    emit(idx);
+                    continue;
+                }
                 res = await RestAPI.get({
                     url: Constants.Endpoints.MESSAGES(idx.channelId),
                     query: { limit: 100, ...(idx.oldestId ? { before: idx.oldestId } : {}) },
