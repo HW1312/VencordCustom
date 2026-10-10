@@ -153,7 +153,7 @@ async function poll(version: number) {
     } catch {
         if (!running || version !== generation) return;
         track = null;
-        status = "Native module missing – rebuild Vencord and restart Discord";
+        status = "Fully restart Discord (quit it from the tray) – a reload is not enough";
     }
     if (!running || version !== generation) return;
     updateCover();
