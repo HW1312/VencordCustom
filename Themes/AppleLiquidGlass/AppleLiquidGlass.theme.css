@@ -1,7 +1,7 @@
 /**
  * @name Apple Liquid Glass
  * @author 5406
- * @version 1.1.3
+ * @version 1.1.4
  * @description Dark, frosted Apple Liquid Glass look (macOS Tahoe / iOS 26) for the whole Discord window.
  */
 
@@ -444,16 +444,18 @@ body {
     order: 1;
 }
 
-/* Minimize / maximize by position too: their aria-labels are translated (German "Minimieren", …).
-   In Discord's code (winButtons) the order is minimize, maximize, close. */
+/* Minimize / maximize: their aria-labels are translated (German "Minimieren", …), so they are told apart by
+   position. Discord has two title bars with opposite order (minimize, maximize, close and close, maximize,
+   minimize) – in both, maximize sits right next to close and minimize doesn't. */
 :is([class^="winButton_"], [class*=" winButton_"])[aria-label="Minimize"],
-:is([class^="winButtons_"], [class*=" winButtons_"]) > :is([class^="winButton_"], [class*=" winButton_"]):not(:is([class^="winButtonClose_"], [class*=" winButtonClose_"])):nth-child(1) {
+:is([class^="winButtonMinMax_"], [class*=" winButtonMinMax_"]):not(:has(+ :is([class^="winButtonClose_"], [class*=" winButtonClose_"]))):not(:is([class^="winButtonClose_"], [class*=" winButtonClose_"]) + *) {
     background-color: #febc2e !important;
     order: 2;
 }
 
 :is([class^="winButton_"], [class*=" winButton_"])[aria-label="Maximize"],
-:is([class^="winButtons_"], [class*=" winButtons_"]) > :is([class^="winButton_"], [class*=" winButton_"]):not(:is([class^="winButtonClose_"], [class*=" winButtonClose_"])):nth-child(2) {
+:is([class^="winButtonMinMax_"], [class*=" winButtonMinMax_"]):has(+ :is([class^="winButtonClose_"], [class*=" winButtonClose_"])),
+:is([class^="winButtonClose_"], [class*=" winButtonClose_"]) + :is([class^="winButtonMinMax_"], [class*=" winButtonMinMax_"]) {
     background-color: #28c840 !important;
     order: 3;
 }
